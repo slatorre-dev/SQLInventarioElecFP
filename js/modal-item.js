@@ -184,68 +184,70 @@ function toggleContenedorFields(){
   if(esContenedor){
     const sel = document.getElementById('f_parent_id');
     if(sel) sel.value = '';
+    const srch = document.getElementById('f_hijos_search');
+    if(srch) srch.value = '';
     renderHijosList();
-    fillAddHijoSelect();
   }
 }
 
 function renderHijosList(){
   const list = document.getElementById('f_hijos_list');
   if(!list) return;
-  const hijos = items.filter(x => Number(x.parent_id) === Number(eid));
-  if(!hijos.length){
-    list.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:6px">Sin componentes aún</div>';
+  const q = (document.getElementById('f_hijos_search')?.value || '').toLowerCase().trim();
+  // Todos los ítems candidatos: no contenedores, no la propia caja
+  const candidatos = items
+    .filter(x => !x.es_contenedor && Number(x.id) !== Number(eid))
+    .filter(x => !q || x.item.toLowerCase().includes(q) || (x.ref||'').toLowerCase().includes(q))
+    .sort((a,b) => {
+      const aEs = Number(a.parent_id) === Number(eid);
+      const bEs = Number(b.parent_id) === Number(eid);
+      if(aEs !== bEs) return aEs ? -1 : 1;
+      return String(a.item||'').localeCompare(String(b.item||''));
+    });
+  if(!candidatos.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px">Sin resultados</div>';
     return;
   }
-  list.innerHTML = hijos.map(h => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
-      <span><strong>${h.item}</strong> <span style="color:var(--muted);font-size:11px">${h.ref ? '· '+h.ref : ''} · ${h.qty} ud.</span></span>
-      <button type="button" class="btn btn-sm btn-d" onclick="quitarHijoDeCaja(${h.id})" title="Quitar de la caja" style="padding:2px 6px;font-size:11px">✕</button>
-    </div>`).join('');
+  list.innerHTML = candidatos.map(x => {
+    const enCaja = Number(x.parent_id) === Number(eid);
+    const otraCaja = x.parent_id && !enCaja ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
+    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">
+      <input type="checkbox" data-hijo-id="${x.id}" ${enCaja?'checked':''} style="width:16px;height:16px;flex-shrink:0">
+      <span style="flex:1">
+        <span style="font-weight:${enCaja?'600':'400'}">${x.item}</span>
+        <span style="color:var(--muted);font-size:11px"> ${x.ref ? '· '+x.ref : ''} · ${x.qty} ud.</span>
+        ${otraCaja ? `<span style="font-size:10px;color:#b45309;margin-left:4px">(en: ${otraCaja.item})</span>` : ''}
+      </span>
+    </label>`;
+  }).join('');
 }
 
-function fillAddHijoSelect(){
-  const sel = document.getElementById('f_add_hijo');
-  if(!sel) return;
-  // Ítems que no son contenedores y no tienen padre (o ya son hijos de esta caja)
-  const disponibles = items.filter(x =>
-    !x.es_contenedor &&
-    (!x.parent_id || Number(x.parent_id) === Number(eid)) &&
-    Number(x.id) !== Number(eid)
-  ).sort((a,b) => String(a.item||'').localeCompare(String(b.item||'')));
-  sel.innerHTML = '<option value="">— Añadir ítem existente a esta caja —</option>' +
-    disponibles.map(x => `<option value="${x.id}">${x.item}${x.ref ? ' · '+x.ref : ''} (${x.qty} ud.)</option>`).join('');
-}
-
-async function addHijoACaja(){
-  const sel = document.getElementById('f_add_hijo');
-  const hijoId = sel?.value;
-  if(!hijoId){ toast('Selecciona un ítem para añadir','err'); return; }
-  if(!eid){ toast('Guarda primero la caja antes de añadir componentes','err'); return; }
-  const hijo = items.find(x => Number(x.id) === Number(hijoId));
-  if(!hijo) return;
-  const updated = { ...hijo, parent_id: Number(eid) };
-  const res = await apiPost({ action: 'update', item: updated });
-  if(!res.ok){ toast('Error: '+res.error,'err'); return; }
-  const idx = items.findIndex(x => Number(x.id) === Number(hijoId));
-  items[idx] = updated;
-  sel.value = '';
-  renderHijosList();
-  fillAddHijoSelect();
-  toast(`${hijo.item} añadido a la caja`,'ok');
-}
-
-async function quitarHijoDeCaja(hijoId){
-  const hijo = items.find(x => Number(x.id) === Number(hijoId));
-  if(!hijo) return;
-  const updated = { ...hijo, parent_id: null };
-  const res = await apiPost({ action: 'update', item: updated });
-  if(!res.ok){ toast('Error: '+res.error,'err'); return; }
-  const idx = items.findIndex(x => Number(x.id) === Number(hijoId));
-  items[idx] = updated;
-  renderHijosList();
-  fillAddHijoSelect();
-  toast(`${hijo.item} quitado de la caja`,'ok');
+async function saveHijosCaja(){
+  if(!eid){ toast('Guarda primero la caja','err'); return; }
+  const checks = document.querySelectorAll('#f_hijos_list input[data-hijo-id]');
+  const btn = document.querySelector('#f_contenedor_hijos .btn-loan');
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+  try {
+    const batch = [];
+    for(const chk of checks){
+      const hijoId = Number(chk.dataset.hijoId);
+      const hijo = items.find(x=>Number(x.id)===hijoId);
+      if(!hijo) continue;
+      const nuevoParent = chk.checked ? Number(eid) : null;
+      if(Number(hijo.parent_id||0) === Number(nuevoParent||0)) continue;
+      batch.push({ hijo, nuevoParent });
+    }
+    for(const { hijo, nuevoParent } of batch){
+      const updated = { ...hijo, parent_id: nuevoParent };
+      const res = await apiPost({ action:'update', item: updated });
+      if(!res.ok) throw new Error(res.error);
+      const idx = items.findIndex(x=>Number(x.id)===Number(hijo.id));
+      items[idx] = updated;
+    }
+    renderHijosList();
+    toast(`Componentes de la caja actualizados`,'ok');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { btn.disabled=false; btn.textContent='💾 Guardar selección'; }
 }
 
 function setItemModalReadonly(readonly){
@@ -295,7 +297,7 @@ function openModal(id=null, src=null){
   fillParentSelect(id);
   document.getElementById('f_parent_id').value = m?.parent_id || '';
   toggleContenedorFields();
-  if(esContenedor && existing){ renderHijosList(); fillAddHijoSelect(); }
+  if(esContenedor && existing){ renderHijosList(); }
   initDocSection(id);
   renderItemQr(existing ? m : null);
   setItemModalReadonly(readonly);

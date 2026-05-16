@@ -451,14 +451,12 @@
           </div>
           <div id="f_contenedor_hijos" style="display:none">
             <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Componentes en esta caja:</div>
-            <div id="f_hijos_list" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--bg2,#f9fafb)"></div>
-            <div style="margin-top:8px">
-              <select class="fi-w" id="f_add_hijo" style="margin-bottom:6px">
-                <option value="">— Añadir ítem existente a esta caja —</option>
-              </select>
-              <button type="button" class="btn btn-sm" onclick="addHijoACaja()" style="width:100%">+ Añadir componente</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:12px;color:var(--muted)">Marca los ítems que pertenecen a esta caja:</span>
+              <button type="button" class="btn btn-sm btn-loan" onclick="saveHijosCaja()" style="font-size:12px;padding:4px 10px">💾 Guardar selección</button>
             </div>
+            <input class="fi-w" id="f_hijos_search" type="text" placeholder="🔍 Buscar ítem..." oninput="renderHijosList()" style="margin-bottom:6px">
+            <div id="f_hijos_list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2,#f9fafb)"></div>
           </div>
         </div>
       </div>
