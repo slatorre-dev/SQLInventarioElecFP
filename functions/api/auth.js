@@ -39,7 +39,7 @@ async function getGmailAccessToken(env) {
 
 async function sendResetEmail(env, to, resetUrl, userName) {
   const accessToken = await getGmailAccessToken(env);
-  const from = env.MAIL_FROM || 'saalm76@gmail.com';
+  const from = env.MAIL_FROM || 'inventarioelec@iesjuanbosco.es';
   const subject = 'Recuperación de contraseña - Inventario Taller FP';
   const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
       <h2>Recuperación de contraseña</h2>
