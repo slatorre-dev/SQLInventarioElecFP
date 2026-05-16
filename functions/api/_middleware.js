@@ -4,6 +4,7 @@ export async function onRequest({ request, env, next }) {
   // Rutas públicas
   if (url.pathname.startsWith('/api/auth')) return next();
   if (url.pathname.startsWith('/api/oauth/callback')) return next();
+  if (url.pathname.startsWith('/api/oauth/start')) return next();
 
   const u = url.searchParams.get('u') || '';
   const p = url.searchParams.get('p') || '';
