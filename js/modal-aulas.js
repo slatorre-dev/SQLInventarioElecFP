@@ -14,12 +14,23 @@ function closeAulasModal(){document.getElementById('mAulas').classList.remove('o
 function renderAulasList(){
   document.getElementById('aulasList').innerHTML = aulasEditing.map((a,i)=>`
     <div class="aula-row">
+      <div style="display:flex;flex-direction:column;gap:1px">
+        <button class="del-btn" onclick="moveAulaRow(${i},-1)" title="Subir" ${i===0?'disabled':''} style="font-size:10px;padding:1px 4px">▲</button>
+        <button class="del-btn" onclick="moveAulaRow(${i},1)" title="Bajar" ${i===aulasEditing.length-1?'disabled':''} style="font-size:10px;padding:1px 4px">▼</button>
+      </div>
       <input class="icon-pick" value="${a.icon}" onchange="aulasEditing[${i}].icon=this.value" maxlength="2">
       <input class="fi-w name-input" value="${a.name}" onchange="aulasEditing[${i}].name=this.value" placeholder="Nombre">
       <input class="fi-w desc-input" value="${a.desc||''}" onchange="aulasEditing[${i}].desc=this.value" placeholder="Descripción">
       <button class="del-btn" onclick="removeAulaRow(${i})" title="Eliminar">🗑</button>
     </div>
   `).join('');
+}
+
+function moveAulaRow(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= aulasEditing.length) return;
+  [aulasEditing[i], aulasEditing[j]] = [aulasEditing[j], aulasEditing[i]];
+  renderAulasList();
 }
 
 function addAulaRow(){
@@ -44,7 +55,7 @@ async function saveAulas(){
     if(!a.name.trim()){toast('Hay aulas sin nombre','err');return}
   }
   // Asegurar que cada aula tiene un th asignado
-  aulasEditing.forEach((a,i)=>{ if(!a.th) a.th = TH_OPTIONS[i%TH_OPTIONS.length]; });
+  aulasEditing.forEach((a,i)=>{ if(!a.th) a.th = TH_OPTIONS[i%TH_OPTIONS.length]; a.orden = i; });
 
   try {
     const res = await apiPost({action:'aulasSync', aulas:aulasEditing});
