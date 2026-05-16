@@ -5,6 +5,7 @@ export async function onRequest({ request, env, next }) {
   if (url.pathname.startsWith('/api/auth')) return next();
   if (url.pathname.startsWith('/api/oauth/callback')) return next();
   if (url.pathname.startsWith('/api/oauth/start')) return next();
+  if (url.pathname.startsWith('/api/backup')) return next();
 
   const u = url.searchParams.get('u') || '';
   const p = url.searchParams.get('p') || '';
