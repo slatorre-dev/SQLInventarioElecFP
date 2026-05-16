@@ -1,0 +1,11 @@
+
+ ⛅️ wrangler 4.92.0
+───────────────────
+✅ Successfully created DB 'inventario-departamento' in region WEUR
+Created your new D1 database.
+
+To access your new D1 Database in your Worker, add the following snippet to your configuration file:
+[[d1_databases]]
+binding = "inventario_departamento"
+database_name = "inventario-departamento"
+database_id = "5e996989-1972-481e-a43a-136e25380906"
