@@ -36,8 +36,7 @@ async function requestReset() {
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
     const appUrl = window.location.href.split('#')[0];
-    const sep = API_URL.includes('?') ? '&' : '?';
-    const r = await fetch(`${API_URL}${sep}action=requestReset&usuario=${encodeURIComponent(usuario)}&appUrl=${encodeURIComponent(appUrl)}`);
+    const r = await fetch(`/api/auth?action=requestReset&usuario=${encodeURIComponent(usuario)}&appUrl=${encodeURIComponent(appUrl)}`);
     const res = await r.json().catch(() => null);
     if (!r.ok || !res?.ok) throw new Error(res?.error || 'HTTP ' + r.status);
     // Mensaje genérico siempre (no revelar si el usuario existe)
@@ -81,11 +80,10 @@ async function doResetPassword() {
   const btn = document.getElementById('resetBtn');
   btn.disabled = true; btn.textContent = 'Cambiando...';
   try {
-    const r = await fetch(API_URL, {
+    const r = await fetch('/api/auth', {
       method: 'POST',
       body: JSON.stringify({ action: 'resetPassword', token: _resetToken, newPassword: p1 }),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      redirect: 'follow'
+      headers: { 'Content-Type': 'application/json' },
     });
     const res = await r.json();
     if (!res.ok) throw new Error(res.error || 'Error al cambiar la contraseña');
