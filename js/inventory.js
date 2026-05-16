@@ -422,12 +422,10 @@ function printColSelectNone(){
 }
 
 function printInv(){
-  // Guardar selección en localStorage
   const sel = Object.fromEntries(PRINT_COLS.map(c=>[c.key, document.getElementById('prcol_'+c.key)?.checked ?? c.default]));
   localStorage.setItem(PRINT_COLS_KEY, JSON.stringify(sel));
   const cols = PRINT_COLS.filter(c=>sel[c.key]);
   if(!cols.length){ toast('Selecciona al menos una columna','err'); return; }
-
   closePrintModal();
 
   const titulo = cf?.label || 'Inventario';
@@ -435,13 +433,7 @@ function printInv(){
   const total = data.length;
   const uds = data.reduce((s,x)=>s+(Number(x.qty)||0),0);
   const fecha = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('printTitle').textContent = `${cf?.icon||'📦'} ${titulo}`;
-  document.getElementById('printMeta').innerHTML =
-    `IES El Bosco — Inventario Departamento<br>${total} tipos · ${uds} unidades<br>${fecha}`;
 
-  // Construir tabla con las columnas seleccionadas
-  const mc = document.getElementById('iContent');
-  const prevContent = mc.innerHTML;
   const thead = cols.map(c=>`<th>${c.label}</th>`).join('');
   const tbody = data.map(x=>{
     const low = Number(x.qty)<=Number(x.min);
@@ -450,33 +442,54 @@ function printInv(){
     const ec = ESTC[x.est]||'#6b7280';
     const mantInfo = [x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · ');
     return '<tr>'+cols.map(c=>{
-      if(c.key==='foto')      return `<td>${x.foto?`<img class="table-photo" src="${x.foto}" alt="">`:''}</td>`;
-      if(c.key==='ref')       return `<td><span class="rbadge">${x.ref||'—'}</span></td>`;
-      if(c.key==='item')      return `<td style="font-weight:600">${x.item}</td>`;
-      if(c.key==='aula')      return `<td>${AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—'}</td>`;
-      if(c.key==='mod')       return `<td style="font-size:11px">${(findModulo(x.mod)||{nombre:x.mod||'—'}).nombre}</td>`;
-      if(c.key==='qty')       return `<td><span class="${low?'qlow':'qok'}">${x.qty}${low?' ⚠':''}</span></td>`;
-      if(c.key==='min')       return `<td>${x.min||'—'}</td>`;
-      if(c.key==='cat')       return `<td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${cat.i} ${x.cat}</span>`:'—'}</td>`;
-      if(c.key==='loc')       return `<td>${x.loc||'—'}</td>`;
-      if(c.key==='est')       return `<td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:'—'}</td>`;
-      if(c.key==='util')      return `<td style="font-size:11px">${x.util||'—'}</td>`;
-      if(c.key==='mant')      return `<td>${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
-      if(c.key==='obs')       return `<td style="font-size:11px">${x.obs||'—'}</td>`;
+      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${x.foto}" alt="">`:''}</td>`;
+      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${x.ref||'—'}</span></td>`;
+      if(c.key==='item')  return `<td style="font-weight:600">${x.item}</td>`;
+      if(c.key==='aula')  return `<td>${AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—'}</td>`;
+      if(c.key==='mod')   { const m=findModulo(x.mod); return `<td style="font-size:11px">${m?m.cod+' '+m.name:x.mod||'—'}</td>`; }
+      if(c.key==='qty')   return `<td style="text-align:center;font-weight:700;color:${low?'#dc2626':'#15803d'}">${x.qty}${low?' ⚠':''}</td>`;
+      if(c.key==='min')   return `<td style="text-align:center">${x.min||'—'}</td>`;
+      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${cat.i} ${x.cat}</span>`:'—'}</td>`;
+      if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
+      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
+      if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
+      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
+      if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
       return '<td>—</td>';
     }).join('')+'</tr>';
   }).join('');
-  mc.innerHTML = `<div class="tw"><div class="tw-scroll"><table>
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Inventario ${titulo}</title>
+  <style>
+    @page{size:A4 landscape;margin:10mm}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
+    .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:10px}
+    .head h1{font-size:18px;margin:0;color:#1e40af}
+    .head p{font-size:11px;color:#555;margin:0;text-align:right}
+    table{width:100%;border-collapse:collapse}
+    th{background:#2563eb;color:#fff;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap}
+    td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+    tr:nth-child(even) td{background:#f9fafb}
+    .footer{margin-top:8px;font-size:10px;color:#9ca3af;text-align:right}
+  </style></head><body>
+  <div class="head">
+    <h1>${cf?.icon||'📦'} ${titulo}</h1>
+    <p>IES El Bosco — Inventario Departamento<br>${total} tipos · ${uds} unidades · ${fecha}</p>
+  </div>
+  <table>
     <thead><tr>${thead}</tr></thead>
     <tbody>${tbody}</tbody>
-  </table></div></div>`;
+  </table>
+  <div class="footer">Inventario Taller FP · ${fecha}</div>
+  <script>window.onload=()=>setTimeout(()=>print(),150);<\/script>
+  </body></html>`;
 
-  const prev = document.title;
-  document.title = `Inventario ${titulo}`;
-  window.print();
-  document.title = prev;
-
-  mc.innerHTML = prevContent;
+  const w = window.open('','_blank');
+  if(!w){ toast('El navegador bloqueó la ventana de impresión','err'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 // ═════════════════════════════════════════════════════════
