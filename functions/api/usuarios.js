@@ -10,6 +10,10 @@ async function auditLog(db, user, accion, resumen) {
   }
 }
 
+function moduloId(row) {
+  return `${row.cicloId}__${row.modCod}`;
+}
+
 export async function onRequestPost({ request, env }) {
   const body = await request.json();
   const { action } = body;
@@ -19,7 +23,7 @@ export async function onRequestPost({ request, env }) {
     const [usuariosRows, ciclosRows] = await Promise.all([
       env.DB.prepare('SELECT usuario, nombre, rol, email FROM usuarios ORDER BY usuario').all(),
       env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {})
-        .then(() => env.DB.prepare('SELECT modCod, responsable FROM ciclos WHERE modCod IS NOT NULL').all()),
+        .then(() => env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL').all()),
     ]);
     const ciclos = ciclosRows?.results || [];
     // Mapear responsable -> lista de modCod
@@ -28,9 +32,9 @@ export async function onRequestPost({ request, env }) {
       const resp = (row.responsable || '').trim().toLowerCase();
       if (!resp) continue;
       if (!modulosPorNombre[resp]) modulosPorNombre[resp] = [];
-      modulosPorNombre[resp].push(String(row.modCod));
+      modulosPorNombre[resp].push(moduloId(row));
     }
-    const todosModulos = ciclos.map(r => ({ cod: String(r.modCod), responsable: r.responsable || '' }));
+    const todosModulos = ciclos.map(r => ({ id: moduloId(r), cicloId: r.cicloId, cod: String(r.modCod), nombre: r.modNombre || '', responsable: r.responsable || '' }));
     const usuarios = usuariosRows.results.map(u => ({
       ...u,
       modulos: modulosPorNombre[u.nombre.trim().toLowerCase()] || [],
@@ -75,16 +79,18 @@ export async function onRequestPost({ request, env }) {
   if (action === 'userAssignModulos') {
     const nombre = (body.nombre || '').trim();
     const modulos = Array.isArray(body.modulos) ? body.modulos.map(String) : [];
+    const legacyByCode = modulos.length > 0 && modulos.every(m => !m.includes('__'));
     if (!nombre) return Response.json({ ok: false, error: 'Nombre requerido' });
     await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
-    const rows = await env.DB.prepare('SELECT modCod, responsable FROM ciclos').all();
+    const rows = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos').all();
     for (const row of rows.results) {
-      const esMio = modulos.includes(String(row.modCod));
+      const id = moduloId(row);
+      const esMio = modulos.includes(id) || (legacyByCode && modulos.includes(String(row.modCod)));
       const eraMio = (row.responsable || '').toLowerCase() === nombre.toLowerCase();
       if (esMio && !eraMio) {
-        await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE modCod=?').bind(nombre, row.modCod).run();
+        await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE cicloId=? AND modCod=?').bind(nombre, row.cicloId, row.modCod).run();
       } else if (!esMio && eraMio) {
-        await env.DB.prepare("UPDATE ciclos SET responsable='' WHERE modCod=?").bind(row.modCod).run();
+        await env.DB.prepare("UPDATE ciclos SET responsable='' WHERE cicloId=? AND modCod=?").bind(row.cicloId, row.modCod).run();
       }
     }
     await auditLog(env.DB, user, 'userAssignModulos', `Módulos asignados a ${nombre}: ${modulos.join(',')}`);

@@ -41,13 +41,17 @@ export async function onRequestPost({ request, env }) {
     const ciclos = body.ciclos || [];
     await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
     // Preservar responsables antes de borrar
-    const existentes = await env.DB.prepare('SELECT modCod, responsable FROM ciclos').all();
+    const existentes = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos').all();
     const respMap = {};
-    for (const r of (existentes.results || [])) respMap[String(r.modCod)] = r.responsable || '';
+    for (const r of (existentes.results || [])) {
+      respMap[`${r.cicloId}__${r.modCod}`] = r.responsable || '';
+      if (!respMap[String(r.modCod)]) respMap[String(r.modCod)] = r.responsable || '';
+    }
     await env.DB.prepare('DELETE FROM ciclos').run();
     const rows = [];
     ciclos.forEach((c, ci) => (c.modulos||[]).forEach((m, mi) => {
-      rows.push({ cicloId:c.id, cicloNombre:c.name, nivel:c.nivel||'', icon:c.icon||'', th:c.th||'', desc:c.desc||'', modCod:m.cod, modNombre:m.name, modHoras:m.horas||0, cicloOrden:ci, modOrden:mi, responsable: respMap[String(m.cod)] || '' });
+      const modKey = `${c.id}__${m.cod}`;
+      rows.push({ cicloId:c.id, cicloNombre:c.name, nivel:c.nivel||'', icon:c.icon||'', th:c.th||'', desc:c.desc||'', modCod:m.cod, modNombre:m.name, modHoras:m.horas||0, cicloOrden:ci, modOrden:mi, responsable: respMap[modKey] || respMap[String(m.cod)] || '' });
     }));
     if (rows.length) {
       const stmt = env.DB.prepare('INSERT INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');

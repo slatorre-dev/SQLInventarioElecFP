@@ -36,15 +36,48 @@ function mergeCats(savedCats, items) {
   return rows.concat(missingNames.map((name, idx) => ({ name, ...defaultCatStyle(name), orden: maxOrder + idx + 1 })));
 }
 
+function normKey(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function mergeProfesores(profesoresRows, usuariosRows) {
+  const profesores = (profesoresRows || [])
+    .filter(p => String(p.nombre || '').trim() && String(p.nombre || '').trim().toLowerCase() !== 'departamento')
+    .map(p => ({ ...p, source: 'profesores' }));
+  const seen = new Set();
+  for (const p of profesores) {
+    seen.add(normKey(p.nombre));
+    if (p.email) seen.add('email:' + normKey(p.email));
+  }
+  for (const u of usuariosRows || []) {
+    const nombre = String(u.nombre || u.usuario || '').trim();
+    if (!nombre || nombre.toLowerCase() === 'departamento') continue;
+    const emailKey = u.email ? 'email:' + normKey(u.email) : '';
+    if (seen.has(normKey(nombre)) || (emailKey && seen.has(emailKey))) continue;
+    profesores.push({
+      id: 'user:' + u.usuario,
+      nombre,
+      departamento: 'Usuarios app',
+      email: u.email || '',
+      source: 'usuarios',
+      usuario: u.usuario,
+    });
+    seen.add(normKey(nombre));
+    if (emailKey) seen.add(emailKey);
+  }
+  return profesores.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es', { sensitivity: 'base' }));
+}
+
 export async function onRequestGet({ request, env }) {
   const user = request.user;
 
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN es_contenedor INTEGER DEFAULT 0").run().catch(() => {});
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN parent_id INTEGER DEFAULT NULL").run().catch(() => {});
 
-  const [items, profesores, prestamos, aulas, cats, ciclosRows] = await Promise.all([
+  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows] = await Promise.all([
     env.DB.prepare('SELECT * FROM inventario ORDER BY id').all(),
     env.DB.prepare("SELECT * FROM profesores WHERE nombre != '' AND lower(nombre) != 'departamento' ORDER BY nombre").all(),
+    env.DB.prepare("SELECT usuario, nombre, email FROM usuarios WHERE nombre != '' ORDER BY nombre").all(),
     env.DB.prepare('SELECT * FROM prestamos ORDER BY id').all(),
     env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all(),
     env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all(),
@@ -68,7 +101,7 @@ export async function onRequestGet({ request, env }) {
     ok: true,
     itemsH: HEADERS_INV,
     itemsC,
-    profesores: profesores.results,
+    profesores: mergeProfesores(profesores.results, usuarios.results),
     prestamos: prestamos.results,
     aulas: aulas.results,
     cats: mergeCats(cats.results, itemRows),

@@ -99,7 +99,11 @@ export async function onRequestPost({ request, env }) {
     if (pres.moduloCod) {
       try {
         await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
-        const modRow = await env.DB.prepare('SELECT responsable FROM ciclos WHERE modCod=?').bind(String(pres.moduloCod)).first();
+        const moduloKey = String(pres.moduloCod);
+        const [cicloId, modCod] = moduloKey.includes('__') ? moduloKey.split('__') : ['', moduloKey];
+        const modRow = cicloId
+          ? await env.DB.prepare('SELECT responsable FROM ciclos WHERE cicloId=? AND modCod=?').bind(cicloId, modCod).first()
+          : await env.DB.prepare('SELECT responsable FROM ciclos WHERE modCod=?').bind(modCod).first();
         const responsableNombre = modRow?.responsable?.trim();
         if (responsableNombre) {
           const userRow = await env.DB.prepare('SELECT email FROM usuarios WHERE nombre=?').bind(responsableNombre).first();

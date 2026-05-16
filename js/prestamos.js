@@ -343,7 +343,7 @@ function closePrestarCaja(){ document.getElementById('mPrestarCaja').classList.r
 async function confirmPrestarCaja(){
   const profId = document.getElementById('prestarCajaProf').value;
   if(!profId){ toast('Selecciona un profesor','err'); return; }
-  const prof = profesores.find(p=>Number(p.id)===Number(profId));
+  const prof = profesores.find(p=>String(p.id)===String(profId));
   if(!prof) return;
   const btn = document.getElementById('btnPrestarCajaSave');
   btn.disabled = true; btn.textContent = '⏳ Registrando...';
@@ -381,7 +381,7 @@ async function confirmPrestar(){
   if(cant<=0){ toast('Cantidad inválida','err'); return; }
 
   const item = items.find(x=>Number(x.id)===Number(prestarItemId));
-  const prof = profesores.find(p=>Number(p.id)===Number(profId));
+  const prof = profesores.find(p=>String(p.id)===String(profId));
   if(!item){ toast('Ítem no encontrado','err'); return; }
   if(!prof){ toast('Profesor no encontrado','err'); return; }
   if(cant > Number(item.qty)){ toast(`Solo hay ${item.qty} disponible(s)`,'err'); return; }
@@ -397,7 +397,7 @@ async function confirmPrestar(){
     profesorNombre: prof.nombre,
     fechaPrevista: document.getElementById('pres_fecha').value,
     obs: document.getElementById('pres_obs').value.trim(),
-    moduloCod: modInfo ? modInfo.cod : '',
+    moduloCod: modInfo ? item.mod : '',
     moduloNombre: modInfo ? modInfo.name : '',
   };
 
@@ -478,8 +478,8 @@ function renderProfList(){
   }
   document.getElementById('profList').innerHTML = profEditing.map((p,i)=>`
     <div class="prof-row">
-      <input class="fi-w name-input" value="${p.nombre||''}" onchange="profEditing[${i}].nombre=this.value" placeholder="Nombre completo">
-      <input class="fi-w dept-input" value="${p.departamento||''}" onchange="profEditing[${i}].departamento=this.value" placeholder="Departamento">
+      <input class="fi-w name-input" value="${p.nombre||''}" onchange="profEditing[${i}].nombre=this.value" placeholder="Nombre completo" ${p.source==='usuarios'?'readonly title="Usuario de la app: se gestiona desde Usuarios"':''}>
+      <input class="fi-w dept-input" value="${p.departamento||''}" onchange="profEditing[${i}].departamento=this.value" placeholder="Departamento" ${p.source==='usuarios'?'readonly':''}>
       <button class="del-btn" onclick="removeProfRow(${i})" title="Eliminar">🗑</button>
     </div>
   `).join('');
@@ -492,7 +492,11 @@ function addProfRow(){
 
 function removeProfRow(idx){
   const p = profEditing[idx];
-  const usados = prestamos.filter(pr=>Number(pr.profesorId)===Number(p.id) && (pr.estado==='Activo'||pr.estado==='Parcial')).length;
+  if(p.source === 'usuarios'){
+    toast('Los usuarios de la app se gestionan desde Usuarios, no desde Profesores','err');
+    return;
+  }
+  const usados = prestamos.filter(pr=>String(pr.profesorId)===String(p.id) && (pr.estado==='Activo'||pr.estado==='Parcial')).length;
   if(usados > 0){
     toast(`No puedes eliminar: tiene ${usados} préstamo(s) activo(s)`,'err');
     return;
@@ -509,15 +513,17 @@ async function saveProfesores(){
   }
 
   // Calcular cambios respecto a profesores actuales
-  const toAdd = validos.filter(p=>!p.id);
+  const editable = validos.filter(p=>p.source !== 'usuarios');
+  const toAdd = editable.filter(p=>!p.id);
   const toUpdate = validos.filter(p=>{
+    if(p.source === 'usuarios') return false;
     if(!p.id) return false;
     const orig = profesores.find(x=>Number(x.id)===Number(p.id));
     if(!orig) return false;
     return orig.nombre!==p.nombre || orig.departamento!==p.departamento || orig.email!==p.email;
   });
-  const idsValidos = new Set(validos.filter(p=>p.id).map(p=>Number(p.id)));
-  const toDelete = profesores.filter(p=>!idsValidos.has(Number(p.id)));
+  const idsValidos = new Set(editable.filter(p=>p.id).map(p=>String(p.id)));
+  const toDelete = profesores.filter(p=>p.source !== 'usuarios' && !idsValidos.has(String(p.id)));
 
   if(!toAdd.length && !toUpdate.length && !toDelete.length){
     closeProfModal(); return;
@@ -704,31 +710,32 @@ function openModulosUsuario(i){
     if(c.id === 'departamento') return;
     cicloMap[c.id] = { name: c.name, nivel: c.nivel || '', mods: [] };
     cicloOrder.push(c.id);
-    c.modulos.forEach(m => cicloMap[c.id].mods.push({ cod: String(m.cod), name: m.name }));
+    c.modulos.forEach(m => cicloMap[c.id].mods.push({ id: `${c.id}__${m.cod}`, cod: String(m.cod), name: m.name }));
   });
 
   // Módulos presentes en la hoja pero sin ciclo conocido → grupo "Otros"
-  const codsConocidos = new Set(CICLOS.flatMap(c=>(c.id==='departamento'?[]:c.modulos.map(m=>String(m.cod)))));
-  const sinCiclo = _todosModulos.filter(m=>!codsConocidos.has(String(m.cod)));
+  const idsConocidos = new Set(CICLOS.flatMap(c=>(c.id==='departamento'?[]:c.modulos.map(m=>`${c.id}__${m.cod}`))));
+  const sinCiclo = _todosModulos.filter(m=>!idsConocidos.has(String(m.id || m.cod)));
   if(sinCiclo.length){
-    cicloMap['__otros__'] = { name:'Otros módulos', nivel:'', mods: sinCiclo.map(m=>({cod:m.cod, name:m.nombre})) };
+    cicloMap['__otros__'] = { name:'Otros módulos', nivel:'', mods: sinCiclo.map(m=>({id:m.id || String(m.cod), cod:m.cod, name:m.nombre || m.cod})) };
     cicloOrder.push('__otros__');
   }
 
   // Mapa de responsables actuales desde backend (disponible solo tras redespliegue GAS)
   const respMap = {};
-  _todosModulos.forEach(m=>{ respMap[String(m.cod)] = m.responsable || ''; });
+  _todosModulos.forEach(m=>{ respMap[String(m.id || m.cod)] = m.responsable || ''; });
 
   const html = cicloOrder.map(cid=>{
     const c = cicloMap[cid];
     if(!c.mods.length) return '';
     const rows = c.mods.map(m=>{
-      const checked = seleccionados.has(String(m.cod)) ? 'checked' : '';
-      const respActual = respMap[String(m.cod)] || '';
+      const mid = String(m.id || m.cod);
+      const checked = seleccionados.has(mid) || seleccionados.has(String(m.cod)) ? 'checked' : '';
+      const respActual = respMap[mid] || '';
       const otroResp = respActual && respActual.toLowerCase() !== (u.nombre||'').toLowerCase()
         ? `<span class="mod-otro-resp">(${respActual})</span>` : '';
       return `<label class="mod-check-row">
-        <input type="checkbox" value="${m.cod}" ${checked} onchange="_toggleModUsuario('${m.cod}',this.checked)">
+        <input type="checkbox" value="${mid}" ${checked} onchange="_toggleModUsuario('${mid}',this.checked)">
         <span class="mod-check-name">${m.name}</span>
         ${otroResp}
       </label>`;
@@ -773,7 +780,8 @@ async function saveModulosUsuario(){
     toast(`Módulos actualizados para ${u.nombre}`,'ok');
     // Sincronizar responsable en _todosModulos local
     _todosModulos.forEach(m=>{
-      const esMio = (u._modulos||[]).includes(String(m.cod));
+      const mid = String(m.id || m.cod);
+      const esMio = (u._modulos||[]).includes(mid);
       const eraMio = (m.responsable||'').toLowerCase() === u.nombre.toLowerCase();
       if(esMio) m.responsable = u.nombre;
       else if(eraMio) m.responsable = '';

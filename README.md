@@ -189,12 +189,12 @@ Tablas:
 |---|---|
 | `inventario` | Items de inventario |
 | `usuarios` | Usuarios de la app |
-| `profesores` | Profesores prestatarios |
+| `profesores` | Profesores prestatarios adicionales; la app tambien incluye usuarios como prestatarios por defecto |
 | `prestamos` | Prestamos y devoluciones |
 | `aulas` | Aulas configurables |
 | `categorias` | Categorias configurables |
-| `ciclos` | Ciclos y modulos en filas planas |
-| `modulos` | Modulos con responsable |
+| `ciclos` | Ciclos y modulos en filas planas; responsables por modulo identificado como `cicloId__modCod` |
+| `modulos` | Tabla heredada/auxiliar de modulos |
 | `documentos` | Metadatos de adjuntos de Drive |
 | `log` | Auditoria |
 | `reset_tokens` | Tokens de recuperacion |
