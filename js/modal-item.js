@@ -209,8 +209,8 @@ function renderHijosList(){
     return;
   }
   list.innerHTML = candidatos.map(x => {
-    const enCaja = Number(x.parent_id) === Number(eid);
-    const otraCaja = x.parent_id && !enCaja ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
+    const enCaja = eid && x.parent_id && Number(x.parent_id) === Number(eid);
+    const otraCaja = x.parent_id && Number(x.parent_id) && !enCaja ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     return `<label style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">
       <input type="checkbox" data-hijo-id="${x.id}" ${enCaja?'checked':''} style="width:16px;height:16px;flex-shrink:0">
       <span style="flex:1">
