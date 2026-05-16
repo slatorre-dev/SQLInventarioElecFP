@@ -34,6 +34,7 @@ Objetivos principales:
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.
 - Los usuarios de la app aparecen por defecto como profesores prestatarios; la tabla `profesores` queda para docentes externos/adicionales.
+- Al registrar un prestamo se puede elegir el propio usuario y docentes externos; otros usuarios de la app o del departamento no se ofrecen como destinatarios.
 - La asignacion de responsables de modulos usa el identificador compuesto `cicloId__modCod`, no solo el codigo del modulo.
 - Perfil de usuario.
 - Recuperacion de contrasena por correo con pantalla dedicada `#reset/<token>`.

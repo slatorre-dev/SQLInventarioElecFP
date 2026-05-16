@@ -241,6 +241,26 @@ function onPresItemChange(val){
   document.getElementById('pres_cant').value = 1;
 }
 
+function isOwnLoanTeacher(p){
+  const sessionName = (SESSION?.nombre || '').toLowerCase().trim();
+  const sessionUser = (SESSION?.usuario || '').toLowerCase().trim();
+  return (
+    String(p.usuario || '').toLowerCase().trim() === sessionUser ||
+    String(p.nombre || '').toLowerCase().trim() === sessionName
+  );
+}
+
+function isExternalLoanTeacher(p){
+  const dep = String(p.departamento || '').toLowerCase().trim();
+  return p.source !== 'usuarios' && dep !== 'departamento' && dep !== 'usuarios app';
+}
+
+function loanTeacherOptions(){
+  return profesores
+    .filter(p => String(p.nombre||'').trim() && String(p.nombre||'').trim().toLowerCase() !== 'departamento')
+    .filter(p => isOwnLoanTeacher(p) || isExternalLoanTeacher(p));
+}
+
 function openPrestar(itemId){
   if(!requirePerm('loans.write')) return;
   if(!profesores.length){
@@ -279,11 +299,12 @@ function openPrestar(itemId){
 
   // Preseleccionar el usuario logueado si existe como profesor prestatario
   const profSelect = document.getElementById('pres_prof');
-  const profsFiltrados = profesores.filter(p => String(p.nombre||'').trim() && String(p.nombre||'').trim().toLowerCase() !== 'departamento');
+  const profsFiltrados = loanTeacherOptions();
   const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
   if(profPropio){
-    profSelect.innerHTML = `<option value="${profPropio.id}" selected>${profPropio.nombre}${profPropio.departamento?' ('+profPropio.departamento+')':''}</option>`;
-    profSelect.disabled = true;
+    profSelect.innerHTML = '<option value="">â€” Seleccionar â€”</option>' +
+      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}${p.departamento?' ('+p.departamento+')':''}</option>`).join('');
+    profSelect.disabled = false;
   } else {
     profSelect.disabled = false;
     profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
@@ -318,11 +339,12 @@ function openPrestarCaja(cajaId){
   ).join('');
 
   const profSelect = document.getElementById('prestarCajaProf');
-  const profsFiltrados = profesores.filter(p => String(p.nombre||'').trim() && String(p.nombre||'').trim().toLowerCase() !== 'departamento');
+  const profsFiltrados = loanTeacherOptions();
   const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
   if(profPropio){
-    profSelect.innerHTML = `<option value="${profPropio.id}" selected>${profPropio.nombre}</option>`;
-    profSelect.disabled = true;
+    profSelect.innerHTML = '<option value="">â€” Seleccionar â€”</option>' +
+      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}</option>`).join('');
+    profSelect.disabled = false;
   } else {
     profSelect.disabled = false;
     profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
