@@ -177,11 +177,13 @@ function fillParentSelect(currentId){
 
 function toggleContenedorFields(){
   const esContenedor = document.getElementById('f_es_contenedor')?.checked;
+  const tipo = document.getElementById('f_tipo_material');
   const parentRow = document.getElementById('f_parent_row');
   const hijosRow = document.getElementById('f_contenedor_hijos');
   if(parentRow) parentRow.style.display = esContenedor ? 'none' : '';
   if(hijosRow) hijosRow.style.display = esContenedor ? '' : 'none';
   if(esContenedor){
+    if(tipo) tipo.value = 'inventariable';
     const sel = document.getElementById('f_parent_id');
     if(sel) sel.value = '';
     const srch = document.getElementById('f_hijos_search');
@@ -253,7 +255,7 @@ async function saveHijosCaja(){
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
@@ -276,6 +278,7 @@ function openModal(id=null, src=null){
   renderMainPhoto(m?.foto||'');
   document.getElementById('f_qty').value = id ? (m?.qty??1) : 1;
   document.getElementById('f_min').value=m?.min??0;
+  document.getElementById('f_tipo_material').value=materialType(m || src || {});
   document.getElementById('f_cat').value=m?.cat||Object.keys(CATS)[0]||'Componentes electrónicos';
   const itemCiclo = m?.mod ? m.mod.split('__')[0] : (cf?.type==='mod' ? cf.ciclo.id : '');
   document.getElementById('f_ciclo').value = itemCiclo;
@@ -441,6 +444,7 @@ async function saveItem(){
     foto:document.getElementById('f_foto').value,
     qty:parseInt(document.getElementById('f_qty').value)||0,
     min:parseInt(document.getElementById('f_min').value)||0,
+    tipo_material: document.getElementById('f_tipo_material').value || 'consumible',
     cat:document.getElementById('f_cat').value,
     mod:document.getElementById('f_mod').value,
     loc:document.getElementById('f_loc').value.trim(),
@@ -516,11 +520,15 @@ function openBaja(id){
   const it = items.find(x=>x.id===id);
   if(!it) return;
   const qty = Number(it.qty)||0;
+  const tipo = materialType(it);
   document.getElementById('bajaItemName').textContent = `${it.ref ? it.ref+' — ' : ''}${it.item}`;
   document.getElementById('bajaQtyActual').textContent = qty;
   document.getElementById('bajaCantidad').max = qty;
   document.getElementById('bajaCantidad').value = 1;
   document.getElementById('bajaMotivo').value = '';
+  document.getElementById('bajaMotivo').placeholder = tipo === 'consumible'
+    ? 'Ej: consumido en practicas, agotado, reposicion necesaria...'
+    : 'Ej: equipo irreparable, obsoleto, perdido, sustituido...';
   document.getElementById('bajaFecha').value = new Date().toISOString().split('T')[0];
   updateBajaRestante();
   document.getElementById('mBaja').classList.add('open');

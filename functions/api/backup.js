@@ -71,6 +71,9 @@ async function uploadToDrive(token, filename, content) {
 }
 
 async function runBackup(db, token) {
+  await db.prepare("ALTER TABLE inventario ADD COLUMN tipo_material TEXT DEFAULT 'consumible'").run().catch(() => {});
+  await db.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
+  await db.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
   const [inventario, aulas, cats, ciclos, prestamos, profesores, usuarios] = await Promise.all([
     db.prepare('SELECT * FROM inventario').all(),
     db.prepare('SELECT * FROM aulas').all().catch(() => ({ results: [] })),

@@ -70,7 +70,7 @@ function globalSearch(q){
     +visible.map((x,i)=>{
       const cat=CATS[x.cat]||null;
       const aulaName=AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—';
-      const low=Number(x.qty)<=Number(x.min);
+      const low=isLowStock(x);
       return`<div class="gsr-item" tabindex="-1" role="option" data-idx="${i}" onclick="gsGo('${x.aula}','${(x.item||'').replace(/'/g,"\\'")}')">
         ${cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};flex-shrink:0;font-size:11px">${cat.i}</span>`:'<span style="width:18px;flex-shrink:0"></span>'}
         <span class="gsr-name">${x.item}</span>

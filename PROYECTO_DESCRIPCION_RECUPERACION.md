@@ -30,6 +30,7 @@ Objetivos principales:
 - D1 remoto `inventario-departamento`.
 - Login y autorizacion por tabla `usuarios`.
 - Inventario, aulas, categorias, ciclos y modulos.
+- Diferenciacion de items consumibles e inventariables mediante `inventario.tipo_material`; las cajas siguen usando `es_contenedor` y `parent_id`.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.
@@ -51,6 +52,9 @@ Objetivos principales:
 - La via principal de documentos es OAuth con una cuenta real de Drive.
 - `/api/*` no debe cachearse en service worker.
 - Las categorias se derivan tambien desde `inventario.cat` para tolerar migraciones incompletas de tabla `categorias`.
+- `tipo_material` separa la gestion de stock: `consumible` entra en alertas de stock bajo y reposicion; `inventariable` se gestiona por trazabilidad, estado, ubicacion, mantenimiento y prestamos.
+- Las cajas/contenedores no son un tercer tipo de material; siguen usando `es_contenedor=1` y componentes relacionados con `parent_id`.
+- La primera migracion de `tipo_material` marca como inventariable lo que sea contenedor o tenga categoria relacionada con herramientas, equipos o instrumentacion.
 
 ## 3. Repositorio
 

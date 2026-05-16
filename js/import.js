@@ -12,6 +12,7 @@ const IMP_FIELDS = [
   {k:'aula',  label:'Aula',               synonyms:['aula','sala','ubicacion_aula','espacio','clase']},
   {k:'qty',   label:'Cantidad',           synonyms:['cantidad','qty','cant','unidades','stock','existencias']},
   {k:'min',   label:'Stock mínimo',       synonyms:['minimo','min','stock_minimo','reposicion']},
+  {k:'tipo_material', label:'Tipo material', synonyms:['tipo_material','tipo material','tipo gestion','tipo_gestion','consumible','inventariable']},
   {k:'cat',   label:'Categoría',          synonyms:['categoria','cat','tipo','familia']},
   {k:'loc',   label:'Ubicación',          synonyms:['ubicacion','localizacion','localizado','sitio','estanteria']},
   {k:'est',   label:'Estado',             synonyms:['estado','condicion','status']},
@@ -286,6 +287,9 @@ function impRenderPreview(){
         const nv = normalize(val);
         const estados = ['Pendiente','En reparación','Reparado','Resuelto'];
         item.mantEstado = estados.find(e => normalize(e) === nv) || (val || 'Pendiente');
+      } else if(f.k === 'tipo_material'){
+        const nv = normalize(val);
+        item.tipo_material = nv.includes('invent') ? 'inventariable' : 'consumible';
       } else if(f.k === 'mantFecha'){
         if(/^\d{4}-\d{2}-\d{2}$/.test(val)) item.mantFecha = val;
         else if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(val)){
@@ -313,6 +317,7 @@ function impRenderPreview(){
     if(item.qty == null) item.qty = 1;
     if(item.min == null) item.min = 0;
     if(!item.est) item.est = 'Bueno';
+    if(!item.tipo_material) item.tipo_material = 'consumible';
     if(!item.cat) item.cat = 'Otros';
     item.mod = item.mod || '';
 

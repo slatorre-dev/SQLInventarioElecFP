@@ -187,7 +187,7 @@ Tablas:
 
 | Tabla | Contenido |
 |---|---|
-| `inventario` | Items de inventario |
+| `inventario` | Items de inventario, incluyendo `tipo_material` (`consumible` o `inventariable`) |
 | `usuarios` | Usuarios de la app |
 | `profesores` | Profesores prestatarios adicionales; la app tambien incluye usuarios como prestatarios por defecto |
 | `prestamos` | Prestamos y devoluciones |
@@ -198,6 +198,7 @@ Tablas:
 | `documentos` | Metadatos de adjuntos de Drive |
 | `log` | Auditoria |
 | `reset_tokens` | Tokens de recuperacion |
+| `app_meta` | Marcas internas de migraciones automaticas |
 
 Schema:
 

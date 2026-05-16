@@ -106,7 +106,7 @@ function goCaja(id){
 
 function openSub(){
   const all=getBase();
-  const low=all.filter(x=>Number(x.qty)<=Number(x.min)).length;
+  const low=all.filter(isLowStock).length;
   let tagC, typeLabel;
   if(cf.type==='aula'){tagC='background:#eff6ff;color:#2563eb';typeLabel='Aula';}
   else if(cf.type==='cat'){tagC=`background:${cf.catBg};color:${cf.catColor}`;typeLabel='Categoría';}

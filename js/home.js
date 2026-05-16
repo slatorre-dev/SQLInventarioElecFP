@@ -7,7 +7,7 @@ function renderHome(){
 
   const loading = !itemsLoaded;
   const total=items.length;
-  const low=items.filter(x=>Number(x.qty)<=Number(x.min)).length;
+  const low=items.filter(isLowStock).length;
   const mant=items.filter(needsMaintenance).length;
   const units=items.reduce((a,x)=>a+(Number(x.qty)||0),0);
   document.getElementById('hStats').innerHTML= loading
@@ -22,7 +22,7 @@ function renderHome(){
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
   document.getElementById('gAulas').innerHTML=AULAS.map(a=>{
     const n=items.filter(x=>x.aula===a.id).length;
-    const w=loading ? 0 : items.filter(x=>x.aula===a.id&&Number(x.qty)<=Number(x.min)).length;
+    const w=loading ? 0 : items.filter(x=>x.aula===a.id&&isLowStock(x)).length;
     return`<div class="ccard ${a.th}" onclick="goAula('${a.id}')">
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
       <button class="ccard-edit" onclick="event.stopPropagation();openAulasModal()" title="Editar aulas">✏️</button>
@@ -35,7 +35,7 @@ function renderHome(){
   document.getElementById('gCats').innerHTML=catEntries.length
     ? catEntries.map(([name,c])=>{
         const n=items.filter(x=>x.cat===name).length;
-        const w=loading ? 0 : items.filter(x=>x.cat===name&&Number(x.qty)<=Number(x.min)).length;
+        const w=loading ? 0 : items.filter(x=>x.cat===name&&isLowStock(x)).length;
         return`<div class="ccard" style="--ch:${c.c};--cbg:${c.bg}" onclick="goCat('${name.replace(/'/g,"\\'")}')">
           ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
           <div class="ccard-icon">${c.i}</div>
