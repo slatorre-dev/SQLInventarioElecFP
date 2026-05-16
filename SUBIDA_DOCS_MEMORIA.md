@@ -184,7 +184,7 @@ https://TU_DOMINIO/api/oauth/callback
 Ejemplo real:
 
 ```text
-https://inventarioelecfp.pages.dev/api/oauth/callback
+https://inventarioelec.pages.dev/api/oauth/callback
 ```
 
 La URI debe coincidir exactamente con la URL que usa la app.
