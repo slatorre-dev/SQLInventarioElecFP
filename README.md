@@ -206,6 +206,11 @@ wrangler pages dev . --d1=DB=inventario-departamento
 # Abre http://localhost:8788
 ```
 
+### 6.1. Configurar subida a Google Drive
+La subida de documentos requiere dos secretos en Cloudflare:
+- `GOOGLE_SERVICE_ACCOUNT`: JSON del service account con permisos de Drive
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID`: ID de la carpeta raíz de Drive donde se crearán las subcarpetas por aula
+
 ### 7. Crear página en Cloudflare Pages
 - Cloudflare Dashboard → Workers & Pages → Create → conectar repo `SQLInventarioElecFP`
 - Settings → Functions → D1 database bindings → Variable: `DB` → BD: `inventario-departamento`
