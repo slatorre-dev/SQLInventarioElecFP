@@ -52,5 +52,23 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ ok: true });
   }
 
+  if (action === 'userAssignModulos') {
+    const nombre = (body.nombre || '').trim();
+    const modulos = Array.isArray(body.modulos) ? body.modulos.map(String) : [];
+    if (!nombre) return Response.json({ ok: false, error: 'Nombre requerido' });
+    const rows = await env.DB.prepare('SELECT modCod, responsable FROM ciclos').all();
+    for (const row of rows.results) {
+      const esMio = modulos.includes(String(row.modCod));
+      const eraMio = (row.responsable || '').toLowerCase() === nombre.toLowerCase();
+      if (esMio && !eraMio) {
+        await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE modCod=?').bind(nombre, row.modCod).run();
+      } else if (!esMio && eraMio) {
+        await env.DB.prepare("UPDATE ciclos SET responsable='' WHERE modCod=?").bind(row.modCod).run();
+      }
+    }
+    await auditLog(env.DB, user, 'userAssignModulos', `Módulos asignados a ${nombre}: ${modulos.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
   return Response.json({ ok: false, error: 'Acción desconocida' });
 }
