@@ -14,7 +14,7 @@ jobs:
       - name: Llamar al endpoint de backup
         run: |
           RESPONSE=$(curl -s -w "\n%{http_code}" \
-            "${{ secrets.BACKUP_URL }}?secret=${{ secrets.BACKUP_SECRET }}")
+            "https://inventarioelecfp.pages.dev/api/backup?secret=${{ secrets.BACKUP_SECRET }}")
           BODY=$(echo "$RESPONSE" | head -n -1)
           CODE=$(echo "$RESPONSE" | tail -n 1)
           echo "HTTP $CODE"
