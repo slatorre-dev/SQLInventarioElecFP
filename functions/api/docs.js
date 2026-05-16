@@ -88,18 +88,26 @@ function normalizeFolderName(name) {
   return String(name || '').trim() || 'Aula';
 }
 
+function driveErrorMessage(prefix, payload) {
+  const message = payload?.error?.message || JSON.stringify(payload);
+  if (/storageQuotaExceeded|Service Accounts do not have storage quota|shared drives/i.test(message)) {
+    return prefix + ': Google rechaza la subida porque la cuenta de servicio no tiene cuota propia. Usa como GOOGLE_DRIVE_ROOT_FOLDER_ID una carpeta dentro de una Unidad compartida de Google Drive y añade el service account como Gestor de contenido o Editor. Detalle: ' + message;
+  }
+  return prefix + ': ' + message;
+}
+
 async function findOrCreateDriveFolder(env, parentFolderId, folderName) {
   const token = await getGoogleAccessToken(env);
   const safeName = normalizeFolderName(folderName).replace(/'/g, "\\'");
   const query = `mimeType='application/vnd.google-apps.folder' and name='${safeName}' and '${parentFolderId}' in parents and trashed=false`;
-  const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&spaces=drive&fields=files(id,name)`;
+  const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&spaces=drive&includeItemsFromAllDrives=true&supportsAllDrives=true&fields=files(id,name)`;
   const searchRes = await fetch(searchUrl, { headers: { Authorization: `Bearer ${token}` } });
   const searchJson = await searchRes.json();
   if (searchRes.ok && Array.isArray(searchJson.files) && searchJson.files.length > 0) {
     return searchJson.files[0].id;
   }
 
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+  const createRes = await fetch('https://www.googleapis.com/drive/v3/files?supportsAllDrives=true&fields=id,name', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -113,7 +121,7 @@ async function findOrCreateDriveFolder(env, parentFolderId, folderName) {
   });
   const createJson = await createRes.json();
   if (!createRes.ok || !createJson.id) {
-    throw new Error('No se pudo crear la carpeta de aula en Drive: ' + (createJson.error?.message || JSON.stringify(createJson)));
+    throw new Error(driveErrorMessage('No se pudo crear la carpeta de aula en Drive', createJson));
   }
   return createJson.id;
 }
@@ -139,7 +147,7 @@ async function uploadFileToDrive(env, folderId, fileName, mimeType, base64Data) 
   body.set(postamble, preamble.length + fileData.length);
 
   const uploadRes = await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink`,
+    `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink`,
     {
       method: 'POST',
       headers: {
@@ -151,11 +159,11 @@ async function uploadFileToDrive(env, folderId, fileName, mimeType, base64Data) 
   );
   const uploadJson = await uploadRes.json();
   if (!uploadRes.ok || !uploadJson.id) {
-    throw new Error('No se pudo subir el archivo a Drive: ' + (uploadJson.error?.message || JSON.stringify(uploadJson)));
+    throw new Error(driveErrorMessage('No se pudo subir el archivo a Drive', uploadJson));
   }
 
   try {
-    await fetch(`https://www.googleapis.com/drive/v3/files/${uploadJson.id}/permissions`, {
+    await fetch(`https://www.googleapis.com/drive/v3/files/${uploadJson.id}/permissions?supportsAllDrives=true`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -191,7 +199,7 @@ export async function onRequestPost({ request, env }) {
     if (body.driveId) {
       try {
         const token = await getGoogleAccessToken(env);
-        await fetch(`https://www.googleapis.com/drive/v3/files/${body.driveId}`, {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${body.driveId}?supportsAllDrives=true`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });

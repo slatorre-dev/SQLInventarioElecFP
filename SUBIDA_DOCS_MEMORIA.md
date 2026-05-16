@@ -31,7 +31,9 @@ En el código se utiliza como `env.GOOGLE_SERVICE_ACCOUNT`.
 
 ### 2.2 `GOOGLE_DRIVE_ROOT_FOLDER_ID`
 
-Este valor debe ser el ID de la carpeta de Google Drive donde se almacenarán los documentos.
+Este valor debe ser el ID de una carpeta de Google Drive donde se almacenarán los documentos.
+
+Importante: con cuenta de servicio, la carpeta debe estar dentro de una **Unidad compartida** de Google Drive. No basta con compartir una carpeta de "Mi unidad" con el service account, porque Google puede rechazar la subida indicando que las cuentas de servicio no tienen cuota propia de almacenamiento.
 
 Cómo obtenerlo:
 - Abre Google Drive.
@@ -53,7 +55,7 @@ En el JSON del service account, el campo `client_email` es el correo exacto que 
 Ejemplo:
 - `inventarioelec@inventarioelec.iam.gserviceaccount.com`
 
-Ese correo debe añadirse como colaborador a la carpeta de Drive y debe tener permiso de `Editor`.
+Ese correo debe añadirse como miembro de la Unidad compartida o de la carpeta raíz y debe tener permiso de `Gestor de contenido` o `Editor`.
 
 ## 4. Cómo funciona el código en `functions/api/docs.js`
 
@@ -102,6 +104,7 @@ Además de los secretos, hay que tener el binding D1 configurado:
 
 - `No se pudo subir el archivo a Drive`
   - Problema en la subida a la API de Google Drive.
+  - Si el detalle menciona `Service Accounts do not have storage quota`, mueve la carpeta raíz a una Unidad compartida y actualiza `GOOGLE_DRIVE_ROOT_FOLDER_ID`.
 
 ## 7. Recomendación final
 
