@@ -15,8 +15,26 @@ export async function onRequestPost({ request, env }) {
   const user = request.user;
 
   if (action === 'getUsers') {
-    const rows = await env.DB.prepare('SELECT usuario, nombre, rol, email FROM usuarios ORDER BY usuario').all();
-    return Response.json({ ok: true, usuarios: rows.results });
+    const [usuariosRows, ciclosRows] = await Promise.all([
+      env.DB.prepare('SELECT usuario, nombre, rol, email FROM usuarios ORDER BY usuario').all(),
+      env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {})
+        .then(() => env.DB.prepare('SELECT modCod, responsable FROM ciclos WHERE modCod IS NOT NULL').all()),
+    ]);
+    const ciclos = ciclosRows?.results || [];
+    // Mapear responsable -> lista de modCod
+    const modulosPorNombre = {};
+    for (const row of ciclos) {
+      const resp = (row.responsable || '').trim().toLowerCase();
+      if (!resp) continue;
+      if (!modulosPorNombre[resp]) modulosPorNombre[resp] = [];
+      modulosPorNombre[resp].push(String(row.modCod));
+    }
+    const todosModulos = ciclos.map(r => ({ cod: String(r.modCod), responsable: r.responsable || '' }));
+    const usuarios = usuariosRows.results.map(u => ({
+      ...u,
+      modulos: modulosPorNombre[u.nombre.trim().toLowerCase()] || [],
+    }));
+    return Response.json({ ok: true, usuarios, todosModulos });
   }
 
   if (action === 'userAdd') {
