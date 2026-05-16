@@ -45,7 +45,7 @@ Navegador
 - **Inventario** de material técnico organizado por aulas y ciclos formativos
 - **Préstamos y devoluciones** de material a profesores
 - **Mantenimiento**: marcar ítems en reparación, asignar responsable
-- **Documentos adjuntos** a ítems (nuevas subidas en Cloudflare R2; enlaces antiguos de Google Drive compatibles)
+- **Documentos adjuntos** a ítems (actualmente en Google Drive, pendiente migrar a R2)
 - **Gestión de usuarios** con roles: Jefe Departamento, profesor, consulta/lector
 - **QR por ítem**: escaneo con cámara y etiquetas imprimibles
 - **Importar/exportar** CSV y backup JSON
@@ -126,7 +126,7 @@ SQLInventarioElecFP/
 | `categorias` | Hoja Categorias | Categorías de ítems |
 | `ciclos` | Hoja Ciclos | Ciclos formativos y módulos (filas planas) |
 | `modulos` | Hoja Modulos | Módulos con responsable (para emails) |
-| `documentos` | Hoja Documentos | Metadatos de archivos en Drive/R2 |
+| `documentos` | Hoja Documentos | Metadatos de archivos en Drive |
 | `log` | Hoja Log | Auditoría de acciones |
 | `reset_tokens` | PropertiesService | Tokens de recuperación de contraseña |
 
@@ -206,14 +206,10 @@ wrangler pages dev . --d1=DB=inventario-departamento
 # Abre http://localhost:8788
 ```
 
-### 6.1. Configurar subida a Cloudflare R2
-Las nuevas subidas de documentos usan R2 como almacenamiento principal:
-- Crear un bucket R2 llamado `inventario-documentos`.
-- En Cloudflare Pages → Settings → Functions → R2 bucket bindings:
-  - Variable name: `DOCS_BUCKET`
-  - Bucket: `inventario-documentos`
-
-Los documentos antiguos de Drive se conservan y siguen abriéndose desde su `driveUrl`.
+### 6.1. Configurar subida a Google Drive
+La subida de documentos requiere dos secretos en Cloudflare:
+- `GOOGLE_SERVICE_ACCOUNT`: JSON del service account con permisos de Drive
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID`: ID de la carpeta raíz de Drive donde se crearán las subcarpetas por aula
 
 ### 7. Crear página en Cloudflare Pages
 - Cloudflare Dashboard → Workers & Pages → Create → conectar repo `SQLInventarioElecFP`
@@ -222,7 +218,7 @@ Los documentos antiguos de Drive se conservan y siguen abriéndose desde su `dri
 
 ## Documentación adicional
 - `PROYECTO_DESCRIPCION_RECUPERACION.md`: descripción completa del proyecto y pasos para recuperar todo el trabajo en otro ordenador.
-- `SUBIDA_DOCS_MEMORIA.md`: memoria detallada de la configuración de documentos en R2 y compatibilidad con Google Drive.
+- `SUBIDA_DOCS_MEMORIA.md`: memoria detallada de la configuración de subida de documentos a Google Drive.
 
 ---
 
@@ -236,7 +232,7 @@ Los documentos antiguos de Drive se conservan y siguen abriéndose desde su `dri
 | Redespliegue backend | Manual (editor GAS) | Automático (git push) |
 | Caché necesaria | Sí (CacheService 3min) | No |
 | Emails | MailApp (GAS) | Pendiente: Resend API |
-| Documentos | Google Drive | R2 para nuevas subidas + Drive compatible para antiguos |
+| Documentos | Google Drive | Google Drive (pendiente R2) |
 | URL producción | inventariodepartamento.pages.dev | Pendiente crear en Cloudflare |
 
 ---
