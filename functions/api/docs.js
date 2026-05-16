@@ -53,6 +53,27 @@ async function signJwt(privateKeyPem, payload) {
 }
 
 async function getGoogleAccessToken(env) {
+  if (env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
+      throw new Error('Google OAuth incompleto: faltan GOOGLE_OAUTH_CLIENT_ID o GOOGLE_OAUTH_CLIENT_SECRET');
+    }
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+        client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+        refresh_token: env.GOOGLE_OAUTH_REFRESH_TOKEN,
+        grant_type: 'refresh_token',
+      }),
+    });
+    const tokenJson = await tokenRes.json();
+    if (!tokenRes.ok || !tokenJson.access_token) {
+      throw new Error('Google OAuth refresh error: ' + (tokenJson.error_description || tokenJson.error || JSON.stringify(tokenJson)));
+    }
+    return tokenJson.access_token;
+  }
+
   const sa = env.GOOGLE_SERVICE_ACCOUNT;
   if (!sa) throw new Error('Google Drive no configurado');
   const account = typeof sa === 'string' ? JSON.parse(sa) : sa;
