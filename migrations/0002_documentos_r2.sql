@@ -1,0 +1,5 @@
+ALTER TABLE documentos ADD COLUMN provider TEXT DEFAULT 'drive';
+ALTER TABLE documentos ADD COLUMN r2Key TEXT DEFAULT '';
+ALTER TABLE documentos ADD COLUMN mimeType TEXT DEFAULT '';
+ALTER TABLE documentos ADD COLUMN size INTEGER DEFAULT 0;
+ALTER TABLE documentos ADD COLUMN driveSyncStatus TEXT DEFAULT '';

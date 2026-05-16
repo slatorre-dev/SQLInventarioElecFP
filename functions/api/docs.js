@@ -30,6 +30,59 @@ function base64ToUint8Array(base64) {
   return bytes;
 }
 
+async function ensureDocumentSchema(db) {
+  const columns = [
+    "ALTER TABLE documentos ADD COLUMN provider TEXT DEFAULT 'drive'",
+    "ALTER TABLE documentos ADD COLUMN r2Key TEXT DEFAULT ''",
+    "ALTER TABLE documentos ADD COLUMN mimeType TEXT DEFAULT ''",
+    "ALTER TABLE documentos ADD COLUMN size INTEGER DEFAULT 0",
+    "ALTER TABLE documentos ADD COLUMN driveSyncStatus TEXT DEFAULT ''",
+  ];
+  for (const sql of columns) {
+    try { await db.prepare(sql).run(); }
+    catch (error) {
+      if (!String(error?.message || error).toLowerCase().includes('duplicate column')) {
+        console.warn('ensureDocumentSchema failed', error?.message || error);
+      }
+    }
+  }
+}
+
+function safePathPart(value, fallback = 'archivo') {
+  return String(value || fallback)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80) || fallback;
+}
+
+function makeR2Key({ itemId, aulaId, fileName }) {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}_${String(d.getUTCMilliseconds()).padStart(3,'0')}`;
+  const rand = crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);
+  return `items/${safePathPart(itemId, 'sin_item')}/${safePathPart(aulaId, 'sin_aula')}/${stamp}_${rand}_${safePathPart(fileName)}`;
+}
+
+async function uploadFileToR2(env, { itemId, aulaId, fileName, mimeType, data }) {
+  if (!env.DOCS_BUCKET) throw new Error('R2 no configurado: falta el binding DOCS_BUCKET');
+  const bytes = base64ToUint8Array(data);
+  const key = makeR2Key({ itemId, aulaId, fileName });
+  await env.DOCS_BUCKET.put(key, bytes, {
+    httpMetadata: { contentType: mimeType || 'application/octet-stream' },
+    customMetadata: {
+      itemId: String(itemId ?? ''),
+      aulaId: String(aulaId ?? ''),
+      fileName: String(fileName || ''),
+    },
+  });
+  return { r2Key: key, size: bytes.byteLength };
+}
+
+function docProvider(doc) {
+  return doc?.provider || (doc?.r2Key ? 'r2' : 'drive');
+}
+
 function pemToArrayBuffer(pem) {
   const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
   return base64ToUint8Array(b64).buffer;
@@ -181,6 +234,41 @@ async function uploadFileToDrive(env, folderId, fileName, mimeType, base64Data) 
   };
 }
 
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const action = url.searchParams.get('action') || '';
+
+  if (action !== 'viewDoc') {
+    return Response.json({ ok: false, error: 'Acción desconocida' }, { status: 404 });
+  }
+
+  await ensureDocumentSchema(env.DB);
+  const docId = url.searchParams.get('docId');
+  if (!docId) return Response.json({ ok: false, error: 'docId requerido' }, { status: 400 });
+
+  const doc = await env.DB.prepare('SELECT * FROM documentos WHERE id=?').bind(docId).first();
+  if (!doc) return Response.json({ ok: false, error: 'Documento no encontrado' }, { status: 404 });
+
+  if (docProvider(doc) === 'drive') {
+    if (!doc.driveUrl) return Response.json({ ok: false, error: 'Documento de Drive sin URL' }, { status: 404 });
+    return Response.redirect(doc.driveUrl, 302);
+  }
+
+  if (!env.DOCS_BUCKET) return Response.json({ ok: false, error: 'R2 no configurado' }, { status: 500 });
+  if (!doc.r2Key) return Response.json({ ok: false, error: 'Documento R2 sin clave' }, { status: 404 });
+
+  const object = await env.DOCS_BUCKET.get(doc.r2Key);
+  if (!object) return Response.json({ ok: false, error: 'Archivo no encontrado en R2' }, { status: 404 });
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set('etag', object.httpEtag);
+  headers.set('cache-control', 'private, max-age=300');
+  headers.set('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(doc.fileName || 'documento')}`);
+  if (doc.mimeType && !headers.has('content-type')) headers.set('content-type', doc.mimeType);
+  return new Response(object.body, { headers });
+}
+
 export async function onRequestPost({ request, env }) {
   const body = await request.json();
   const { action } = body;
@@ -189,17 +277,28 @@ export async function onRequestPost({ request, env }) {
   if (action === 'getDocs') {
     const itemId = body.itemId;
     if (itemId == null) return Response.json({ ok: false, error: 'itemId requerido' });
+    await ensureDocumentSchema(env.DB);
     const docs = await env.DB.prepare('SELECT * FROM documentos WHERE itemId=? ORDER BY id').bind(itemId).all();
-    return Response.json({ ok: true, docs: docs.results || [] });
+    return Response.json({ ok: true, docs: (docs.results || []).map(d => ({ ...d, provider: docProvider(d) })) });
   }
 
   if (action === 'deleteDoc') {
     const docId = body.docId;
     if (docId == null) return Response.json({ ok: false, error: 'docId requerido' });
-    if (body.driveId) {
+    await ensureDocumentSchema(env.DB);
+    const doc = await env.DB.prepare('SELECT * FROM documentos WHERE id=?').bind(docId).first();
+    if (!doc) return Response.json({ ok: false, error: 'Documento no encontrado' });
+    const provider = docProvider(doc);
+    if (provider === 'r2' && doc.r2Key && env.DOCS_BUCKET) {
+      try {
+        await env.DOCS_BUCKET.delete(doc.r2Key);
+      } catch (e) {
+        console.warn('R2 delete failed', e?.message || e);
+      }
+    } else if (doc.driveId || body.driveId) {
       try {
         const token = await getGoogleAccessToken(env);
-        await fetch(`https://www.googleapis.com/drive/v3/files/${body.driveId}?supportsAllDrives=true`, {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${doc.driveId || body.driveId}?supportsAllDrives=true`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -208,7 +307,7 @@ export async function onRequestPost({ request, env }) {
       }
     }
     await env.DB.prepare('DELETE FROM documentos WHERE id=?').bind(docId).run();
-    await auditLog(env.DB, user, 'deleteDoc', body.itemId, `Doc ${docId} eliminado`);
+    await auditLog(env.DB, user, 'deleteDoc', doc.itemId || body.itemId, `Doc ${docId} eliminado`);
     return Response.json({ ok: true });
   }
 
@@ -218,17 +317,14 @@ export async function onRequestPost({ request, env }) {
     if (!fileName) return Response.json({ ok: false, error: 'fileName requerido' });
     if (!data) return Response.json({ ok: false, error: 'data requerido' });
 
-    const rootFolderId = env.GOOGLE_DRIVE_ROOT_FOLDER_ID || env.DRIVE_FOLDER_ID;
-    if (!rootFolderId) return Response.json({ ok: false, error: 'Drive root folder no configurado' });
-
     try {
-      const folderId = await findOrCreateDriveFolder(env, rootFolderId, aulaName || aulaId || 'Aula');
-      const uploaded = await uploadFileToDrive(env, folderId, fileName, mimeType || 'application/octet-stream', data);
-      await env.DB.prepare('INSERT INTO documentos (itemId,itemNombre,aulaId,fileName,driveId,driveUrl,fecha) VALUES (?,?,?,?,?,?,?)')
-        .bind(itemId, itemNombre || '', aulaId || '', fileName, uploaded.driveId, uploaded.driveUrl, new Date().toISOString()).run();
-      const doc = await env.DB.prepare('SELECT * FROM documentos WHERE driveId=?').bind(uploaded.driveId).first();
+      await ensureDocumentSchema(env.DB);
+      const uploaded = await uploadFileToR2(env, { itemId, aulaId, fileName, mimeType: mimeType || 'application/octet-stream', data });
+      await env.DB.prepare('INSERT INTO documentos (itemId,itemNombre,aulaId,fileName,driveId,driveUrl,fecha,provider,r2Key,mimeType,size,driveSyncStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+        .bind(itemId, itemNombre || '', aulaId || '', fileName, '', '', new Date().toISOString(), 'r2', uploaded.r2Key, mimeType || 'application/octet-stream', uploaded.size, 'pending').run();
+      const doc = await env.DB.prepare('SELECT * FROM documentos WHERE r2Key=?').bind(uploaded.r2Key).first();
       await auditLog(env.DB, user, 'uploadDoc', itemId, `Documento subido: ${fileName}`);
-      return Response.json({ ok: true, doc });
+      return Response.json({ ok: true, doc: { ...doc, provider: 'r2' } });
     } catch (error) {
       return Response.json({ ok: false, error: error.message || String(error) });
     }

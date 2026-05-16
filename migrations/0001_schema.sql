@@ -102,6 +102,11 @@ CREATE TABLE IF NOT EXISTS documentos (
   fileName   TEXT DEFAULT '',
   driveId    TEXT DEFAULT '',
   driveUrl   TEXT DEFAULT '',
+  provider   TEXT DEFAULT 'drive',
+  r2Key      TEXT DEFAULT '',
+  mimeType   TEXT DEFAULT '',
+  size       INTEGER DEFAULT 0,
+  driveSyncStatus TEXT DEFAULT '',
   fecha      TEXT DEFAULT ''
 );
 

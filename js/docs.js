@@ -12,6 +12,11 @@ const DOC_ICONS = {pdf:'📄',jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'�
 function docIcon(name){ return DOC_ICONS[(name||'').split('.').pop().toLowerCase()]||'📎'; }
 function isImageDocName(name){ return ['jpg','jpeg','png','gif','webp','svg'].includes((name||'').split('.').pop().toLowerCase()); }
 function driveThumbSrc(driveId, size=360){ return `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveId)}&sz=w${size}`; }
+function docProvider(doc){ return doc?.provider || (doc?.r2Key ? 'r2' : 'drive'); }
+function docViewUrl(doc){
+  if(docProvider(doc) === 'r2') return urlWithAuth('docs', { action:'viewDoc', docId:doc.id });
+  return doc.driveUrl || urlWithAuth('docs', { action:'viewDoc', docId:doc.id });
+}
 
 function initDocSection(itemId){
   docsPendientes = []; docsActuales = [];
@@ -33,8 +38,10 @@ async function loadItemDocs(itemId){
 function syncMainPhotoFromDocs(){
   const input = document.getElementById('f_foto');
   if(!input || input.value) return;
-  const imgDoc = docsActuales.find(d => d.driveId && isImageDocName(d.fileName));
-  if(imgDoc && typeof renderMainPhoto === 'function') renderMainPhoto(driveThumbSrc(imgDoc.driveId));
+  const imgDoc = docsActuales.find(d => isImageDocName(d.fileName) && (d.driveId || d.r2Key));
+  if(imgDoc && typeof renderMainPhoto === 'function') {
+    renderMainPhoto(docProvider(imgDoc) === 'r2' ? docViewUrl(imgDoc) : driveThumbSrc(imgDoc.driveId));
+  }
 }
 
 async function addDocFiles(files){
@@ -49,14 +56,16 @@ async function addDocFiles(files){
 
 function removePendingDoc(idx){ docsPendientes.splice(idx,1); renderDocList(); }
 
-async function deleteExistingDoc(docId, driveId){
-  if(!confirm('¿Eliminar este documento de Drive?')) return;
+async function deleteExistingDoc(docId){
+  if(!confirm('¿Eliminar este documento?')) return;
   try{
-    const res = await apiPost({action:'deleteDoc', docId, driveId});
+    const res = await apiPost({action:'deleteDoc', docId});
     if(!res.ok) throw new Error(res.error);
+    const old = docsActuales.find(d=>d.id===docId);
     docsActuales = docsActuales.filter(d=>d.id!==docId);
     const fotoInput = document.getElementById('f_foto');
-    if(fotoInput?.value && String(fotoInput.value).includes(String(driveId))) renderMainPhoto('');
+    const oldPhotoRef = old ? (old.driveId || old.r2Key || '') : '';
+    if(fotoInput?.value && oldPhotoRef && String(fotoInput.value).includes(String(oldPhotoRef))) renderMainPhoto('');
     renderDocList(); toast('Documento eliminado','ok');
   }catch(e){ toast('Error: '+e.message,'err'); }
 }
@@ -67,8 +76,8 @@ function renderDocList(){
     <div class="doc-row">
       <span class="di">${docIcon(d.fileName)}</span>
       <span class="dn" title="${d.fileName}">${d.fileName}</span>
-      <a class="dv" href="${d.driveUrl}" target="_blank">Ver</a>
-      <button class="dx" onclick="deleteExistingDoc(${d.id},'${d.driveId}')" title="Eliminar">✕</button>
+      <a class="dv" href="${docViewUrl(d)}" target="_blank">Ver</a>
+      <button class="dx" onclick="deleteExistingDoc(${d.id})" title="Eliminar">✕</button>
     </div>`).join('');
   const pe = docsPendientes.map((f,i)=>`
     <div class="doc-row dp">
@@ -162,8 +171,8 @@ function _renderDmList(){
     <div class="doc-row">
       <span class="di">${docIcon(d.fileName)}</span>
       <span class="dn" title="${d.fileName}">${d.fileName}</span>
-      <a class="dv" href="${d.driveUrl}" target="_blank">Ver</a>
-      <button class="dx" onclick="_dmDeleteDoc(${d.id},'${d.driveId}')" title="Eliminar">✕</button>
+      <a class="dv" href="${docViewUrl(d)}" target="_blank">Ver</a>
+      <button class="dx" onclick="_dmDeleteDoc(${d.id})" title="Eliminar">✕</button>
     </div>`).join('');
   const pe = _dmPendientes.map((f,i)=>`
     <div class="doc-row dp">
@@ -174,10 +183,10 @@ function _renderDmList(){
   el.innerHTML = (ex+pe) || '<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin documentos adjuntos.</div>';
 }
 
-async function _dmDeleteDoc(docId, driveId){
-  if(!confirm('¿Eliminar este documento de Drive?')) return;
+async function _dmDeleteDoc(docId){
+  if(!confirm('¿Eliminar este documento?')) return;
   try {
-    const res = await apiPost({action:'deleteDoc', docId, driveId});
+    const res = await apiPost({action:'deleteDoc', docId});
     if(!res.ok) throw new Error(res.error);
     _dmActuales = _dmActuales.filter(d=>d.id!==docId);
     _renderDmList(); toast('Documento eliminado','ok');
@@ -190,6 +199,8 @@ async function saveDocsModal(){
   const btn = document.getElementById('btnDocsSave');
   btn.disabled = true; btn.textContent = '⏳ Subiendo...';
   const aulaName = AULAS.find(a=>a.id===_dmItem.aula)?.name || _dmItem.aula;
+  const failed = [];
+  let saved = 0;
   for(const file of [..._dmPendientes]){
     try {
       toast(`Subiendo ${file.name}…`,'ok');
@@ -198,17 +209,23 @@ async function saveDocsModal(){
         aulaId:_dmItem.aula, aulaName, fileName:file.name, mimeType:file.type||'application/octet-stream', data});
       if(!res.ok) throw new Error(res.error);
       if(res.doc) _dmActuales.push(res.doc);
-    } catch(e){ toast(`Error: ${e.message}`,'err'); }
+      saved++;
+    } catch(e){
+      failed.push(file);
+      toast(`Error: ${e.message}`,'err');
+    }
   }
-  _dmPendientes = [];
+  _dmPendientes = failed;
   _renderDmList();
   btn.disabled = false; btn.textContent = '💾 Guardar documentos';
-  toast('Documentos guardados','ok');
+  if(saved) toast(`${saved} documento${saved!==1?'s':''} guardado${saved!==1?'s':''}`,'ok');
+  if(failed.length) toast(`${failed.length} documento${failed.length!==1?'s':''} pendiente${failed.length!==1?'s':''} por error`,'err');
 }
 
 async function uploadPendingDocs(itemId, itemNombre, aulaId){
   if(!docsPendientes.length) return;
   const aulaName = AULAS.find(a=>a.id===aulaId)?.name || aulaId;
+  const failed = [];
   for(const file of [...docsPendientes]){
     try{
       toast(`Subiendo ${file.name}…`,'ok');
@@ -216,7 +233,10 @@ async function uploadPendingDocs(itemId, itemNombre, aulaId){
       const res = await apiPost({action:'uploadDoc', itemId, itemNombre, aulaId, aulaName,
         fileName:file.name, mimeType:file.type||'application/octet-stream', data});
       if(!res.ok) throw new Error(res.error);
-    }catch(e){ toast(`Error con ${file.name}: ${e.message}`,'err'); }
+    }catch(e){
+      failed.push(file);
+      toast(`Error con ${file.name}: ${e.message}`,'err');
+    }
   }
-  docsPendientes = [];
+  docsPendientes = failed;
 }

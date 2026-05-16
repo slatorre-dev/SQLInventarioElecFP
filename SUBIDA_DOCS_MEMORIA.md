@@ -1,120 +1,62 @@
-# Memoria de configuración de subida de documentos a Google Drive
+# Memoria de configuración de documentos
 
 Fecha: 2026-05-16
 Proyecto: SQLInventarioElecFP
 
-## 1. Qué se ha hecho
+## 1. Estado actual
 
-Se ha modificado `functions/api/docs.js` para que la aplicación pueda subir documentos adjuntos a Google Drive desde Cloudflare Pages/Workers.
+La aplicación usa un modelo híbrido:
 
-También se documentó en `README.md` la necesidad de configurar dos secretos en Cloudflare:
-- `GOOGLE_SERVICE_ACCOUNT`
-- `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+- Las nuevas subidas se guardan en Cloudflare R2.
+- Los documentos antiguos que ya tienen `driveUrl` se conservan en Google Drive y siguen funcionando.
+- D1 guarda solo los metadatos: item, aula, nombre, proveedor, clave R2 o URL de Drive.
 
-## 2. Secretos necesarios en Cloudflare
+## 2. Configuración R2
 
-### 2.1 `GOOGLE_SERVICE_ACCOUNT`
+Crear un bucket R2:
 
-Este valor debe ser el JSON completo del service account de Google Cloud.
+```text
+inventario-documentos
+```
 
-Ejemplo de datos que contiene:
-- `type`
-- `project_id`
-- `private_key_id`
-- `private_key`
-- `client_email`
-- `token_uri`
-- `auth_provider_x509_cert_url`
-- `client_x509_cert_url`
+En Cloudflare Pages → Settings → Functions → R2 bucket bindings:
 
-En el código se utiliza como `env.GOOGLE_SERVICE_ACCOUNT`.
+```text
+Variable name: DOCS_BUCKET
+Bucket: inventario-documentos
+```
 
-### 2.2 `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+También queda declarado en `wrangler.toml`:
 
-Este valor debe ser el ID de una carpeta de Google Drive donde se almacenarán los documentos.
+```toml
+[[r2_buckets]]
+binding = "DOCS_BUCKET"
+bucket_name = "inventario-documentos"
+```
 
-Importante: con cuenta de servicio, la carpeta debe estar dentro de una **Unidad compartida** de Google Drive. No basta con compartir una carpeta de "Mi unidad" con el service account, porque Google puede rechazar la subida indicando que las cuentas de servicio no tienen cuota propia de almacenamiento.
+## 3. D1
 
-Cómo obtenerlo:
-- Abre Google Drive.
-- Entra en la carpeta que quieres usar como raíz.
-- Copia la parte de la URL que aparece tras `/folders/`.
+La tabla `documentos` mantiene las columnas antiguas de Drive y añade columnas para R2:
 
-Ejemplo:
-- URL: `https://drive.google.com/drive/folders/1aBcD_efGHijkLmNoPqRsTuvWxYz`
-- ID: `1aBcD_efGHijkLmNoPqRsTuvWxYz`
+```sql
+provider TEXT DEFAULT 'drive'
+r2Key TEXT DEFAULT ''
+mimeType TEXT DEFAULT ''
+size INTEGER DEFAULT 0
+driveSyncStatus TEXT DEFAULT ''
+```
 
-No se guarda la URL completa; solo el ID.
+El endpoint `functions/api/docs.js` intenta crear esas columnas automáticamente si faltan. También existe la migración `migrations/0002_documentos_r2.sql`.
 
-## 3. Permisos y usuario de servicio
+## 4. Funcionamiento
 
-El service account es una cuenta técnica de Google Cloud, no un usuario humano.
+- `uploadDoc`: guarda nuevas subidas en R2 y registra `provider='r2'`.
+- `getDocs`: devuelve documentos antiguos y nuevos.
+- `viewDoc`: si el documento es R2, lo sirve desde el bucket privado; si es Drive, redirige a `driveUrl`.
+- `deleteDoc`: borra el objeto de R2 o intenta borrar el archivo de Drive según corresponda, y elimina el metadato de D1.
 
-En el JSON del service account, el campo `client_email` es el correo exacto que debe tener permisos en Drive.
+## 5. Drive antiguo
 
-Ejemplo:
-- `inventarioelec@inventarioelec.iam.gserviceaccount.com`
+Los campos `driveId` y `driveUrl` se mantienen para no romper documentos ya existentes.
 
-Ese correo debe añadirse como miembro de la Unidad compartida o de la carpeta raíz y debe tener permiso de `Gestor de contenido` o `Editor`.
-
-## 4. Cómo funciona el código en `functions/api/docs.js`
-
-### 4.1 `getGoogleAccessToken(env)`
-
-- Lee `GOOGLE_SERVICE_ACCOUNT` desde `env`.
-- Parse el JSON del service account.
-- Genera un JWT firmado con la clave privada (`private_key`).
-- Solicita un token de acceso a `https://oauth2.googleapis.com/token` con scope `https://www.googleapis.com/auth/drive`.
-
-### 4.2 `findOrCreateDriveFolder(env, parentFolderId, folderName)`
-
-- Usa el token de acceso para buscar una subcarpeta con el nombre del aula dentro de la carpeta raíz.
-- Si existe, devuelve su ID.
-- Si no existe, crea la carpeta y devuelve el nuevo ID.
-
-### 4.3 `uploadFileToDrive(env, folderId, fileName, mimeType, base64Data)`
-
-- Sube el archivo a Drive usando multipart upload.
-- Intenta aplicar permiso de lectura pública (`anyone` reader), pero si falla no detiene la lógica principal.
-- Devuelve `driveId` y `driveUrl`.
-
-### 4.4 `onRequestPost({ request, env })`
-
-Maneja tres acciones principales:
-- `getDocs`: lista documentos de un item.
-- `deleteDoc`: borra los metadatos y, si existe `driveId`, intenta borrar el archivo en Drive.
-- `uploadDoc`: sube el documento a Drive, guarda los metadatos en D1 y registra auditoría.
-
-## 5. Configuración adicional en Cloudflare
-
-Además de los secretos, hay que tener el binding D1 configurado:
-- Variable: `DB`
-- Base de datos: `inventario-departamento`
-
-## 6. Errores más comunes
-
-- `Google Drive no configurado`
-  - Falta `GOOGLE_SERVICE_ACCOUNT`.
-
-- `Drive root folder no configurado`
-  - Falta `GOOGLE_DRIVE_ROOT_FOLDER_ID` (o `DRIVE_FOLDER_ID` si se usa viejo nombre).
-
-- `No se pudo crear la carpeta de aula en Drive`
-  - El service account no tiene acceso a la carpeta raíz o la API de Drive no responde.
-
-- `No se pudo subir el archivo a Drive`
-  - Problema en la subida a la API de Google Drive.
-  - Si el detalle menciona `Service Accounts do not have storage quota`, mueve la carpeta raíz a una Unidad compartida y actualiza `GOOGLE_DRIVE_ROOT_FOLDER_ID`.
-
-## 7. Recomendación final
-
-Después de configurar los secretos y permisos:
-1. Despliega el proyecto en Cloudflare Pages.
-2. Prueba subir un documento desde la app.
-3. Si hay fallo, revisa los logs de Cloudflare Functions y el mensaje de error que devuelve la aplicación.
-
-## 8. Notas de seguridad
-
-- Nunca compartas el JSON del service account en GitHub.
-- El JSON debe guardarse solo como secreto en Cloudflare.
-- Si el JSON se ha expuesto, reemplaza la clave privada en Google Cloud y genera una nueva.
+Google Drive ya no es necesario para nuevas subidas. Si en el futuro se quiere sincronizar también a Drive, se puede usar `driveSyncStatus` para marcar `pending`, `ok` o `error`.
