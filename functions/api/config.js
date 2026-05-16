@@ -39,14 +39,19 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'ciclosSync') {
     const ciclos = body.ciclos || [];
+    await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
+    // Preservar responsables antes de borrar
+    const existentes = await env.DB.prepare('SELECT modCod, responsable FROM ciclos').all();
+    const respMap = {};
+    for (const r of (existentes.results || [])) respMap[String(r.modCod)] = r.responsable || '';
     await env.DB.prepare('DELETE FROM ciclos').run();
     const rows = [];
     ciclos.forEach((c, ci) => (c.modulos||[]).forEach((m, mi) => {
-      rows.push({ cicloId:c.id, cicloNombre:c.name, nivel:c.nivel||'', icon:c.icon||'', th:c.th||'', desc:c.desc||'', modCod:m.cod, modNombre:m.name, modHoras:m.horas||0, cicloOrden:ci, modOrden:mi });
+      rows.push({ cicloId:c.id, cicloNombre:c.name, nivel:c.nivel||'', icon:c.icon||'', th:c.th||'', desc:c.desc||'', modCod:m.cod, modNombre:m.name, modHoras:m.horas||0, cicloOrden:ci, modOrden:mi, responsable: respMap[String(m.cod)] || '' });
     }));
     if (rows.length) {
-      const stmt = env.DB.prepare('INSERT INTO ciclos VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-      await env.DB.batch(rows.map(r => stmt.bind(r.cicloId,r.cicloNombre,r.nivel,r.icon,r.th,r.desc,r.modCod,r.modNombre,r.modHoras,r.cicloOrden,r.modOrden)));
+      const stmt = env.DB.prepare('INSERT INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+      await env.DB.batch(rows.map(r => stmt.bind(r.cicloId,r.cicloNombre,r.nivel,r.icon,r.th,r.desc,r.modCod,r.modNombre,r.modHoras,r.cicloOrden,r.modOrden,r.responsable)));
     }
     await auditLog(env.DB, user, 'ciclosSync', `Sincronizados ${ciclos.length} ciclos`);
     return Response.json({ ok: true });
