@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v90';
+const VERSION = 'v91';
 const CACHE_SHELL   = 'inventario-fp-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-fp-runtime-' + VERSION;
 
@@ -84,6 +84,11 @@ self.addEventListener('fetch', e => {
 
   // Esquemas no http(s) — extensiones, chrome://, etc.
   if (!url.startsWith('http')) return;
+
+  const parsedUrl = new URL(url);
+  if (parsedUrl.origin === self.location.origin && parsedUrl.pathname.startsWith('/api/')) {
+    return;
+  }
 
   // ─── 1. API Apps Script: SIEMPRE RED ──────────────────
   // Si la cacheamos, mostrariamos datos viejos del inventario.
