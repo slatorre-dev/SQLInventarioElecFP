@@ -444,10 +444,21 @@
             <span>Este ítem es una caja o contenedor de componentes</span>
           </label>
           <div id="f_parent_row">
-            <select class="fi-w" id="f_parent_id">
+            <select class="fi-w" id="f_parent_id" onchange="toggleContenedorFields()">
               <option value="">— Sin caja padre —</option>
             </select>
             <div style="font-size:11px;color:var(--muted);margin-top:3px">Si este componente pertenece a una caja, selecciónala aquí</div>
+          </div>
+          <div id="f_contenedor_hijos" style="display:none">
+            <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Componentes en esta caja:</div>
+            <div id="f_hijos_list" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;background:var(--bg2,#f9fafb)"></div>
+            <div style="margin-top:8px">
+              <select class="fi-w" id="f_add_hijo" style="margin-bottom:6px">
+                <option value="">— Añadir ítem existente a esta caja —</option>
+              </select>
+              <button type="button" class="btn btn-sm" onclick="addHijoACaja()" style="width:100%">+ Añadir componente</button>
+            </div>
           </div>
         </div>
       </div>

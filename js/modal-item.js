@@ -178,9 +178,74 @@ function fillParentSelect(currentId){
 function toggleContenedorFields(){
   const esContenedor = document.getElementById('f_es_contenedor')?.checked;
   const parentRow = document.getElementById('f_parent_row');
+  const hijosRow = document.getElementById('f_contenedor_hijos');
   if(parentRow) parentRow.style.display = esContenedor ? 'none' : '';
-  // Si es contenedor no puede tener padre
-  if(esContenedor) { const sel = document.getElementById('f_parent_id'); if(sel) sel.value = ''; }
+  if(hijosRow) hijosRow.style.display = esContenedor ? '' : 'none';
+  if(esContenedor){
+    const sel = document.getElementById('f_parent_id');
+    if(sel) sel.value = '';
+    renderHijosList();
+    fillAddHijoSelect();
+  }
+}
+
+function renderHijosList(){
+  const list = document.getElementById('f_hijos_list');
+  if(!list) return;
+  const hijos = items.filter(x => Number(x.parent_id) === Number(eid));
+  if(!hijos.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:6px">Sin componentes aún</div>';
+    return;
+  }
+  list.innerHTML = hijos.map(h => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span><strong>${h.item}</strong> <span style="color:var(--muted);font-size:11px">${h.ref ? '· '+h.ref : ''} · ${h.qty} ud.</span></span>
+      <button type="button" class="btn btn-sm btn-d" onclick="quitarHijoDeCaja(${h.id})" title="Quitar de la caja" style="padding:2px 6px;font-size:11px">✕</button>
+    </div>`).join('');
+}
+
+function fillAddHijoSelect(){
+  const sel = document.getElementById('f_add_hijo');
+  if(!sel) return;
+  // Ítems que no son contenedores y no tienen padre (o ya son hijos de esta caja)
+  const disponibles = items.filter(x =>
+    !x.es_contenedor &&
+    (!x.parent_id || Number(x.parent_id) === Number(eid)) &&
+    Number(x.id) !== Number(eid)
+  ).sort((a,b) => String(a.item||'').localeCompare(String(b.item||'')));
+  sel.innerHTML = '<option value="">— Añadir ítem existente a esta caja —</option>' +
+    disponibles.map(x => `<option value="${x.id}">${x.item}${x.ref ? ' · '+x.ref : ''} (${x.qty} ud.)</option>`).join('');
+}
+
+async function addHijoACaja(){
+  const sel = document.getElementById('f_add_hijo');
+  const hijoId = sel?.value;
+  if(!hijoId){ toast('Selecciona un ítem para añadir','err'); return; }
+  if(!eid){ toast('Guarda primero la caja antes de añadir componentes','err'); return; }
+  const hijo = items.find(x => Number(x.id) === Number(hijoId));
+  if(!hijo) return;
+  const updated = { ...hijo, parent_id: Number(eid) };
+  const res = await apiPost({ action: 'update', item: updated });
+  if(!res.ok){ toast('Error: '+res.error,'err'); return; }
+  const idx = items.findIndex(x => Number(x.id) === Number(hijoId));
+  items[idx] = updated;
+  sel.value = '';
+  renderHijosList();
+  fillAddHijoSelect();
+  toast(`${hijo.item} añadido a la caja`,'ok');
+}
+
+async function quitarHijoDeCaja(hijoId){
+  const hijo = items.find(x => Number(x.id) === Number(hijoId));
+  if(!hijo) return;
+  const updated = { ...hijo, parent_id: null };
+  const res = await apiPost({ action: 'update', item: updated });
+  if(!res.ok){ toast('Error: '+res.error,'err'); return; }
+  const idx = items.findIndex(x => Number(x.id) === Number(hijoId));
+  items[idx] = updated;
+  renderHijosList();
+  fillAddHijoSelect();
+  toast(`${hijo.item} quitado de la caja`,'ok');
 }
 
 function setItemModalReadonly(readonly){
@@ -230,6 +295,7 @@ function openModal(id=null, src=null){
   fillParentSelect(id);
   document.getElementById('f_parent_id').value = m?.parent_id || '';
   toggleContenedorFields();
+  if(esContenedor && existing){ renderHijosList(); fillAddHijoSelect(); }
   initDocSection(id);
   renderItemQr(existing ? m : null);
   setItemModalReadonly(readonly);
