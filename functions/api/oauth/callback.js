@@ -19,9 +19,7 @@ export async function onRequestGet({ request, env }) {
     return html('<h1 class="err">Falta el código OAuth</h1>');
   }
   if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
-    return html(`<h1 class="err">Faltan GOOGLE_OAUTH_CLIENT_ID o GOOGLE_OAUTH_CLIENT_SECRET en Cloudflare</h1>
-      <p>Variables disponibles en runtime:</p>
-      <pre>${JSON.stringify(Object.keys(env).sort(), null, 2)}</pre>`);
+    return html('<h1 class="err">Faltan GOOGLE_OAUTH_CLIENT_ID o GOOGLE_OAUTH_CLIENT_SECRET en Cloudflare</h1>');
   }
 
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
