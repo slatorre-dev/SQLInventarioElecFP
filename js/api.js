@@ -9,7 +9,7 @@ const ENDPOINT_MAP = {
   aulasSync:'config', catsSync:'config', ciclosSync:'config',
   updateProfile:'perfil', changePassword:'perfil',
   getUsers:'usuarios', userAdd:'usuarios', userUpdate:'usuarios',
-  userDelete:'usuarios', userResetPassword:'usuarios',
+  userDelete:'usuarios', userResetPassword:'usuarios', userAssignModulos:'usuarios',
   getDocs:'docs', uploadDoc:'docs', deleteDoc:'docs',
   notificarPedido:'pedidos', getItemLog:'list',
 };
