@@ -1,9 +1,10 @@
 async function auditLog(db, user, accion, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
+    const actor = user || {};
     await db.prepare("CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT '', usuario TEXT DEFAULT '', nombre TEXT DEFAULT '', rol TEXT DEFAULT '', accion TEXT DEFAULT '', itemId TEXT DEFAULT '', resumen TEXT DEFAULT '')").run();
     await db.prepare('INSERT INTO log (fecha,usuario,nombre,rol,accion,itemId,resumen) VALUES (?,?,?,?,?,?,?)')
-      .bind(fecha, user.usuario, user.nombre, user.rol, accion, '', resumen).run();
+      .bind(fecha, actor.usuario || '', actor.nombre || '', actor.rol || '', accion, '', resumen).run();
   } catch (error) {
     console.warn('auditLog failed', error?.message || error);
   }
@@ -54,7 +55,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'userDelete') {
-    if (body.usuario === user.usuario)
+    if (user && body.usuario === user.usuario)
       return Response.json({ ok: false, error: 'No puedes eliminar tu propia cuenta' });
     await env.DB.prepare('DELETE FROM usuarios WHERE usuario=?').bind(body.usuario).run();
     await auditLog(env.DB, user, 'userDelete', `Usuario eliminado: ${body.usuario}`);
@@ -62,10 +63,11 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'userResetPassword') {
-    if (!body.newPassword || body.newPassword.length < 4)
+    const newPassword = body.newPassword || body.password || '';
+    if (!newPassword || newPassword.length < 4)
       return Response.json({ ok: false, error: 'Contraseña demasiado corta' });
     await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
-      .bind(body.newPassword, body.usuario).run();
+      .bind(newPassword, body.usuario).run();
     await auditLog(env.DB, user, 'userResetPassword', `Contraseña reseteada: ${body.usuario}`);
     return Response.json({ ok: true });
   }

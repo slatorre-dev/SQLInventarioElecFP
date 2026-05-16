@@ -163,7 +163,7 @@ Rutas publicas:
 | `/api/config` | POST | Aulas, categorias, ciclos |
 | `/api/prestar` | POST | Prestamos y devoluciones |
 | `/api/profesores` | POST | Gestion profesores prestatarios |
-| `/api/usuarios` | POST | Gestion usuarios app |
+| `/api/usuarios` | POST | Gestion usuarios app, roles, modulos y reset de contrasena |
 | `/api/perfil` | POST | Perfil y contrasena |
 | `/api/docs` | POST | Documentos adjuntos |
 | `/api/oauth/start` | GET | Iniciar OAuth Drive |

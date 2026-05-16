@@ -32,7 +32,7 @@ Objetivos principales:
 - Inventario, aulas, categorias, ciclos y modulos.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
-- Usuarios de la app.
+- Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.
 - Perfil de usuario.
 - Documentos adjuntos en Google Drive.
 - OAuth de Drive con cuenta real.
