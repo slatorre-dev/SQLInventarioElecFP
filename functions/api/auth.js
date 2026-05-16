@@ -50,14 +50,16 @@ async function sendResetEmail(env, to, resetUrl, userName) {
       <p style="font-size:12px;color:#6b7280">El enlace caduca en 1 hora.</p>
     </div>`;
 
+  const subjectEncoded = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
   const mime = [
     `From: Inventario Taller FP <${from}>`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${subjectEncoded}`,
     'MIME-Version: 1.0',
     'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: base64',
     '',
-    htmlBody,
+    btoa(unescape(encodeURIComponent(htmlBody))),
   ].join('\r\n');
 
   const encoded = btoa(unescape(encodeURIComponent(mime)))

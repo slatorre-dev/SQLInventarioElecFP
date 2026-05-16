@@ -20,14 +20,16 @@ async function sendGmail(env, to, subject, htmlBody) {
   const accessToken = await getGmailAccessToken(env);
   if (!accessToken || !to) return;
   const from = env.MAIL_FROM || 'inventarioelec@iesjuanbosco.es';
+  const subjectEncoded = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
   const mime = [
     `From: Inventario Taller FP <${from}>`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${subjectEncoded}`,
     'MIME-Version: 1.0',
     'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: base64',
     '',
-    htmlBody,
+    btoa(unescape(encodeURIComponent(htmlBody))),
   ].join('\r\n');
   const encoded = btoa(unescape(encodeURIComponent(mime)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
