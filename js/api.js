@@ -48,6 +48,8 @@ async function apiPost(payload){
     body: JSON.stringify(payload),
     headers: {'Content-Type':'application/json'},
   });
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json();
+  let data = null;
+  try { data = await r.json(); } catch(e) {}
+  if(!r.ok) throw new Error(data?.error || data?.message || 'HTTP '+r.status);
+  return data || {};
 }
