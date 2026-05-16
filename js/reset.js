@@ -38,14 +38,14 @@ async function requestReset() {
     const appUrl = window.location.href.split('#')[0];
     const sep = API_URL.includes('?') ? '&' : '?';
     const r = await fetch(`${API_URL}${sep}action=requestReset&usuario=${encodeURIComponent(usuario)}&appUrl=${encodeURIComponent(appUrl)}`);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    await r.json();
+    const res = await r.json().catch(() => null);
+    if (!r.ok || !res?.ok) throw new Error(res?.error || 'HTTP ' + r.status);
     // Mensaje genérico siempre (no revelar si el usuario existe)
     okEl.textContent = 'Si el usuario existe y tiene correo registrado, recibirás un enlace en breve.';
     okEl.classList.add('show');
     document.getElementById('recoveryUser').value = '';
   } catch (err) {
-    errEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
+    errEl.textContent = err.message || 'Error de conexión. Inténtalo de nuevo.';
     errEl.classList.add('show');
   } finally {
     btn.disabled = false; btn.textContent = 'Enviar correo de recuperación';
