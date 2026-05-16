@@ -1,246 +1,473 @@
 # SQLInventarioElecFP
 
-Versión 2 del inventario del departamento de Electricidad y Electrónica del IES El Bosco.
-Misma app que el proyecto original (`inventarioDepartamentoV2`) pero con backend migrado de Google Apps Script + Google Sheets a **Cloudflare Workers + Cloudflare D1 (SQLite)**.
+Inventario web del departamento de Electricidad y Electronica del IES El Bosco.
 
----
+Este repositorio contiene la migracion del proyecto original basado en Google Apps Script + Google Sheets hacia una arquitectura con Cloudflare Pages, Cloudflare Pages Functions y Cloudflare D1.
 
-## De dónde viene este proyecto
+## 1. Estado actual
 
-El proyecto original (`inventarioDepartamentoV2 / inventarioDepartamentoV3`) lleva en producción desde 2025 y funciona así:
+Estado a 2026-05-16:
 
+- Frontend: SPA en HTML, CSS y JavaScript vanilla.
+- Hosting: Cloudflare Pages.
+- Backend: Cloudflare Pages Functions en `functions/api/`.
+- Base de datos: Cloudflare D1, base `inventario-departamento`.
+- Documentos adjuntos: Google Drive mediante OAuth de usuario real.
+- Despliegue: automatico al hacer `git push` a `main`.
+- Service worker: activo para cachear shell estatico; `/api/*` no se cachea.
+
+## 2. Origen del proyecto
+
+El proyecto original funcionaba asi:
+
+```text
+Navegador -> Google Apps Script -> Google Sheets
 ```
-Navegador → Google Apps Script (backend) → Google Sheets (base de datos)
-```
 
-Ese sistema funciona pero tiene un problema grave de rendimiento: la carga inicial puede tardar **20-60 segundos** porque Google Apps Script tiene latencia alta y lee las hojas de Sheets secuencialmente.
+Ese enfoque funciona, pero la carga inicial puede tardar mucho porque Apps Script tiene latencia alta y leer varias hojas de Sheets secuencialmente es costoso.
 
-Este nuevo proyecto migra el backend a Cloudflare, que ya aloja el frontend, consiguiendo tiempos de respuesta de **< 200ms**.
+El nuevo enfoque es:
 
----
-
-## Stack nuevo
-
-```
+```text
 Navegador
-    │
-    ├── HTML/CSS/JS  →  Cloudflare Pages (igual que antes)
-    │
-    └── GET/POST /api/*  →  Cloudflare Workers (backend JS)
-                                    │
-                            Cloudflare D1 (SQLite en el edge)
+  -> Cloudflare Pages
+  -> /api/* Cloudflare Pages Functions
+  -> Cloudflare D1
+  -> Google Drive API para documentos adjuntos
 ```
 
-| Capa | Tecnología | Dónde |
+## 3. Funcionalidades implementadas
+
+- Inventario de material tecnico.
+- Organizacion por aulas.
+- Organizacion por ciclos y modulos.
+- Categorias personalizables.
+- Prestamos y devoluciones.
+- Profesores prestatarios.
+- Usuarios de la app con roles.
+- Perfil de usuario.
+- Mantenimiento/reparacion de items.
+- Adjuntos/documentos por item.
+- Fotos comprimidas antes de subir.
+- Codigos QR por item.
+- Escaneo QR con camara.
+- Importacion CSV.
+- Exportacion CSV y backup JSON.
+- PWA instalable.
+- Cache offline del shell de la aplicacion.
+
+## 4. Stack tecnico
+
+| Capa | Tecnologia | Archivos |
 |---|---|---|
-| Frontend | HTML + CSS + JS vanilla (sin frameworks) | `index.html`, `css/`, `js/` |
-| Backend | Cloudflare Workers (JS) | `functions/api/` |
-| Base de datos | Cloudflare D1 (SQLite) | BD `inventario-departamento` |
-| Hosting | Cloudflare Pages | Auto-deploy desde GitHub `main` |
+| Frontend | HTML/CSS/JS vanilla | `index.html`, `css/`, `js/` |
+| Backend | Cloudflare Pages Functions | `functions/api/` |
+| Base de datos | Cloudflare D1 | `migrations/0001_schema.sql` |
+| Documentos | Google Drive OAuth | `functions/api/docs.js`, `functions/api/oauth/` |
+| Hosting | Cloudflare Pages | GitHub `main` |
+| PWA | Service Worker | `sw.js`, `manifest.json` |
 
----
+## 5. Estructura del repositorio
 
-## Qué hace la app
-
-- **Inventario** de material técnico organizado por aulas y ciclos formativos
-- **Préstamos y devoluciones** de material a profesores
-- **Mantenimiento**: marcar ítems en reparación, asignar responsable
-- **Documentos adjuntos** a ítems (actualmente en Google Drive, pendiente migrar a R2)
-- **Gestión de usuarios** con roles: Jefe Departamento, profesor, consulta/lector
-- **QR por ítem**: escaneo con cámara y etiquetas imprimibles
-- **Importar/exportar** CSV y backup JSON
-- **PWA instalable**, funciona offline con service worker
-
----
-
-## Estructura de archivos
-
-```
+```text
 SQLInventarioElecFP/
-│
-├── index.html              ← App SPA completa (todas las páginas en un HTML)
-├── manifest.json           ← PWA manifest
-├── sw.js                   ← Service worker (caché offline)
-├── favicon.svg
-├── wrangler.toml           ← Configuración Cloudflare (D1 binding)
-│
-├── css/
-│   └── styles.css          ← Todos los estilos
-│
-├── js/                     ← Frontend (vanilla JS, sin frameworks)
-│   ├── state.js            ← Variables globales: items, SESSION, etc.
-│   ├── api.js              ← apiGet() y apiPost() → llaman a /api/*
-│   ├── auth.js             ← Login, logout, loadData() en 2 fases
-│   ├── config.js           ← AULAS, CICLOS, CATS por defecto
-│   ├── roles.js            ← Sistema de permisos frontend
-│   ├── nav.js              ← Navegación entre vistas
-│   ├── home.js             ← Pantalla de inicio con tarjetas
-│   ├── inventory.js        ← Listado de inventario (tabla + tarjetas)
-│   ├── modal-item.js       ← Modal de añadir/editar ítem
-│   ├── modal-aulas.js      ← Gestión de aulas
-│   ├── modal-cats.js       ← Gestión de categorías
-│   ├── modal-ciclos.js     ← Gestión de ciclos y módulos
-│   ├── prestamos.js        ← Préstamos y devoluciones
-│   ├── import.js           ← Importar CSV y restaurar backup JSON
-│   ├── docs.js             ← Documentos adjuntos
-│   ├── docs-dpto.js        ← Documentación del departamento (SharePoint)
-│   ├── profile.js          ← Perfil de usuario
-│   ├── reset.js            ← Recuperación de contraseña
-│   ├── search.js           ← Buscador global
-│   ├── pwa.js              ← Registro del service worker
-│   └── qr-scanner.js      ← Escaneo QR con cámara
-│
-├── functions/              ← Cloudflare Workers (backend)
-│   └── api/
-│       ├── _middleware.js  ← Autenticación compartida (lee u= y p= de query)
-│       ├── auth.js         ← GET /api/auth?action=login
-│       ├── meta.js         ← GET /api/meta  (aulas, cats, ciclos — carga rápida)
-│       ├── list.js         ← GET /api/list  (items, prestamos, profesores)
-│       ├── item.js         ← POST /api/item (add, update, delete, bulkImport)
-│       ├── prestar.js      ← POST /api/prestar (prestar, devolver)
-│       ├── config.js       ← POST /api/config (aulasSync, catsSync, ciclosSync)
-│       ├── profesores.js   ← POST /api/profesores (profAdd, profUpdate, profDelete)
-│       ├── perfil.js       ← POST /api/perfil (updateProfile, changePassword)
-│       └── usuarios.js     ← POST /api/usuarios (getUsers, userAdd, userUpdate...)
-│
-├── migrations/
-│   └── 0001_schema.sql     ← Definición de todas las tablas D1
-│
-└── icons/
-    ├── icon-192.png
-    ├── icon-512.png
-    └── qr-code.svg
+  index.html
+  manifest.json
+  sw.js
+  wrangler.toml
+  README.md
+  SUBIDA_DOCS_MEMORIA.md
+  PROYECTO_DESCRIPCION_RECUPERACION.md
+  MIGRACION_CLOUDFLARE_D1.md
+
+  css/
+    styles.css
+
+  js/
+    api.js
+    auth.js
+    config.js
+    docs.js
+    docs-dpto.js
+    home.js
+    import.js
+    inventory.js
+    modal-aulas.js
+    modal-cats.js
+    modal-ciclos.js
+    modal-item.js
+    nav.js
+    prestamos.js
+    profile.js
+    pwa.js
+    qr-scanner.js
+    reset.js
+    roles.js
+    search.js
+    state.js
+
+  functions/
+    api/
+      _middleware.js
+      auth.js
+      config.js
+      docs.js
+      item.js
+      list.js
+      meta.js
+      perfil.js
+      prestar.js
+      profesores.js
+      usuarios.js
+      oauth/
+        start.js
+        callback.js
+
+  migrations/
+    0001_schema.sql
+
+  icons/
 ```
 
----
+## 6. Backend API
 
-## Base de datos D1 — tablas
+Las funciones viven en `functions/api/`.
 
-| Tabla | Equivalente en Sheets | Contenido |
+### Autenticacion
+
+`functions/api/_middleware.js` protege las rutas `/api/*`.
+
+El frontend envia credenciales de la app en query params:
+
+```text
+?u=usuario&p=password
+```
+
+El middleware consulta la tabla `usuarios` en D1. Si no coinciden, devuelve 401.
+
+Rutas publicas:
+
+- `/api/auth` para login.
+- `/api/oauth/callback` porque Google redirige sin credenciales de la app.
+
+`/api/oauth/start` no es publica: requiere `u` y `p`.
+
+### Endpoints principales
+
+| Endpoint | Metodo | Uso |
 |---|---|---|
-| `inventario` | Hoja Inventario | Ítems de material (22 columnas) |
-| `usuarios` | Hoja Usuarios | Cuentas de acceso + roles |
-| `profesores` | Hoja Profesores | Profesores prestatarios |
-| `prestamos` | Hoja Prestamos | Historial de préstamos |
-| `aulas` | Hoja Aulas | Aulas/espacios configurables |
-| `categorias` | Hoja Categorias | Categorías de ítems |
-| `ciclos` | Hoja Ciclos | Ciclos formativos y módulos (filas planas) |
-| `modulos` | Hoja Modulos | Módulos con responsable (para emails) |
-| `documentos` | Hoja Documentos | Metadatos de archivos en Drive |
-| `log` | Hoja Log | Auditoría de acciones |
-| `reset_tokens` | PropertiesService | Tokens de recuperación de contraseña |
+| `/api/auth` | GET | Login |
+| `/api/meta` | GET | Aulas, categorias, ciclos, usuario |
+| `/api/list` | GET | Inventario, prestamos, profesores |
+| `/api/item` | POST | Add/update/delete/bulkImport |
+| `/api/config` | POST | Aulas, categorias, ciclos |
+| `/api/prestar` | POST | Prestamos y devoluciones |
+| `/api/profesores` | POST | Gestion profesores prestatarios |
+| `/api/usuarios` | POST | Gestion usuarios app |
+| `/api/perfil` | POST | Perfil y contrasena |
+| `/api/docs` | POST | Documentos adjuntos |
+| `/api/oauth/start` | GET | Iniciar OAuth Drive |
+| `/api/oauth/callback` | GET | Recibir codigo OAuth |
 
----
+## 7. Base de datos D1
 
-## Cómo funciona la autenticación
+Base remota:
 
-El frontend envía `u=usuario&p=contraseña` como query params en cada petición.
-El `_middleware.js` los lee, consulta la tabla `usuarios` y rechaza con 401 si no coinciden.
-Las credenciales se guardan en `localStorage` bajo la clave `inv_session`.
+```text
+inventario-departamento
+```
 
-Las peticiones GET van a `/api/meta` y `/api/list`.
-Las peticiones POST van a `/api/item`, `/api/prestar`, etc. — el body JSON incluye `action` para diferenciar operaciones dentro del mismo endpoint.
+Binding en Cloudflare:
 
----
+```text
+DB
+```
 
-## Carga en dos fases (optimización de rendimiento)
+Tablas:
 
-`auth.js → loadData()` hace dos llamadas separadas:
+| Tabla | Contenido |
+|---|---|
+| `inventario` | Items de inventario |
+| `usuarios` | Usuarios de la app |
+| `profesores` | Profesores prestatarios |
+| `prestamos` | Prestamos y devoluciones |
+| `aulas` | Aulas configurables |
+| `categorias` | Categorias configurables |
+| `ciclos` | Ciclos y modulos en filas planas |
+| `modulos` | Modulos con responsable |
+| `documentos` | Metadatos de adjuntos de Drive |
+| `log` | Auditoria |
+| `reset_tokens` | Tokens de recuperacion |
 
-1. **Fase 1 — `/api/meta`** (~50ms): devuelve solo aulas, categorías y ciclos. El home se muestra inmediatamente con las tarjetas navegables. Los contadores muestran un skeleton animado.
+Schema:
 
-2. **Fase 2 — `/api/list`** (~150ms): devuelve ítems, préstamos y profesores en background. Los ítems llegan comprimidos como arrays (`itemsC` + `itemsH`) para reducir el tamaño del JSON ~40%. Al terminar, el home se refresca con los contadores reales.
+```bash
+wrangler d1 execute inventario-departamento --file=migrations/0001_schema.sql
+```
 
----
+En este proyecto se trabaja preferentemente con la base remota. Ver `claude.md`.
 
-## Workers pendientes de implementar
+## 8. Carga de datos
 
-Estos endpoints aún no están escritos — se irán añadiendo:
+`js/auth.js` carga datos en dos fases:
 
-| Endpoint | Acción | Estado |
-|---|---|---|
-| `/api/docs` | getDocs, uploadDoc, deleteDoc | Pendiente |
-| `/api/pedidos` | notificarPedido | Pendiente |
-| `/api/auth` | requestReset, resetPassword | Pendiente (solo login implementado) |
-| Email (préstamos, mantenimiento, stock bajo) | — | Pendiente (usar Resend API) |
-| Backup/restore | restoreBackup | Pendiente |
+1. `/api/meta`
+   - Aulas.
+   - Categorias.
+   - Ciclos.
+   - Usuario.
+   - Permite mostrar home rapidamente.
 
----
+2. `/api/list`
+   - Items.
+   - Prestamos.
+   - Profesores.
+   - Datos pesados en segundo paso.
 
-## Pasos para poner en marcha (resumen)
+Los items se devuelven comprimidos:
 
-### 1. Instalar Wrangler
+```json
+{
+  "itemsH": ["id", "ref", "..."],
+  "itemsC": [[1, "REF", "..."]]
+}
+```
+
+El frontend los reconstruye como objetos.
+
+## 9. Categorias
+
+Las categorias se guardan en la tabla `categorias`.
+
+Durante la migracion se detecto que algunos items tenian `inventario.cat`, pero faltaban filas en `categorias`. Para evitar que desaparezcan tarjetas de categoria al recargar:
+
+- `/api/meta` mezcla categorias declaradas con categorias usadas por inventario.
+- `/api/list` hace lo mismo.
+- Las categorias faltantes se muestran con estilo generado.
+- Al editarlas desde la app y guardar, pasan a quedar registradas en `categorias`.
+
+Los iconos de categorias se cambian desde:
+
+```text
+Departamento -> Gestionar categorias
+```
+
+## 10. Documentos adjuntos en Drive
+
+El sistema actual usa Google Drive con OAuth de usuario real.
+
+Motivo:
+
+- R2 se descarto porque Cloudflare pide tarjeta bancaria.
+- Service account de Google Drive falla si no hay Unidad compartida, porque no tiene cuota propia.
+- OAuth permite usar el almacenamiento de una cuenta real.
+
+Documentacion completa:
+
+```text
+SUBIDA_DOCS_MEMORIA.md
+```
+
+### Secretos necesarios
+
+En Cloudflare Pages, entorno `Production`:
+
+```text
+GOOGLE_OAUTH_CLIENT_ID
+GOOGLE_OAUTH_CLIENT_SECRET
+GOOGLE_OAUTH_REFRESH_TOKEN
+GOOGLE_DRIVE_ROOT_FOLDER_ID
+```
+
+Fallback heredado:
+
+```text
+GOOGLE_SERVICE_ACCOUNT
+```
+
+Si `GOOGLE_OAUTH_REFRESH_TOKEN` existe, el backend usa OAuth. Si no existe, intenta service account.
+
+### OAuth
+
+Endpoints:
+
+```text
+/api/oauth/start
+/api/oauth/callback
+```
+
+Para generar refresh token:
+
+```text
+https://TU_DOMINIO/api/oauth/start?u=USUARIO_APP&p=PASSWORD_APP
+```
+
+### Drive root folder
+
+`GOOGLE_DRIVE_ROOT_FOLDER_ID` es solo el ID de la carpeta.
+
+Ejemplo:
+
+```text
+https://drive.google.com/drive/folders/1Ld7IhlJ1cmihza6CMskMSxHty0Qujbg
+```
+
+Valor:
+
+```text
+1Ld7IhlJ1cmihza6CMskMSxHty0Qujbg
+```
+
+## 11. Service worker
+
+Archivo:
+
+```text
+sw.js
+```
+
+Puntos importantes:
+
+- Cachea shell estatico.
+- No cachea peticiones no GET.
+- No cachea `/api/*`.
+- Para forzar actualizacion se cambia `VERSION`.
+
+Esto es importante porque cachear `/api/meta` o `/api/list` produjo problemas de datos antiguos durante la migracion.
+
+## 12. Variables y secretos Cloudflare
+
+### D1 binding
+
+```text
+Variable: DB
+Database: inventario-departamento
+```
+
+### Environment variables / secrets
+
+```text
+GOOGLE_OAUTH_CLIENT_ID
+GOOGLE_OAUTH_CLIENT_SECRET
+GOOGLE_OAUTH_REFRESH_TOKEN
+GOOGLE_DRIVE_ROOT_FOLDER_ID
+GOOGLE_SERVICE_ACCOUNT  (fallback opcional)
+```
+
+Despues de modificar variables en Cloudflare Pages hay que redeplegar.
+
+Redeploy por Git:
+
+```bash
+git commit --allow-empty -m "Trigger Cloudflare redeploy"
+git push
+```
+
+## 13. Seguridad
+
+No subir nunca:
+
+- `client_secret*.json`
+- `credentials*.json`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REFRESH_TOKEN`
+- JSON de service account
+- `backup.json`
+- `migration.sql`
+
+`.gitignore` incluye patrones para evitar subir credenciales locales.
+
+Si se filtra un secreto:
+
+1. Revocar en Google Cloud o cuenta Google.
+2. Generar nuevo.
+3. Actualizar Cloudflare.
+4. Redeploy.
+
+## 14. Puesta en marcha desde cero
+
+### 14.1 Clonar repo
+
+```bash
+git clone https://github.com/sebantonio/SQLInventarioElecFP.git
+cd SQLInventarioElecFP
+git checkout main
+```
+
+### 14.2 Instalar Wrangler
+
 ```bash
 npm install -g wrangler
 wrangler login
 ```
 
-### 2. Crear la base de datos D1
+### 14.3 Crear D1
+
 ```bash
 wrangler d1 create inventario-departamento
-# Copia el database_id que te devuelve y ponlo en wrangler.toml
 ```
 
-### 3. Aplicar el schema
+Copiar `database_id` a `wrangler.toml`.
+
+### 14.4 Aplicar schema
+
 ```bash
 wrangler d1 execute inventario-departamento --file=migrations/0001_schema.sql
 ```
 
-### 4. Migrar datos desde el proyecto anterior
-- En la app actual (`inventariodepartamento.pages.dev`): **⚙️ Departamento → Exportar / Backup → Backup completo JSON**
-- Guarda el archivo como `backup.json` en la raíz de este proyecto
-- Ejecuta el script de migración (ver `MIGRACION_CLOUDFLARE_D1.md` para el código completo):
-```bash
-node migrate.js
-wrangler d1 execute inventario-departamento --file=migration.sql
+### 14.5 Configurar Pages
+
+En Cloudflare:
+
+```text
+Workers & Pages -> Create -> conectar GitHub repo
+Settings -> Functions -> D1 database bindings -> DB
+Settings -> Environment variables -> secretos Google
 ```
 
-### 5. Añadir usuarios manualmente
+### 14.6 Crear usuario inicial
+
 ```bash
-wrangler d1 execute inventario-departamento --command="INSERT INTO usuarios VALUES ('admin','TU_PASSWORD','Nombre','Jefe Departamento','email@centro.es')"
+wrangler d1 execute inventario-departamento --command="INSERT INTO usuarios (usuario,password,nombre,rol,email) VALUES ('Admin','Admin','Administrador','Jefe Departamento','')"
 ```
 
-### 6. Probar en local
-```bash
-wrangler pages dev . --d1=DB=inventario-departamento
-# Abre http://localhost:8788
+Cambiar esa contrasena despues.
+
+### 14.7 Migrar datos
+
+Ver:
+
+```text
+MIGRACION_CLOUDFLARE_D1.md
 ```
 
-### 6.1. Configurar subida a Google Drive
-La subida de documentos puede usar OAuth de una cuenta real de Drive:
-- `GOOGLE_OAUTH_CLIENT_ID`: ID del cliente OAuth web.
-- `GOOGLE_OAUTH_CLIENT_SECRET`: secreto del cliente OAuth web.
-- `GOOGLE_OAUTH_REFRESH_TOKEN`: token generado desde `/api/oauth/start`.
-- `GOOGLE_DRIVE_ROOT_FOLDER_ID`: ID de la carpeta raíz de Drive donde se crearán las subcarpetas por aula.
+## 15. Flujo de trabajo diario
 
-El callback autorizado en Google Cloud debe ser `https://TU_DOMINIO/api/oauth/callback`.
+1. Editar codigo local.
+2. Probar sintaxis si procede:
 
-### 7. Crear página en Cloudflare Pages
-- Cloudflare Dashboard → Workers & Pages → Create → conectar repo `SQLInventarioElecFP`
-- Settings → Functions → D1 database bindings → Variable: `DB` → BD: `inventario-departamento`
-- Git push → auto-deploy
+```bash
+node --check functions/api/docs.js
+```
 
-## Documentación adicional
-- `PROYECTO_DESCRIPCION_RECUPERACION.md`: descripción completa del proyecto y pasos para recuperar todo el trabajo en otro ordenador.
-- `SUBIDA_DOCS_MEMORIA.md`: memoria detallada de la configuración de subida de documentos a Google Drive.
+3. Commit.
+4. Push.
+5. Cloudflare Pages despliega.
 
----
+## 16. Commits relevantes recientes
 
-## Diferencias con el proyecto original
+```text
+c71036b Fix D1 write audit failures
+8965306 Derive missing categories from inventory
+3c3cb73 Support shared drives for document uploads
+29bc0b6 Revert "Use R2 for new document uploads"
+d9dc653 Add Google Drive OAuth setup flow
+b227d58 Remove OAuth environment diagnostics
+```
 
-| Aspecto | Original (V3) | Este (V4) |
-|---|---|---|
-| Backend | Google Apps Script | Cloudflare Workers |
-| BD | Google Sheets | Cloudflare D1 (SQLite) |
-| Tiempo de carga | 5-60 segundos | < 200ms |
-| Redespliegue backend | Manual (editor GAS) | Automático (git push) |
-| Caché necesaria | Sí (CacheService 3min) | No |
-| Emails | MailApp (GAS) | Pendiente: Resend API |
-| Documentos | Google Drive | Google Drive (pendiente R2) |
-| URL producción | inventariodepartamento.pages.dev | Pendiente crear en Cloudflare |
+## 17. Documentacion adicional
 
----
-
-## Guía de migración completa
-
-Ver `MIGRACION_CLOUDFLARE_D1.md` para la planificación detallada paso a paso.
+- `SUBIDA_DOCS_MEMORIA.md`: documentos adjuntos y OAuth Drive.
+- `PROYECTO_DESCRIPCION_RECUPERACION.md`: recuperacion completa del proyecto.
+- `MIGRACION_CLOUDFLARE_D1.md`: migracion desde Google Sheets.
+- `claude.md`: notas de trabajo con D1 remoto.
