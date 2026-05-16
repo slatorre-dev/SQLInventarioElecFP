@@ -36,7 +36,7 @@ function updateModSelect(){
 function itemUrl(id){
   const base = location.protocol.startsWith('http')
     ? location.origin + location.pathname.replace(/index\.html$/,'')
-    : 'https://inventariodepartamento.pages.dev/';
+    : 'https://inventarioelec.pages.dev/';
   return base.replace(/#.*$/,'') + '#item/' + encodeURIComponent(itemCode(id) || id);
 }
 
