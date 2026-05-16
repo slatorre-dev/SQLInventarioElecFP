@@ -298,6 +298,81 @@ function openPrestar(itemId){
 }
 function closePrestar(){ document.getElementById('mPrestar').classList.remove('open'); }
 
+// ─── PRÉSTAMO DE CAJA COMPLETA ────────────────────────────
+let _prestarCajaId = null;
+
+function openPrestarCaja(cajaId){
+  if(!requirePerm('loans.write')) return;
+  const caja = items.find(x=>Number(x.id)===Number(cajaId));
+  if(!caja) return;
+  const hijos = items.filter(x=>Number(x.parent_id)===Number(cajaId) && Number(x.qty)>0);
+  if(!hijos.length){ toast('La caja no tiene componentes con stock','err'); return; }
+  _prestarCajaId = cajaId;
+
+  document.getElementById('prestarCajaNombre').textContent = `${caja.ref ? caja.ref+' · ' : ''}${caja.item}`;
+  document.getElementById('prestarCajaComponentes').innerHTML = hijos.map(h=>
+    `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span style="font-weight:600">${h.item}</span>
+      <span style="color:var(--muted);font-size:12px"> · ${h.qty} ud.</span>
+    </div>`
+  ).join('');
+
+  const profSelect = document.getElementById('prestarCajaProf');
+  const profsFiltrados = profesores.filter(p => String(p.nombre||'').trim() && String(p.nombre||'').trim().toLowerCase() !== 'departamento');
+  const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
+  if(profPropio){
+    profSelect.innerHTML = `<option value="${profPropio.id}" selected>${profPropio.nombre}</option>`;
+    profSelect.disabled = true;
+  } else {
+    profSelect.disabled = false;
+    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
+      profsFiltrados.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+  }
+
+  document.getElementById('prestarCajaAulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
+    AULAS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+
+  const f = new Date(); f.setDate(f.getDate()+7);
+  document.getElementById('prestarCajaFecha').value = f.toISOString().split('T')[0];
+  document.getElementById('prestarCajaObs').value = '';
+  document.getElementById('mPrestarCaja').classList.add('open');
+}
+
+function closePrestarCaja(){ document.getElementById('mPrestarCaja').classList.remove('open'); _prestarCajaId = null; }
+
+async function confirmPrestarCaja(){
+  const profId = document.getElementById('prestarCajaProf').value;
+  if(!profId){ toast('Selecciona un profesor','err'); return; }
+  const prof = profesores.find(p=>Number(p.id)===Number(profId));
+  if(!prof) return;
+  const btn = document.getElementById('btnPrestarCajaSave');
+  btn.disabled = true; btn.textContent = '⏳ Registrando...';
+  try {
+    const res = await apiPost({
+      action: 'prestarCaja',
+      cajaId: _prestarCajaId,
+      profesorId: prof.id,
+      profesorNombre: prof.nombre,
+      aulaDestino: document.getElementById('prestarCajaAulaDest').value,
+      fechaPrevista: document.getElementById('prestarCajaFecha').value,
+      obs: document.getElementById('prestarCajaObs').value.trim(),
+      gestionadoPor: SESSION?.nombre || '',
+      fechaPrestamo: new Date().toISOString().split('T')[0],
+    });
+    if(!res.ok) throw new Error(res.error);
+    // Actualizar estado local
+    for(const p of (res.prestamos || [])){
+      prestamos.push(p);
+      const idx = items.findIndex(x=>Number(x.id)===Number(p.itemId));
+      if(idx>=0) items[idx].qty = Number(items[idx].qty) - Number(p.cantidad);
+    }
+    closePrestarCaja();
+    toast(`Caja prestada: ${res.prestamos?.length || 0} componentes registrados`,'ok');
+    if(cf) openSub(); else renderHome();
+  } catch(err){ toast('Error: '+err.message,'err'); }
+  finally { btn.disabled=false; btn.textContent='📦 Registrar préstamo de caja'; }
+}
+
 async function confirmPrestar(){
   if(prestarItemId===null||prestarItemId===undefined){ toast('Selecciona un ítem','err'); return; }
   const profId = document.getElementById('pres_prof').value;

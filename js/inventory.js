@@ -128,13 +128,19 @@ function rTable(data,mc){
     <thead><tr><th>Foto</th>${th2('ref','Ref.')}${th2('aula','Aula')}${th2('item','Ítem')}${th2('qty','Cant.')}<th>Mín.</th>${th2('cat','Categoría')}${th2('loc','Ubicación')}${th2('est','Estado')}${th2('util','Utilidad')}<th>Acciones</th></tr></thead>
     <tbody>${data.map(x=>{
       const low=Number(x.qty)<=Number(x.min),mant=needsMaintenance(x),mantInfo=[x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · '),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280';
-      return`<tr>
+      const esContenedor = x.es_contenedor == 1;
+      const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
+      const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
+      return`<tr${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
         <td>${x.foto?`<img class="table-photo" src="${x.foto}" alt="">`:'<span class="table-photo empty">📷</span>'}</td>
         <td><span class="rbadge">${x.ref||'—'}</span></td>
         <td style="font-size:12px;color:var(--muted)">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</td>
         <td style="max-width:220px;font-weight:600" title="${x.item}">
           <div class="item-title-line">
+            ${parentItem?'<span style="color:var(--muted);margin-right:4px">↳</span>':''}
             <span class="item-title-text">${x.item}</span>
+            ${esContenedor?`<span title="${numHijos} componentes" style="font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
+            ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${parentItem.item}">📦 ${parentItem.ref||parentItem.item}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
         </td>
@@ -148,12 +154,10 @@ function rTable(data,mc){
           <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
           <button class="btn btn-sm" onclick="duplicateItem(${x.id})" title="Duplicar">⧉</button>
           <button class="btn btn-sm" onclick="openDocsModal(${x.id})" title="Documentación">📌</button>
-          <button class="btn btn-sm btn-loan"
-             onclick="openPresDevModal(${x.id})"
-             title="Prestar / Devolver"
-             style="font-size:16px;line-height:1">
-            ⌛
-          </button>
+          ${esContenedor
+            ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
+            : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
+          }
           <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="${isPedido(x.id)?'Quitar del pedido':'Añadir al pedido'}">🛒</button>
           <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
         </div></td>
@@ -165,15 +169,19 @@ function rTable(data,mc){
 function rCards(data,mc){
   mc.innerHTML=`<div class="cgrid">${data.map(x=>{
     const low=Number(x.qty)<=Number(x.min),mant=needsMaintenance(x),mantStatus=x.mantEstado||'Pendiente',cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',mod=findModulo(x.mod);
-    return`<div class="icard${low?' low':''}">
+    const esContenedor2 = x.es_contenedor == 1;
+    const parentItem2 = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
+    const numHijos2 = esContenedor2 ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
+    return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}">
       ${x.foto?`<img class="card-photo" src="${x.foto}" alt="Foto de ${x.item}">`:''}
       <div class="ch">
         <div class="card-title-wrap">
           <div class="item-title-line">
-            <div class="cname">${x.item}</div>
+            <div class="cname">${parentItem2?'↳ ':''}${x.item}</div>
+            ${esContenedor2?`<span style="font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
-          <div class="cref">${x.ref||''}</div>
+          <div class="cref">${x.ref||''}${parentItem2?` · <span style="color:#15803d;font-size:10px">📦 ${parentItem2.ref||parentItem2.item}</span>`:''}</div>
         </div>
         <div class="cqbox"><div class="cqbig" style="color:${low?'var(--red)':'var(--green)'}">${x.qty}</div><div class="cqmin">mín. ${x.min}</div></div>
       </div>
@@ -198,7 +206,10 @@ function rCards(data,mc){
         <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
         <button class="btn btn-sm" onclick="duplicateItem(${x.id})" title="Duplicar">⧉</button>
         <button class="btn btn-sm" onclick="openDocsModal(${x.id})" title="Documentación">📌</button>
-        <button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>
+        ${esContenedor2
+          ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
+          : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
+        }
         <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
         <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
       </div>

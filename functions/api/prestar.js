@@ -54,6 +54,33 @@ export async function onRequestPost({ request, env }) {
   const { action } = body;
   const user = request.user;
 
+  if (action === 'prestarCaja') {
+    // Presta todos los hijos de una caja de una vez
+    const { cajaId, profesorId, profesorNombre, aulaDestino, fechaPrevista, obs, gestionadoPor, fechaPrestamo } = body;
+    const hijos = await env.DB.prepare('SELECT * FROM inventario WHERE parent_id=?').bind(cajaId).all();
+    if (!hijos.results?.length) return Response.json({ ok: false, error: 'La caja no tiene componentes' });
+    const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
+    let nextId = (maxRow.m || 0) + 1;
+    const nuevos = [];
+    for (const hijo of hijos.results) {
+      if (Number(hijo.qty) < 1) continue;
+      const pres = {
+        id: nextId++, itemId: hijo.id, itemNombre: hijo.item, cantidad: Number(hijo.qty),
+        aulaOrigen: hijo.aula, aulaDestino: aulaDestino || '', profesorId, profesorNombre,
+        gestionadoPor: gestionadoPor || '', fechaPrestamo: fechaPrestamo || '',
+        fechaPrevista: fechaPrevista || '', fechaDevolucion: '', cantidadDevuelta: 0,
+        estado: 'Activo', obs: obs || '', moduloCod: '', moduloNombre: '',
+      };
+      const vals = HEADERS_PRES.map(h => pres[h] ?? '');
+      await env.DB.prepare(`INSERT INTO prestamos (${HEADERS_PRES.join(',')}) VALUES (${HEADERS_PRES.map(()=>'?').join(',')})`)
+        .bind(...vals).run();
+      await env.DB.prepare('UPDATE inventario SET qty = qty - ? WHERE id=?').bind(pres.cantidad, hijo.id).run();
+      nuevos.push(pres);
+    }
+    await auditLog(env.DB, user, 'prestarCaja', cajaId, `Préstamo de caja ${cajaId} completa a ${profesorNombre}: ${nuevos.length} componentes`);
+    return Response.json({ ok: true, prestamos: nuevos });
+  }
+
   if (action === 'prestar') {
     const pres = body.prestamo;
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();

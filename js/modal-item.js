@@ -167,10 +167,26 @@ function setMainPhotoFromFile(file){
   });
 }
 
+function fillParentSelect(currentId){
+  const sel = document.getElementById('f_parent_id');
+  if(!sel) return;
+  const contenedores = items.filter(x => x.es_contenedor && Number(x.id) !== Number(currentId));
+  sel.innerHTML = '<option value="">— Sin caja padre —</option>' +
+    contenedores.map(x => `<option value="${x.id}">${x.ref ? x.ref+' · ' : ''}${x.item}</option>`).join('');
+}
+
+function toggleContenedorFields(){
+  const esContenedor = document.getElementById('f_es_contenedor')?.checked;
+  const parentRow = document.getElementById('f_parent_row');
+  if(parentRow) parentRow.style.display = esContenedor ? 'none' : '';
+  // Si es contenedor no puede tener padre
+  if(esContenedor) { const sel = document.getElementById('f_parent_id'); if(sel) sel.value = ''; }
+}
+
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
@@ -209,6 +225,11 @@ function openModal(id=null, src=null){
   document.getElementById('f_mantNota').value=m?.mantNota||'';
   toggleMaintFields();
   document.getElementById('f_obs').value=m?.obs||'';
+  const esContenedor = m?.es_contenedor == 1 || m?.es_contenedor === true;
+  document.getElementById('f_es_contenedor').checked = esContenedor;
+  fillParentSelect(id);
+  document.getElementById('f_parent_id').value = m?.parent_id || '';
+  toggleContenedorFields();
   initDocSection(id);
   renderItemQr(existing ? m : null);
   setItemModalReadonly(readonly);
@@ -364,6 +385,8 @@ async function saveItem(){
     mantResp:document.getElementById('f_mantResp').value.trim(),
     mantEstado:document.getElementById('f_mantEstado').value,
     obs:document.getElementById('f_obs').value.trim(),
+    es_contenedor: document.getElementById('f_es_contenedor').checked ? 1 : 0,
+    parent_id: document.getElementById('f_parent_id').value ? Number(document.getElementById('f_parent_id').value) : null,
   };
   const btn = document.getElementById('btnSave');
   btn.disabled = true; btn.textContent = '⏳ Guardando...';

@@ -1,4 +1,4 @@
-const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code'];
+const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id'];
 
 const CAT_PALETTE = [
   { c:'#2563eb', bg:'#eff6ff', i:'🏷️' },
@@ -38,6 +38,9 @@ function mergeCats(savedCats, items) {
 
 export async function onRequestGet({ request, env }) {
   const user = request.user;
+
+  await env.DB.prepare("ALTER TABLE inventario ADD COLUMN es_contenedor INTEGER DEFAULT 0").run().catch(() => {});
+  await env.DB.prepare("ALTER TABLE inventario ADD COLUMN parent_id INTEGER DEFAULT NULL").run().catch(() => {});
 
   const [items, profesores, prestamos, aulas, cats, ciclosRows] = await Promise.all([
     env.DB.prepare('SELECT * FROM inventario ORDER BY id').all(),

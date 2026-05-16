@@ -436,6 +436,21 @@
         </div>
       </div>
       <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="f_obs" placeholder="Notas, proveedor, nº serie..."></textarea></div>
+      <div class="full">
+        <label class="fl">Contenedor / Caja</label>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
+            <input type="checkbox" id="f_es_contenedor" onchange="toggleContenedorFields()">
+            <span>Este ítem es una caja o contenedor de componentes</span>
+          </label>
+          <div id="f_parent_row">
+            <select class="fi-w" id="f_parent_id">
+              <option value="">— Sin caja padre —</option>
+            </select>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">Si este componente pertenece a una caja, selecciónala aquí</div>
+          </div>
+        </div>
+      </div>
       <div class="full" id="itemQrBox" style="display:none">
         <hr class="docs-sep">
         <div class="docs-lbl">▦ Código QR del ítem</div>
@@ -558,6 +573,33 @@
       <div class="mf-right">
         <button class="btn" onclick="closePrestar()">Cancelar</button>
         <button class="btn btn-loan" id="btnPrestarSave" onclick="confirmPrestar()">📤 Registrar préstamo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRÉSTAMO CAJA COMPLETA -->
+<div class="mbg" id="mPrestarCaja" onclick="if(event.target===this)closePrestarCaja()">
+  <div class="modal">
+    <div class="mh"><span class="mti">📦 Préstamo de caja completa</span><button class="mcl" onclick="closePrestarCaja()">✕</button></div>
+    <div style="margin-bottom:12px">
+      <div style="font-weight:600;font-size:15px" id="prestarCajaNombre"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Se prestarán todos los componentes con stock:</div>
+      <div id="prestarCajaComponentes" style="margin-top:8px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px 12px"></div>
+    </div>
+    <div class="fg">
+      <div class="full"><label class="fl">Profesor que pide *</label>
+        <select class="fi-w" id="prestarCajaProf"></select>
+      </div>
+      <div><label class="fl">Aula destino</label><select class="fi-w" id="prestarCajaAulaDest"></select></div>
+      <div><label class="fl">Devolución prevista</label><input class="fi-w" id="prestarCajaFecha" type="date"></div>
+      <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="prestarCajaObs" placeholder="Para qué se necesita, etc."></textarea></div>
+    </div>
+    <div class="mf">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closePrestarCaja()">Cancelar</button>
+        <button class="btn btn-loan" id="btnPrestarCajaSave" onclick="confirmPrestarCaja()">📦 Registrar préstamo de caja</button>
       </div>
     </div>
   </div>

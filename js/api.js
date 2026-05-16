@@ -4,7 +4,7 @@
 
 const ENDPOINT_MAP = {
   add:'item', update:'item', delete:'item', bulkImport:'item', restoreBackup:'item',
-  prestar:'prestar', devolver:'prestar',
+  prestar:'prestar', devolver:'prestar', prestarCaja:'prestar',
   profAdd:'profesores', profUpdate:'profesores', profDelete:'profesores',
   aulasSync:'config', catsSync:'config', ciclosSync:'config',
   updateProfile:'perfil', changePassword:'perfil',
