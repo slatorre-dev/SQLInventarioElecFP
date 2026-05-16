@@ -1,0 +1,161 @@
+// ═════════════════════════════════════════════════════════
+// AULAS — por defecto, modificable por el usuario
+// ═════════════════════════════════════════════════════════
+// AULAS — se cargan desde Google Sheets, no desde localStorage
+const AULAS_DEFAULT=[
+  {id:'aula35',name:'Aula 35',icon:'🔧',th:'th-blue',  desc:'Mantenimiento Electrónico'},
+  {id:'aula36',name:'Aula 36',icon:'⚡',th:'th-purple',desc:'Electrónica'},
+  {id:'aula38',name:'Aula 38',icon:'💡',th:'th-amber', desc:'Electricidad'},
+  {id:'aula39',name:'Aula 39',icon:'🔌',th:'th-orange',desc:'Electricidad'},
+  {id:'aula40',name:'Aula 40',icon:'📡',th:'th-teal',  desc:'Electrónica'},
+  {id:'aula41',name:'Aula 41',icon:'🛠️',th:'th-green', desc:'Electrónica'},
+  {id:'aula_dep',name:'Departamento',icon:'🏛️',th:'th-pink',  desc:'Departamento'},
+];
+let AULAS = AULAS_DEFAULT.slice(); // se reemplazará al cargar datos del backend
+
+const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pink','th-purple','th-red'];
+
+// ═════════════════════════════════════════════════════════
+// CICLOS Y MÓDULOS
+// ═════════════════════════════════════════════════════════
+let CICLOS = [
+  {
+    id:'gm_telecom',
+    name:'Inst. de Telecomunicaciones',
+    nivel:'CFGM',
+    icon:'📡',
+    th:'th-blue',
+    desc:'Grado Medio · Electricidad y Electrónica',
+    modulos:[
+      {cod:'0237',name:'Infraestructuras comunes de telecomunicación',horas:214},
+      {cod:'0238',name:'Instalaciones domóticas',horas:186},
+      {cod:'0359',name:'Electrónica aplicada',horas:210},
+      {cod:'0360',name:'Equipos microinformáticos',horas:151},
+      {cod:'0361',name:'Infraestructuras de redes de datos y telefonía',horas:277},
+      {cod:'0362',name:'Instalaciones eléctricas básicas',horas:128},
+      {cod:'0363',name:'Megafonía y sonorización',horas:128},
+      {cod:'0364',name:'CCTV y seguridad electrónica',horas:188},
+      {cod:'0365',name:'Instalaciones de radiocomunicaciones',horas:93},
+      {cod:'0156',name:'Inglés profesional GM',horas:60},
+      {cod:'1664',name:'Digitalización (GM)',horas:50},
+      {cod:'1708',name:'Sostenibilidad aplicada',horas:40},
+      {cod:'1709',name:'Empleabilidad I',horas:80},
+      {cod:'1710',name:'Empleabilidad II',horas:60},
+      {cod:'1713',name:'Proyecto intermodular telecom.',horas:0},
+    ]
+  },
+  {
+    id:'gm_electric',
+    name:'Inst. Eléctricas y Automáticas',
+    nivel:'CFGM',
+    icon:'🔌',
+    th:'th-amber',
+    desc:'Grado Medio · Electricidad y Electrónica',
+    modulos:[
+      {cod:'0232',name:'Automatismos industriales',horas:244},
+      {cod:'0233',name:'Electrónica',horas:58},
+      {cod:'0234',name:'Electrotecnia',horas:175},
+      {cod:'0235',name:'Instalaciones eléctricas interiores',horas:233},
+      {cod:'0236',name:'Instalaciones de distribución',horas:203},
+      {cod:'0237',name:'Infraestructuras comunes de telecomunicación',horas:214},
+      {cod:'0238',name:'Instalaciones domóticas',horas:186},
+      {cod:'0239',name:'Instalaciones solares fotovoltaicas',horas:74},
+      {cod:'0240',name:'Máquinas eléctricas',horas:188},
+      {cod:'0156',name:'Inglés profesional GM',horas:60},
+      {cod:'1664',name:'Digitalización (GM)',horas:50},
+      {cod:'1708',name:'Sostenibilidad aplicada',horas:40},
+      {cod:'1709',name:'Empleabilidad I',horas:80},
+      {cod:'1710',name:'Empleabilidad II',horas:60},
+      {cod:'1713',name:'Proyecto intermodular eléctricas',horas:0},
+    ]
+  },
+  {
+    id:'gs_mantelec',
+    name:'Mantenimiento Electrónico',
+    nivel:'CFGS',
+    icon:'🔧',
+    th:'th-purple',
+    desc:'Grado Superior · Electricidad y Electrónica',
+    modulos:[
+      {cod:'1051',name:'Circuitos electrónicos analógicos',horas:196},
+      {cod:'1052',name:'Equipos microprogramables',horas:196},
+      {cod:'1053',name:'Mantenimiento eq. radiocomunicaciones',horas:242},
+      {cod:'1054',name:'Mantenimiento eq. voz y datos',horas:223},
+      {cod:'1055',name:'Mantenimiento eq. electrónica industrial',horas:141},
+      {cod:'1056',name:'Mantenimiento eq. de audio',horas:166},
+      {cod:'1057',name:'Mantenimiento eq. de video',horas:136},
+      {cod:'1058',name:'Montaje y mantenimiento eq. electrónicos',horas:177},
+      {cod:'1059',name:'Infraestructuras y desarrollo del mant.',horas:98},
+      {cod:'0179',name:'Inglés profesional GS',horas:60},
+      {cod:'1665',name:'Digitalización (GS)',horas:50},
+      {cod:'1708',name:'Sostenibilidad aplicada',horas:40},
+      {cod:'1709',name:'Empleabilidad I',horas:80},
+      {cod:'1710',name:'Empleabilidad II',horas:60},
+      {cod:'1060',name:'Proyecto intermodular mant. electrónico',horas:0},
+    ]
+  },
+  {
+    id:'gs_sea',
+    name:'Sistemas Electrotécnicos y Automatizados',
+    nivel:'CFGS',
+    icon:'⚙️',
+    th:'th-teal',
+    desc:'Grado Superior · Electricidad y Electrónica',
+    modulos:[
+      {cod:'0517',name:'Procesos en ICT',horas:167},
+      {cod:'0518',name:'Técnicas en instalaciones eléctricas',horas:233},
+      {cod:'0519',name:'Documentación técnica eléctrica',horas:149},
+      {cod:'0520',name:'Sistemas y circuitos eléctricos',horas:175},
+      {cod:'0521',name:'Inst. domóticas y automáticas',horas:221},
+      {cod:'0522',name:'Redes eléctricas y centros de transformación',horas:192},
+      {cod:'0523',name:'Configuración inst. domóticas',horas:167},
+      {cod:'0524',name:'Configuración inst. eléctricas',horas:190},
+      {cod:'0602',name:'Gestión del montaje y mantenimiento',horas:81},
+      {cod:'0179',name:'Inglés profesional GS',horas:60},
+      {cod:'1665',name:'Digitalización (GS)',horas:50},
+      {cod:'1708',name:'Sostenibilidad aplicada',horas:40},
+      {cod:'1709',name:'Empleabilidad I',horas:80},
+      {cod:'1710',name:'Empleabilidad II',horas:60},
+      {cod:'0526',name:'Proyecto intermodular SEA',horas:0},
+    ]
+  },{
+    id:'departamento',
+    name:'Departamento',
+    nivel:'',
+    icon:'🏛️',
+    th:'th-pink',
+    desc:'Material genérico del departamento',
+    modulos:[
+      {cod:'dpto',name:'Departamento',horas:0},
+    ]
+  }
+];
+
+// Helper para encontrar un módulo por su id (formato: cicloId__codigo)
+function findModulo(modId){
+  if(!modId) return null;
+  const [cId, cod] = modId.split('__');
+  const c = CICLOS.find(x=>x.id===cId);
+  if(!c) return null;
+  const m = c.modulos.find(x=>x.cod===cod);
+  return m ? {...m, ciclo:c} : null;
+}
+
+// ═════════════════════════════════════════════════════════
+// CATEGORÍAS Y ESTADOS
+// ═════════════════════════════════════════════════════════
+const CATS_DEFAULT={
+  'Componentes electrónicos':{c:'#2563eb',bg:'#eff6ff',i:'⚡'},
+  'Herramientas':            {c:'#d97706',bg:'#fffbeb',i:'🔨'},
+  'Equipos de medida':       {c:'#0891b2',bg:'#ecfeff',i:'📊'},
+  'Consumibles':             {c:'#7c3aed',bg:'#f5f3ff',i:'📦'},
+  'Fibra óptica':            {c:'#059669',bg:'#ecfdf5',i:'💡'},
+  'Telecomunicaciones':      {c:'#ea580c',bg:'#fff7ed',i:'📡'},
+  'Material eléctrico':      {c:'#db2777',bg:'#fdf2f8',i:'🔌'},
+  'Redes':                   {c:'#0e7490',bg:'#f0fdfa',i:'🌐'},
+  'Domótica':                {c:'#7e22ce',bg:'#faf5ff',i:'🏠'},
+  'Ordenadores':             {c:'#1d4ed8',bg:'#eff6ff',i:'💻'},
+  'Otros':                   {c:'#6b7280',bg:'#f9fafb',i:'🔧'},
+};
+let CATS = Object.assign({}, CATS_DEFAULT);
+const ESTC={'Bueno':'#059669','Deteriorado':'#d97706','Avería':'#dc2626','Baja':'#9ca3af'};
