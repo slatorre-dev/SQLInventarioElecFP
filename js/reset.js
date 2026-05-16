@@ -57,6 +57,8 @@ function showResetPage(token) {
   document.getElementById('resetPass1').value = '';
   document.getElementById('resetPass2').value = '';
   document.getElementById('resetError').classList.remove('show');
+  if (typeof _hideOverlay === 'function') _hideOverlay();
+  setConn('', 'Restablecer contraseña');
   show('pReset');
 }
 

@@ -34,6 +34,7 @@ Objetivos principales:
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.
 - Perfil de usuario.
+- Recuperacion de contrasena por correo con pantalla dedicada `#reset/<token>`.
 - Documentos adjuntos en Google Drive.
 - OAuth de Drive con cuenta real.
 - QR por item.
