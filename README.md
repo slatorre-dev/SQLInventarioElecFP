@@ -216,6 +216,10 @@ La subida de documentos requiere dos secretos en Cloudflare:
 - Settings → Functions → D1 database bindings → Variable: `DB` → BD: `inventario-departamento`
 - Git push → auto-deploy
 
+## Documentación adicional
+- `PROYECTO_DESCRIPCION_RECUPERACION.md`: descripción completa del proyecto y pasos para recuperar todo el trabajo en otro ordenador.
+- `SUBIDA_DOCS_MEMORIA.md`: memoria detallada de la configuración de subida de documentos a Google Drive.
+
 ---
 
 ## Diferencias con el proyecto original
