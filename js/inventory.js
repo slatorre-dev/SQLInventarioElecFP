@@ -18,6 +18,7 @@ function getBase(){
     if(cf.type==='cat') return x.cat===cf.id;
     if(cf.type==='lowstock') return Number(x.qty)<=Number(x.min);
     if(cf.type==='maintenance') return needsMaintenance(x);
+    if(cf.type==='caja') return Number(x.parent_id)===Number(cf.id);
     return x.mod===cf.id;
   });
 }
@@ -139,7 +140,7 @@ function rTable(data,mc){
           <div class="item-title-line">
             ${parentItem?'<span style="color:var(--muted);margin-right:4px">↳</span>':''}
             <span class="item-title-text">${x.item}</span>
-            ${esContenedor?`<span title="${numHijos} componentes" style="font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
+            ${esContenedor?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
             ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${parentItem.item}">📦 ${parentItem.ref||parentItem.item}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
@@ -178,7 +179,7 @@ function rCards(data,mc){
         <div class="card-title-wrap">
           <div class="item-title-line">
             <div class="cname">${parentItem2?'↳ ':''}${x.item}</div>
-            ${esContenedor2?`<span style="font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
+            ${esContenedor2?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
           <div class="cref">${x.ref||''}${parentItem2?` · <span style="color:#15803d;font-size:10px">📦 ${parentItem2.ref||parentItem2.item}</span>`:''}</div>

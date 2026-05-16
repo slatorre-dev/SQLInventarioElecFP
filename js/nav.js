@@ -96,6 +96,14 @@ function goMaintenance(){
   openSub();
 }
 
+function goCaja(id){
+  const caja = items.find(x=>Number(x.id)===Number(id));
+  if(!caja) return;
+  _push({page:'caja', id}, '#caja/'+id);
+  cf={type:'caja', id:Number(id), label:caja.item, icon:'📦', cajaRef:caja.ref||''};
+  openSub();
+}
+
 function openSub(){
   const all=getBase();
   const low=all.filter(x=>Number(x.qty)<=Number(x.min)).length;
@@ -104,6 +112,7 @@ function openSub(){
   else if(cf.type==='cat'){tagC=`background:${cf.catBg};color:${cf.catColor}`;typeLabel='Categoría';}
   else if(cf.type==='lowstock'){tagC='background:#fff7ed;color:#c2410c';typeLabel='Alerta';}
   else if(cf.type==='maintenance'){tagC='background:#fffbeb;color:#b45309';typeLabel='Mantenimiento';}
+  else if(cf.type==='caja'){tagC='background:#eff6ff;color:#2563eb';typeLabel='Caja';}
   else{tagC='background:#f5f3ff;color:#7c3aed';typeLabel='Módulo';}
   document.getElementById('sTag').textContent=`${cf.icon} ${typeLabel}`;
   document.getElementById('sTag').style.cssText=tagC;
@@ -117,6 +126,8 @@ function openSub(){
     document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} por debajo del stock mínimo`;
   } else if(cf.type==='maintenance'){
     document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} marcado${all.length!==1?'s':''} para mantenimiento o reparación`;
+  } else if(cf.type==='caja'){
+    document.getElementById('sMeta').textContent = `${all.length} componente${all.length!==1?'s':''} · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
   } else {
     document.getElementById('sMeta').textContent = `${cf.ciclo.name} · ${all.length} tipos · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
   }
@@ -130,12 +141,15 @@ function openSub(){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>⚠️ Stock bajo</strong>`;
   } else if(cf.type==='maintenance'){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>🛠️ Mantenimiento</strong>`;
+  } else if(cf.type==='caja'){
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>📦 ${cf.label}</strong>`;
   } else {
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${cf.ciclo.icon} ${cf.ciclo.name}</span><span class="sep">›</span><strong>${cf.label}</strong>`;
   }
 
-  document.getElementById('btnN').style.display = (cf.type==='lowstock' || cf.type==='maintenance') ? 'none' : 'flex';
-  document.getElementById('btnE').style.display = (cf.type==='lowstock' || cf.type==='maintenance') ? 'none' : 'flex';
+  const noActions = cf.type==='lowstock' || cf.type==='maintenance' || cf.type==='caja';
+  document.getElementById('btnN').style.display = noActions ? 'none' : 'flex';
+  document.getElementById('btnE').style.display = noActions ? 'none' : 'flex';
   _hideHomeButtons();
   if(typeof applyRoleUI === 'function') applyRoleUI();
   document.getElementById('srch').value='';
@@ -179,6 +193,7 @@ function navigateFromHash(hash){
   if(seg === 'ciclo'&& id) { openCiclo(id); return; }
   if(seg === 'mod'  && id) { goMod(id); return; }
   if(seg === 'item' && id) { openItemRoute(id); return; }
+  if(seg === 'caja' && id) { goCaja(id); return; }
   goHome();
 }
 
