@@ -5,3 +5,5 @@ node_modules/
 migration.sql
 backup.json
 migrate.js
+client_secret*.json
+credentials*.json

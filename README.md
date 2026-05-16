@@ -207,9 +207,13 @@ wrangler pages dev . --d1=DB=inventario-departamento
 ```
 
 ### 6.1. Configurar subida a Google Drive
-La subida de documentos requiere dos secretos en Cloudflare:
-- `GOOGLE_SERVICE_ACCOUNT`: JSON del service account con permisos de Drive
-- `GOOGLE_DRIVE_ROOT_FOLDER_ID`: ID de la carpeta raíz de Drive donde se crearán las subcarpetas por aula
+La subida de documentos puede usar OAuth de una cuenta real de Drive:
+- `GOOGLE_OAUTH_CLIENT_ID`: ID del cliente OAuth web.
+- `GOOGLE_OAUTH_CLIENT_SECRET`: secreto del cliente OAuth web.
+- `GOOGLE_OAUTH_REFRESH_TOKEN`: token generado desde `/api/oauth/start`.
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID`: ID de la carpeta raíz de Drive donde se crearán las subcarpetas por aula.
+
+El callback autorizado en Google Cloud debe ser `https://TU_DOMINIO/api/oauth/callback`.
 
 ### 7. Crear página en Cloudflare Pages
 - Cloudflare Dashboard → Workers & Pages → Create → conectar repo `SQLInventarioElecFP`
