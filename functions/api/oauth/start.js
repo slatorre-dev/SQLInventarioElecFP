@@ -1,6 +1,10 @@
 export async function onRequestGet({ request, env }) {
   if (!env.GOOGLE_OAUTH_CLIENT_ID) {
-    return Response.json({ ok: false, error: 'Falta GOOGLE_OAUTH_CLIENT_ID' }, { status: 500 });
+    return Response.json({
+      ok: false,
+      error: 'Falta GOOGLE_OAUTH_CLIENT_ID',
+      envKeys: Object.keys(env).sort(),
+    }, { status: 500 });
   }
 
   const url = new URL(request.url);
