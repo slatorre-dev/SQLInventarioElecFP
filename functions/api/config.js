@@ -1,8 +1,13 @@
 // Gestión de aulas, categorías y ciclos
 async function auditLog(db, user, accion, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
-  await db.prepare('INSERT INTO log (fecha,usuario,nombre,rol,accion,itemId,resumen) VALUES (?,?,?,?,?,?,?)')
-    .bind(fecha, user.usuario, user.nombre, user.rol, accion, '', resumen).run();
+  try {
+    await db.prepare("CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT '', usuario TEXT DEFAULT '', nombre TEXT DEFAULT '', rol TEXT DEFAULT '', accion TEXT DEFAULT '', itemId TEXT DEFAULT '', resumen TEXT DEFAULT '')").run();
+    await db.prepare('INSERT INTO log (fecha,usuario,nombre,rol,accion,itemId,resumen) VALUES (?,?,?,?,?,?,?)')
+      .bind(fecha, user.usuario, user.nombre, user.rol, accion, '', resumen).run();
+  } catch (error) {
+    console.warn('auditLog failed', error?.message || error);
+  }
 }
 
 export async function onRequestPost({ request, env }) {
