@@ -9,11 +9,23 @@ async function auditLog(db, user, accion, resumen) {
   }
 }
 
+async function getRequestUser(request, env) {
+  if (request.user) return request.user;
+  const url = new URL(request.url);
+  const u = url.searchParams.get('u') || '';
+  const p = url.searchParams.get('p') || '';
+  if (!u || !p) return null;
+  return env.DB.prepare(
+    'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND password=?'
+  ).bind(u.trim(), p).first();
+}
+
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
     const { action } = body;
-    const user = request.user;
+    const user = await getRequestUser(request, env);
+    if (!user) return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
 
     if (action === 'updateProfile') {
       await env.DB.prepare('UPDATE usuarios SET nombre=?, email=? WHERE usuario=?')
