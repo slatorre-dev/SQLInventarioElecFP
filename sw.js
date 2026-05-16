@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v116';
+const VERSION = 'v117';
 const CACHE_SHELL   = 'inventario-fp-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-fp-runtime-' + VERSION;
 
@@ -27,6 +27,7 @@ const SHELL = [
   './js/inventory.js',
   './js/modal-item.js',
   './js/modal-aulas.js',
+  './js/modal-ubicaciones.js',
   './js/modal-cats.js',
   './js/modal-ciclos.js',
   './js/prestamos.js',

@@ -72,12 +72,15 @@ async function uploadToDrive(token, filename, content) {
 
 async function runBackup(db, token) {
   await db.prepare("ALTER TABLE inventario ADD COLUMN tipo_material TEXT DEFAULT 'consumible'").run().catch(() => {});
+  await db.prepare("ALTER TABLE inventario ADD COLUMN proveedor TEXT DEFAULT ''").run().catch(() => {});
+  await db.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
   await db.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
   await db.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
-  const [inventario, aulas, cats, ciclos, prestamos, profesores, usuarios] = await Promise.all([
+  const [inventario, aulas, cats, ubicaciones, ciclos, prestamos, profesores, usuarios] = await Promise.all([
     db.prepare('SELECT * FROM inventario').all(),
     db.prepare('SELECT * FROM aulas').all().catch(() => ({ results: [] })),
     db.prepare('SELECT * FROM categorias').all().catch(() => ({ results: [] })),
+    db.prepare('SELECT * FROM ubicaciones').all().catch(() => ({ results: [] })),
     db.prepare('SELECT * FROM ciclos').all().catch(() => ({ results: [] })),
     db.prepare('SELECT * FROM prestamos').all().catch(() => ({ results: [] })),
     db.prepare('SELECT * FROM profesores').all().catch(() => ({ results: [] })),
@@ -94,6 +97,7 @@ async function runBackup(db, token) {
         items: inventario.results?.length ?? 0,
         aulas: aulas.results?.length ?? 0,
         categorias: cats.results?.length ?? 0,
+        ubicaciones: ubicaciones.results?.length ?? 0,
         ciclos: ciclos.results?.length ?? 0,
         prestamos: prestamos.results?.length ?? 0,
         profesores: profesores.results?.length ?? 0,
@@ -103,6 +107,7 @@ async function runBackup(db, token) {
     inventario: inventario.results ?? [],
     aulas: aulas.results ?? [],
     categorias: cats.results ?? [],
+    ubicaciones: ubicaciones.results ?? [],
     ciclos: ciclos.results ?? [],
     prestamos: prestamos.results ?? [],
     profesores: profesores.results ?? [],

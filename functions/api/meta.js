@@ -32,13 +32,34 @@ function mergeCats(savedCats, inventoryCats) {
   return rows.concat(missing);
 }
 
+function mergeUbicaciones(savedRows, inventoryRows) {
+  const rows = (savedRows || []).filter(r => String(r.name || '').trim());
+  const seen = new Set(rows.map(r => String(r.name).trim().toLowerCase()));
+  const maxOrder = rows.reduce((max, r) => Math.max(max, Number(r.orden) || 0), 0);
+  const missing = (inventoryRows || [])
+    .map(r => String(r.loc || r.name || '').trim())
+    .filter(Boolean)
+    .filter(name => {
+      const key = name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' }))
+    .map((name, idx) => ({ name, orden: maxOrder + idx + 1 }));
+  return rows.concat(missing);
+}
+
 export async function onRequestGet({ request, env }) {
   const user = request.user;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
 
-  const [aulas, cats, invCats, ciclosRows] = await Promise.all([
+  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows] = await Promise.all([
     env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all(),
     env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all(),
     env.DB.prepare("SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' ORDER BY cat").all(),
+    env.DB.prepare('SELECT * FROM ubicaciones ORDER BY orden, name').all().catch(() => ({ results: [] })),
+    env.DB.prepare("SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' ORDER BY loc").all(),
     env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all(),
   ]);
 
@@ -55,6 +76,7 @@ export async function onRequestGet({ request, env }) {
     ok: true,
     aulas: aulas.results,
     cats: mergeCats(cats.results, invCats.results),
+    ubicaciones: mergeUbicaciones(ubicaciones.results, invLocs.results),
     ciclos: cicloOrder.map(id => cicloMap[id]),
     user
   });

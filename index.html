@@ -64,6 +64,7 @@
         <div class="dept-menu" id="deptMenu">
           <div class="dept-menu-title">Gestión del departamento</div>
           <button class="dept-menu-item" onclick="closeDeptMenu();openAulasModal()">🏫 Gestionar aulas</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openUbicacionesModal()">📍 Gestionar ubicaciones</button>
           <button class="dept-menu-item" onclick="closeDeptMenu();openCatsModal()">🏷️ Gestionar categorías</button>
           <button class="dept-menu-item" onclick="closeDeptMenu();openCiclosModal()">📚 Gestionar ciclos y módulos</button>
           <div class="dept-menu-sep"></div>
@@ -412,6 +413,7 @@
         <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
       </div>
       <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
+      <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
       <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
       <label class="check-row full">
         <input type="checkbox" id="f_mant" onchange="toggleMaintFields()">
@@ -875,6 +877,23 @@
   </div>
 </div>
 
+<!-- MODAL GESTIÓN DE UBICACIONES -->
+<div class="mbg" id="mUbicaciones" onclick="if(event.target===this)closeUbicacionesModal()">
+  <div class="modal">
+    <div class="mh"><div class="mt">Gestionar ubicaciones</div><button class="mx" onclick="closeUbicacionesModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Edita las ubicaciones sugeridas en los ítems. Las ubicaciones ya usadas por inventario se mantienen disponibles.</p>
+    <div class="aulas-list" id="ubicacionesList"></div>
+    <button class="add-aula-btn" onclick="addUbicacionRow()">＋ Añadir ubicación</button>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeUbicacionesModal()">Cancelar</button>
+        <button class="btn btn-p" onclick="saveUbicaciones()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GESTIÓN DE CATEGORÍAS -->
 <div class="mbg" id="mCats" onclick="if(event.target===this)closeCatsModal()">
   <div class="modal">
@@ -1021,6 +1040,7 @@
 <script defer src="js/inventory.js"></script>
 <script defer src="js/modal-item.js"></script>
 <script defer src="js/modal-aulas.js"></script>
+<script defer src="js/modal-ubicaciones.js"></script>
 <script defer src="js/modal-cats.js"></script>
 <script defer src="js/modal-ciclos.js"></script>
 <script defer src="js/prestamos.js"></script>

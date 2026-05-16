@@ -125,6 +125,7 @@ async function loadData(){
     showUserChip();
     if(meta.aulas && meta.aulas.length) AULAS = meta.aulas;
     if(meta.cats && meta.cats.length) CATS = Object.fromEntries(meta.cats.sort((a,b)=>a.orden-b.orden).map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
+    if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
     document.getElementById('btnN').style.display='flex';
     document.getElementById('btnPres').style.display='flex';
@@ -171,7 +172,7 @@ async function loadData(){
 
 // ─── INIT ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();closeConf();closeAulasModal();closePrestar();closeDevolver();closeProfModal();closeImport();closeExportModal();closeDocsModal();closeDelModal();closeHistorial();closeQrScanner();closeUsuariosModal();closeModulosUsuario();closePrintModal()}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();closeConf();closeAulasModal();closeUbicacionesModal();closePrestar();closeDevolver();closeProfModal();closeImport();closeExportModal();closeDocsModal();closeDelModal();closeHistorial();closeQrScanner();closeUsuariosModal();closeModulosUsuario();closePrintModal()}});
   ['loginUser','loginPass'].forEach(id=>{
     document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
   });

@@ -37,6 +37,18 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ ok: true });
   }
 
+  if (action === 'ubicacionesSync') {
+    const ubicaciones = body.ubicaciones || [];
+    await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run();
+    await env.DB.prepare('DELETE FROM ubicaciones').run();
+    if (ubicaciones.length) {
+      const stmt = env.DB.prepare('INSERT INTO ubicaciones (name,orden) VALUES (?,?)');
+      await env.DB.batch(ubicaciones.map((u, i) => stmt.bind(String(u.name || '').trim(), u.orden || i + 1)));
+    }
+    await auditLog(env.DB, user, 'ubicacionesSync', `Sincronizadas ${ubicaciones.length} ubicaciones`);
+    return Response.json({ ok: true });
+  }
+
   if (action === 'ciclosSync') {
     const ciclos = body.ciclos || [];
     await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});

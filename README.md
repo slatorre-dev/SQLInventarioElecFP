@@ -187,12 +187,13 @@ Tablas:
 
 | Tabla | Contenido |
 |---|---|
-| `inventario` | Items de inventario, incluyendo `tipo_material` (`consumible` o `inventariable`) |
+| `inventario` | Items de inventario, incluyendo `tipo_material` (`consumible` o `inventariable`) y `proveedor` |
 | `usuarios` | Usuarios de la app |
 | `profesores` | Profesores prestatarios adicionales; la app tambien incluye usuarios como prestatarios por defecto |
 | `prestamos` | Prestamos y devoluciones |
 | `aulas` | Aulas configurables |
 | `categorias` | Categorias configurables |
+| `ubicaciones` | Ubicaciones sugeridas/editables para los items |
 | `ciclos` | Ciclos y modulos en filas planas; responsables por modulo identificado como `cicloId__modCod` |
 | `modulos` | Tabla heredada/auxiliar de modulos |
 | `documentos` | Metadatos de adjuntos de Drive |

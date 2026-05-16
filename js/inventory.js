@@ -30,7 +30,7 @@ function getFiltered(){
   return getBase().filter(x=>{
     if(fc&&x.cat!==fc)return false;
     if(fe&&x.est!==fe)return false;
-    if(q&&!fuzzyMatch(q,[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc].join(' ')))return false;
+    if(q&&!fuzzyMatch(q,[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor].join(' ')))return false;
     return true;
   }).sort((a,b)=>{
     let av=a[sk]??'',bv=b[sk]??'';
@@ -150,7 +150,7 @@ function rTable(data,mc){
         <td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${cat.i} ${x.cat}</span>`:'—'}<br><span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:10px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span></td>
         <td style="color:var(--muted);font-size:12px" title="${x.loc||''}">${x.loc?(x.loc.length>10?x.loc.slice(0,10)+'…':x.loc):'—'}</td>
         <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:'—'}</td>
-        <td style="color:var(--muted);font-size:12px" title="${mantInfo || x.util || ''}">${mant?`🛠️ ${shortText(mantInfo)} `:''}${shortText(x.util)||'—'}</td>
+        <td style="color:var(--muted);font-size:12px" title="${mantInfo || x.util || x.proveedor || ''}">${mant?`🛠️ ${shortText(mantInfo)} `:''}${shortText(x.util)||'—'}${x.proveedor?`<br><span title="${x.proveedor}">🏪 ${shortText(x.proveedor,18)}</span>`:''}</td>
         <td><div style="display:flex;gap:6px">
           <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
           <button class="btn btn-sm" onclick="duplicateItem(${x.id})" title="Duplicar">⧉</button>
@@ -197,6 +197,7 @@ function rCards(data,mc){
         <div><div class="cfl">Aula</div><div class="cfv">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</div></div>
         <div><div class="cfl">Ubicación</div><div class="cfv">${x.loc||'—'}</div></div>
         <div><div class="cfl">Utilidad</div><div class="cfv" style="font-size:11px" title="${x.util||''}">${shortText(x.util)||'—'}</div></div>
+        <div><div class="cfl">Proveedor</div><div class="cfv" style="font-size:11px" title="${x.proveedor||''}">${shortText(x.proveedor)||'—'}</div></div>
         <div><div class="cfl">Revisión</div><div class="cfv" style="font-family:var(--mono);font-size:11px">${x.fecha||'—'}</div></div>
       </div>
       ${mant?`<div class="maint-note">
@@ -288,10 +289,10 @@ function delPickerSelect(itemId){
 // ═════════════════════════════════════════════════════════
 function exportCSV(){
   const data=getFiltered();
-  const h='Referencia,Aula,Módulo,Ítem,Cantidad,Mínimo,Tipo material,Categoría,Ubicación,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Revisión,Observaciones';
+  const h='Referencia,Aula,Módulo,Ítem,Cantidad,Mínimo,Tipo material,Categoría,Ubicación,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,Revisión,Observaciones';
   const rows=data.map(x=>{
     const m = findModulo(x.mod);
-    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.loc,x.est,needsMaintenance(x)?'Sí':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.fecha,x.obs].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
+    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.loc,x.est,needsMaintenance(x)?'Sí':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
   });
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent([h,...rows].join('\n'));a.download='inventario.csv';a.click();
   toast('CSV exportado','ok');
@@ -328,10 +329,10 @@ function downloadText(filename, mime, text){
 }
 
 function inventoryCsvRows(data){
-  const h='Referencia,Aula,MÃ³dulo,Ãtem,Cantidad,MÃ­nimo,Tipo material,CategorÃ­a,UbicaciÃ³n,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,RevisiÃ³n,Observaciones';
+  const h='Referencia,Aula,MÃ³dulo,Ãtem,Cantidad,MÃ­nimo,Tipo material,CategorÃ­a,UbicaciÃ³n,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,RevisiÃ³n,Observaciones';
   const rows=data.map(x=>{
     const m = findModulo(x.mod);
-    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.loc,x.est,needsMaintenance(x)?'SÃ­':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.fecha,x.obs].map(csvCell).join(',');
+    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.loc,x.est,needsMaintenance(x)?'SÃ­':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(csvCell).join(',');
   });
   return '\uFEFF' + [h,...rows].join('\n');
 }
@@ -355,6 +356,7 @@ function exportFullBackup(){
         items: items.length,
         aulas: AULAS.length,
         categorias: Object.keys(CATS).length,
+        ubicaciones: UBICACIONES.length,
         ciclos: CICLOS.length,
         prestamos: prestamos.length,
         profesores: profesores.length
@@ -363,6 +365,7 @@ function exportFullBackup(){
     inventario: items,
     aulas: AULAS,
     categorias: CATS,
+    ubicaciones: UBICACIONES,
     ciclos: CICLOS,
     prestamos,
     profesores
@@ -388,6 +391,7 @@ const PRINT_COLS = [
   { key:'loc',       label:'Ubicación',     default:true  },
   { key:'est',       label:'Estado',        default:true  },
   { key:'util',      label:'Utilidad',      default:false },
+  { key:'proveedor', label:'Proveedor',     default:false },
   { key:'mant',      label:'Mantenimiento', default:false },
   { key:'obs',       label:'Observaciones', default:false },
 ];
@@ -455,6 +459,7 @@ function printInv(){
       if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
       if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
       if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
+      if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
       if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
       if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
       return '<td>—</td>';

@@ -22,6 +22,7 @@ const IMP_FIELDS = [
   {k:'mantResp',   label:'Responsable mant.',  synonyms:['responsable_mantenimiento','responsable_reparacion','mant_responsable']},
   {k:'mantNota',   label:'Nota mant.',         synonyms:['nota_mantenimiento','nota_reparacion','motivo_reparacion','mant_nota']},
   {k:'util',  label:'Utilidad',           synonyms:['utilidad','uso','funcion','para_que']},
+  {k:'proveedor', label:'Proveedor',       synonyms:['proveedor','supplier','tienda','url_proveedor','compra','enlace_compra']},
   {k:'fecha', label:'Última revisión',    synonyms:['fecha','revision','ultima_revision','actualizado']},
   {k:'obs',   label:'Observaciones',      synonyms:['observaciones','obs','notas','comentarios','comentario']},
 ];
