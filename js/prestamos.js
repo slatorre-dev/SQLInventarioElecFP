@@ -682,7 +682,8 @@ async function _promptResetPass(i){
   if(!nueva) return;
   if(nueva.trim().length < 6){ toast('La contraseña debe tener al menos 6 caracteres','err'); return; }
   try {
-    const res = await apiPost({ action:'userResetPassword', usuario:u.usuario, newPassword:nueva.trim() });
+    const newPassword = nueva.trim();
+    const res = await apiPost({ action:'userResetPassword', usuario:u.usuario, newPassword, password:newPassword });
     if(!res.ok) throw new Error(res.error);
     toast(`Contraseña actualizada para ${u.nombre||u.usuario}`,'ok');
   } catch(e){ toast('Error: '+e.message,'err'); }

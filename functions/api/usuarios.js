@@ -63,7 +63,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'userResetPassword') {
-    const newPassword = body.newPassword || body.password || '';
+    const newPassword = String(body.newPassword || body.password || '').trim();
     if (!newPassword || newPassword.length < 4)
       return Response.json({ ok: false, error: 'Contraseña demasiado corta' });
     await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
