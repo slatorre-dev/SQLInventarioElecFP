@@ -147,7 +147,7 @@ El middleware consulta la tabla `usuarios` en D1. Si no coinciden, devuelve 401.
 
 Rutas publicas:
 
-- `/api/auth` para login.
+- `/api/auth` para login y recuperacion de contrasena.
 - `/api/oauth/callback` porque Google redirige sin credenciales de la app.
 
 `/api/oauth/start` no es publica: requiere `u` y `p`.
@@ -156,7 +156,7 @@ Rutas publicas:
 
 | Endpoint | Metodo | Uso |
 |---|---|---|
-| `/api/auth` | GET | Login |
+| `/api/auth` | GET/POST | Login y recuperacion de contrasena |
 | `/api/meta` | GET | Aulas, categorias, ciclos, usuario |
 | `/api/list` | GET | Inventario, prestamos, profesores |
 | `/api/item` | POST | Add/update/delete/bulkImport |
@@ -277,6 +277,8 @@ GOOGLE_OAUTH_CLIENT_ID
 GOOGLE_OAUTH_CLIENT_SECRET
 GOOGLE_OAUTH_REFRESH_TOKEN
 GOOGLE_DRIVE_ROOT_FOLDER_ID
+RESEND_API_KEY
+MAIL_FROM
 ```
 
 Fallback heredado:
@@ -352,6 +354,8 @@ GOOGLE_OAUTH_CLIENT_SECRET
 GOOGLE_OAUTH_REFRESH_TOKEN
 GOOGLE_DRIVE_ROOT_FOLDER_ID
 GOOGLE_SERVICE_ACCOUNT  (fallback opcional)
+RESEND_API_KEY          (recuperacion de contrasena)
+MAIL_FROM               (remitente verificado; opcional)
 ```
 
 Despues de modificar variables en Cloudflare Pages hay que redeplegar.
