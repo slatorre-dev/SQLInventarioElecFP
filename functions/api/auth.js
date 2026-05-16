@@ -16,14 +16,32 @@ function appBaseUrl(request, bodyOrParams) {
   return `${url.origin}/`;
 }
 
-async function sendResetEmail(env, to, resetUrl, userName) {
-  if (!env.RESEND_API_KEY) {
-    throw new Error('Correo no configurado: falta RESEND_API_KEY');
+async function getGmailAccessToken(env) {
+  if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET || !env.GOOGLE_OAUTH_REFRESH_TOKEN) {
+    throw new Error('Correo no configurado: faltan GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET o GOOGLE_OAUTH_REFRESH_TOKEN');
   }
-  const from = env.MAIL_FROM || 'Inventario Taller FP <onboarding@resend.dev>';
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+      client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+      refresh_token: env.GOOGLE_OAUTH_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.access_token) {
+    throw new Error(data?.error_description || data?.error || 'No se pudo obtener access token de Gmail');
+  }
+  return data.access_token;
+}
+
+async function sendResetEmail(env, to, resetUrl, userName) {
+  const accessToken = await getGmailAccessToken(env);
+  const from = env.MAIL_FROM || 'saalm76@gmail.com';
   const subject = 'Recuperación de contraseña - Inventario Taller FP';
-  const html = `
-    <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+  const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
       <h2>Recuperación de contraseña</h2>
       <p>Hola${userName ? ' ' + userName : ''},</p>
       <p>Se ha solicitado cambiar la contraseña de tu cuenta en Inventario Taller FP.</p>
@@ -31,19 +49,31 @@ async function sendResetEmail(env, to, resetUrl, userName) {
       <p>Si no has solicitado este cambio, puedes ignorar este correo.</p>
       <p style="font-size:12px;color:#6b7280">El enlace caduca en 1 hora.</p>
     </div>`;
-  const text = `Recuperación de contraseña\n\nAbre este enlace para cambiar tu contraseña:\n${resetUrl}\n\nEl enlace caduca en 1 hora.`;
 
-  const res = await fetch('https://api.resend.com/emails', {
+  const mime = [
+    `From: Inventario Taller FP <${from}>`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=utf-8',
+    '',
+    htmlBody,
+  ].join('\r\n');
+
+  const encoded = btoa(unescape(encodeURIComponent(mime)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ from, to, subject, html, text }),
+    body: JSON.stringify({ raw: encoded }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.message || data?.error || 'No se pudo enviar el correo');
+    throw new Error(data?.error?.message || 'No se pudo enviar el correo');
   }
 }
 
