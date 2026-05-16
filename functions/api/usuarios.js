@@ -56,6 +56,7 @@ export async function onRequestPost({ request, env }) {
     const nombre = (body.nombre || '').trim();
     const modulos = Array.isArray(body.modulos) ? body.modulos.map(String) : [];
     if (!nombre) return Response.json({ ok: false, error: 'Nombre requerido' });
+    await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
     const rows = await env.DB.prepare('SELECT modCod, responsable FROM ciclos').all();
     for (const row of rows.results) {
       const esMio = modulos.includes(String(row.modCod));
