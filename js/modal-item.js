@@ -628,8 +628,8 @@ function _autoRef(name){
   const nums = items.filter(x=>x.id!==eid).map(x=>x.ref||'').filter(r=>pat.test(r)).map(r=>parseInt(r.split('-')[1])||0);
   return cap + '-' + (nums.length ? Math.max(...nums)+1 : 1);
 }
-function closeM(){
-  if(modalHasChanges){
+function closeM(force=false){
+  if(!force && modalHasChanges){
     if(!confirm('Hay cambios sin guardar. ¿Descartar cambios?')) return;
   }
   document.getElementById('mItem').classList.remove('open');
@@ -792,8 +792,7 @@ async function saveItem(){
       fillTagSuggestions();
       toast('Ítem añadido','ok');
     }
-    resetModalChanges();
-    closeM();
+    closeM(true);
     if(cf) openSub(); else renderHome();
   } catch(err) { toast('Error: '+err.message,'err'); }
   finally { btn.disabled=false; btn.textContent='💾 Guardar'; }
