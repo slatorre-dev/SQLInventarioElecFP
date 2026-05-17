@@ -368,6 +368,23 @@
         <button class="vbtn" id="vC" onclick="sv('cards')" title="Tarjetas">⊞</button>
       </div>
     </div>
+    <div class="bulkbar print-no" id="bulkBar" style="display:none">
+      <div class="bulk-count" id="bulkCount">0 seleccionados</div>
+      <select id="bulkAction" onchange="renderBulkActionControl()">
+        <option value="">Acción en lote...</option>
+        <option value="loc">Cambiar ubicación</option>
+        <option value="cat">Cambiar categoría</option>
+        <option value="mod">Cambiar ciclo y módulo</option>
+        <option value="tagsAdd">Añadir tags</option>
+        <option value="tagsReplace">Reemplazar tags</option>
+        <option value="mant">Marcar mantenimiento</option>
+      </select>
+      <div class="bulk-control" id="bulkActionControl"></div>
+      <button class="mini-btn" onclick="applyBulkAction()">Aplicar</button>
+      <button class="mini-btn" onclick="bulkExportSelected()">Exportar</button>
+      <button class="mini-btn" onclick="bulkPrintSelected()">Imprimir</button>
+      <button class="mini-btn" onclick="clearBulkSelection()">Limpiar</button>
+    </div>
     <div class="srow">
       <span class="clbl" id="iCount"></span>
       <span class="lalert" id="iLow"></span>

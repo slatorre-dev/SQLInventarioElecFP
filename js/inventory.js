@@ -46,6 +46,7 @@ function renderInv(){
   const low=data.filter(isLowStock).length;
   document.getElementById('iCount').textContent=`${data.length} ítem${data.length!==1?'s':''}`;
   document.getElementById('iLow').textContent=low>0?`⚠ ${low} con stock bajo`:'';
+  renderBulkBar();
   const mc=document.getElementById('iContent');
   if(!data.length){mc.innerHTML=`<div class="empty"><div class="ei">🔍</div><div class="et">No hay ítems con estos filtros.</div></div>`;return}
   const mode = getInvRenderMode();
@@ -131,6 +132,181 @@ function itemTags(item){
   return String(item?.tags || '').split(/[;,]/).map(t=>t.trim()).filter(Boolean);
 }
 
+let bulkSelected = new Set();
+
+function getSelectedItems(){
+  return items.filter(x => bulkSelected.has(String(x.id)));
+}
+
+function renderBulkBar(){
+  bulkSelected = new Set([...bulkSelected].filter(id => items.some(x => String(x.id) === String(id))));
+  const bar = document.getElementById('bulkBar');
+  if(!bar) return;
+  const n = bulkSelected.size;
+  bar.style.display = n ? 'flex' : 'none';
+  document.getElementById('bulkCount').textContent = `${n} seleccionado${n!==1?'s':''}`;
+}
+
+function toggleBulkSelect(id, checked){
+  if(checked) bulkSelected.add(String(id));
+  else bulkSelected.delete(String(id));
+  renderInv();
+}
+
+function toggleBulkPage(checked){
+  getInvPage(getFiltered()).items.forEach(x => checked ? bulkSelected.add(String(x.id)) : bulkSelected.delete(String(x.id)));
+  renderInv();
+}
+
+function clearBulkSelection(){
+  bulkSelected.clear();
+  renderInv();
+}
+
+function renderBulkActionControl(){
+  const action = document.getElementById('bulkAction')?.value || '';
+  const box = document.getElementById('bulkActionControl');
+  if(!box) return;
+  if(action === 'loc'){
+    box.innerHTML = '<input id="bulkLoc" list="locList" placeholder="Nueva ubicacion">';
+  } else if(action === 'cat'){
+    box.innerHTML = `<select id="bulkCat">${sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('')}</select>`;
+  } else if(action === 'mod'){
+    box.innerHTML = `<select id="bulkCiclo" onchange="renderBulkModOptions()">${CICLOS.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('')}</select><select id="bulkMod"></select>`;
+    renderBulkModOptions();
+  } else if(action === 'tagsAdd' || action === 'tagsReplace'){
+    box.innerHTML = '<input id="bulkTags" list="tagList" placeholder="tag1, tag2">';
+  } else if(action === 'mant'){
+    box.innerHTML = '<select id="bulkMant"><option value="1">Marcar mantenimiento</option><option value="">Quitar mantenimiento</option></select>';
+  } else {
+    box.innerHTML = '';
+  }
+}
+
+function renderBulkModOptions(){
+  const cid = document.getElementById('bulkCiclo')?.value;
+  const modSel = document.getElementById('bulkMod');
+  const ciclo = CICLOS.find(c=>c.id===cid);
+  if(!modSel || !ciclo) return;
+  modSel.innerHTML = ciclo.modulos.map(m=>`<option value="${ciclo.id}__${m.cod}">${escHtml(m.cod)} - ${escHtml(m.name)}</option>`).join('');
+}
+
+function mergeTags(current, incoming, replace=false){
+  const next = String(incoming || '').split(',').map(cleanTag).filter(Boolean);
+  if(replace) return next.join(', ');
+  const all = [...itemTags({tags:current}), ...next];
+  return [...new Map(all.map(t=>[t.toLowerCase(), t])).values()].join(', ');
+}
+
+async function applyBulkAction(){
+  if(!requirePerm('items.write')) return;
+  const selected = getSelectedItems();
+  if(!selected.length) return;
+  const action = document.getElementById('bulkAction').value;
+  let patch = null;
+  if(action === 'loc') patch = { loc: document.getElementById('bulkLoc').value.trim() };
+  else if(action === 'cat') patch = { cat: document.getElementById('bulkCat').value };
+  else if(action === 'mod') patch = { mod: document.getElementById('bulkMod').value };
+  else if(action === 'mant') patch = { mant: document.getElementById('bulkMant').value, mantEstado: document.getElementById('bulkMant').value ? 'Pendiente' : '' };
+  else if(action === 'tagsAdd' || action === 'tagsReplace') {
+    const tags = document.getElementById('bulkTags').value;
+    if(!tags.trim()){ toast('Indica tags para aplicar','err'); return; }
+    patch = { _tags: tags, _replaceTags: action === 'tagsReplace' };
+  }
+  if(!patch){ toast('Selecciona una accion en lote','err'); return; }
+  if(!confirm(`Aplicar cambio a ${selected.length} item${selected.length!==1?'s':''}?`)) return;
+  let ok = 0;
+  for(const it of selected){
+    const updated = {...it, ...patch};
+    if('_tags' in patch){
+      updated.tags = mergeTags(it.tags, patch._tags, patch._replaceTags);
+      delete updated._tags; delete updated._replaceTags;
+    }
+    try{
+      const res = await apiPost({action:'update', item:updated});
+      if(!res.ok) throw new Error(res.error);
+      const idx = items.findIndex(x=>String(x.id)===String(it.id));
+      if(idx >= 0) items[idx] = updated;
+      ok++;
+    }catch(e){ console.warn('[bulk] update failed', it.id, e); }
+  }
+  fillTagSuggestions();
+  bulkSelected.clear();
+  toast(`${ok} item${ok!==1?'s':''} actualizado${ok!==1?'s':''}`,'ok');
+  if(cf) openSub(); else renderHome();
+}
+
+function bulkExportSelected(){
+  const selected = getSelectedItems();
+  if(!selected.length) return;
+  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  downloadText(`inventario-seleccion-${stamp}.csv`, 'text/csv;charset=utf-8', inventoryCsvRows(selected));
+  toast('Seleccion exportada','ok');
+}
+
+function bulkPrintSelected(){
+  const selected = getSelectedItems();
+  if(!selected.length) return;
+  const sel = _getPrintCols();
+  const cols = PRINT_COLS.filter(c=>sel[c.key]);
+  if(!cols.length){ toast('Selecciona columnas en Imprimir','err'); return; }
+  const total = selected.length;
+  const uds = selected.reduce((s,x)=>s+(Number(x.qty)||0),0);
+  const fecha = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const thead = cols.map(c=>`<th>${c.label}</th>`).join('');
+  const tbody = selected.map(x=>{
+    const low = isLowStock(x);
+    const mant = needsMaintenance(x);
+    const cat = CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'};
+    const ec = ESTC[x.est]||'#6b7280';
+    const mantInfo = [x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · ');
+    return '<tr>'+cols.map(c=>{
+      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${x.foto}" alt="">`:''}</td>`;
+      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${x.ref||'—'}</span></td>`;
+      if(c.key==='item')  return `<td style="font-weight:600">${x.item}</td>`;
+      if(c.key==='aula')  return `<td>${AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—'}</td>`;
+      if(c.key==='mod')   { const m=findModulo(x.mod); return `<td style="font-size:11px">${m?m.cod+' '+m.name:x.mod||'—'}</td>`; }
+      if(c.key==='qty')   return `<td style="text-align:center;font-weight:700;color:${low?'#dc2626':'#15803d'}">${x.qty}${low?' ⚠':''}</td>`;
+      if(c.key==='min')   return `<td style="text-align:center">${x.min||'—'}</td>`;
+      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${cat.i} ${x.cat}</span>`:'—'}</td>`;
+      if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
+      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
+      if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
+      if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
+      if(c.key==='tags')  return `<td style="font-size:11px">${x.tags||'—'}</td>`;
+      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
+      if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
+      return '<td>—</td>';
+    }).join('')+'</tr>';
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Inventario seleccion</title>
+  <style>
+    @page{size:A4 landscape;margin:10mm}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
+    .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:10px}
+    .head h1{font-size:18px;margin:0;color:#1e40af}
+    .head p{font-size:11px;color:#555;margin:0;text-align:right}
+    table{width:100%;border-collapse:collapse}
+    th{background:#2563eb;color:#fff;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap}
+    td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+    tr:nth-child(even) td{background:#f9fafb}
+  </style></head><body>
+  <div class="head">
+    <h1>Seleccion de inventario</h1>
+    <p>IES El Bosco - Inventario Departamento<br>${total} tipos · ${uds} unidades · ${fecha}</p>
+  </div>
+  <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
+  <script>window.onload=()=>setTimeout(()=>print(),150);<\/script>
+  </body></html>`;
+  const w = window.open('','_blank');
+  if(!w){ toast('El navegador bloqueo la ventana de impresion','err'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
 function itemActiveLoans(id){
   return (prestamos || []).filter(p => String(p.itemId)===String(id) && (p.estado==='Activo' || p.estado==='Parcial'));
 }
@@ -189,7 +365,7 @@ function hideQuickItem(){
 
 function rTable(data,mc){
   mc.innerHTML=`<div class="tw"><div class="tw-scroll"><table>
-    <thead><tr><th>Foto</th>${th2('ref','Ref.')}${th2('aula','Aula')}${th2('item','Ítem')}${th2('qty','Cant.')}<th>Mín.</th>${th2('cat','Categoría')}${th2('loc','Ubicación')}${th2('est','Estado')}${th2('util','Utilidad')}<th>Acciones</th></tr></thead>
+    <thead><tr><th><input type="checkbox" onchange="toggleBulkPage(this.checked)" title="Seleccionar pagina"></th><th>Foto</th>${th2('ref','Ref.')}${th2('aula','Aula')}${th2('item','Ítem')}${th2('qty','Cant.')}<th>Mín.</th>${th2('cat','Categoría')}${th2('loc','Ubicación')}${th2('est','Estado')}${th2('util','Utilidad')}<th>Acciones</th></tr></thead>
     <tbody>${data.map(x=>{
       const low=isLowStock(x),mant=needsMaintenance(x),mantInfo=[x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · '),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',tipo=materialType(x);
       const esContenedor = x.es_contenedor == 1;
@@ -198,7 +374,9 @@ function rTable(data,mc){
       const tags = itemTags(x);
       const utilTitle = [mantInfo, x.util, x.proveedor, x.tags].filter(Boolean).join(' · ');
       const utilVisible = mant ? `🛠️ ${shortText(mantInfo || x.util || x.proveedor, 12)}` : (shortText(x.util || x.proveedor, 15) || '—');
-      return`<tr${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
+      const selected = bulkSelected.has(String(x.id));
+      return`<tr class="${selected?'bulk-row-selected':''}"${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
+        <td><input class="bulk-check" type="checkbox" ${selected?'checked':''} onclick="event.stopPropagation()" onchange="toggleBulkSelect(${x.id},this.checked)" title="Seleccionar"></td>
         <td>${x.foto?`<img class="table-photo quick-item-trigger" src="${x.foto}" alt="" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:`<span class="table-photo table-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">📷</span>`}</td>
         <td><span class="rbadge">${x.ref||'—'}</span></td>
         <td style="font-size:12px;color:var(--muted)">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</td>
@@ -239,7 +417,11 @@ function rCards(data,mc){
     const esContenedor2 = x.es_contenedor == 1;
     const parentItem2 = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos2 = esContenedor2 ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
-    return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}">
+    const selected = bulkSelected.has(String(x.id));
+    return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}${selected?' bulk-card-selected':''}">
+      <label class="bulk-card-check" onclick="event.stopPropagation()" title="Seleccionar">
+        <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
+      </label>
       ${x.foto?`<img class="card-photo quick-item-trigger" src="${x.foto}" alt="Foto de ${x.item}" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:''}
       <div class="ch">
         <div class="card-title-wrap">
