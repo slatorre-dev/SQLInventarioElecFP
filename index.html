@@ -76,6 +76,8 @@
           <button class="dept-menu-item" onclick="closeDeptMenu();openExportModal()">📥 Exportar / Backup</button>
           <div class="dept-menu-sep"></div>
           <a class="dept-menu-item" href="https://docs.google.com/spreadsheets/d/1VNk8sXg4Gjudjn6hHWTUxlWXIvJUFCHBwLkAZ1FC13Y/edit?gid=919419425#gid=919419425" target="_blank" rel="noopener" onclick="closeDeptMenu()">📊 Ver hoja de cálculo</a>
+          <div class="dept-menu-sep"></div>
+          <button class="dept-menu-item" id="btnHistorial" style="display:none" onclick="closeDeptMenu();openHistorialModal()">📋 Historial de acciones</button>
         </div>
       </div>
     </div>
@@ -1078,6 +1080,51 @@
   </div>
 </div>
 
+<!-- ══ MODAL HISTORIAL (SOLO SEBA) ══ -->
+<div class="mbg" id="mHistorial" onclick="if(event.target===this)closeHistorialModal()" style="display:none">
+  <div class="mbox">
+    <div class="mhead">
+      <h2>📋 Historial de acciones</h2>
+      <button class="mbtn-close" onclick="closeHistorialModal()">✕</button>
+    </div>
+    <div class="mscroll">
+      <div class="historial-controls" id="historialControls">
+        <div class="historial-filter-row">
+          <input type="text" id="filterUsuario" placeholder="Filtrar por usuario..." class="historial-filter">
+          <select id="filterAccion" class="historial-filter">
+            <option value="">Todas las acciones</option>
+            <option value="add">Añadir ítem</option>
+            <option value="update">Actualizar ítem</option>
+            <option value="delete">Eliminar ítem</option>
+            <option value="loan">Préstamo</option>
+            <option value="order">Pedido</option>
+          </select>
+          <input type="text" id="filterQue" placeholder="Filtrar por elemento..." class="historial-filter">
+        </div>
+        <button class="mini-btn" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
+      </div>
+      <table class="historial-table" id="historialTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Elemento</th>
+            <th>Nombre</th>
+            <th>Detalles</th>
+          </tr>
+        </thead>
+        <tbody id="historialTbody">
+        </tbody>
+      </table>
+      <div id="historialEmpty" style="text-align:center;padding:2rem;color:#999">Cargando historial...</div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeHistorialModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script defer src="js/config.js"></script>
@@ -1101,6 +1148,8 @@
 <script defer src="js/profile.js"></script>
 <script defer src="js/reset.js"></script>
 <script defer src="js/qr-scanner.js"></script>
+<script defer src="js/audit-log.js"></script>
+<script defer src="js/modal-historial.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script defer src="js/auth.js"></script>
 </body>

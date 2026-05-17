@@ -128,4 +128,7 @@ function applyRoleUI(){
   // Botón Departamento solo para Jefes/Admin
   const deptWrap = document.getElementById('deptMenuWrap');
   if(deptWrap) deptWrap.style.display = can('config.manage') ? 'flex' : 'none';
+  // Botón Historial solo para Seba
+  const btnHistorial = document.getElementById('btnHistorial');
+  if(btnHistorial) btnHistorial.style.display = (SESSION && SESSION.usuario === 'seba') ? 'flex' : 'none';
 }
