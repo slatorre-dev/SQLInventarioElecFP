@@ -563,6 +563,8 @@ function openModal(id=null, src=null){
   if(!existing && !requirePerm('items.write')) return;
   if(existing && !SESSION) return;
   eid=id; fillModalSelects();
+  modalHasChanges = false;
+  updateModalIndicator();
   const m = existing ? items.find(x=>Number(x.id)===Number(id)) : src;
   if(existing && !m) return;
   const readonly = existing && !can('items.write');
