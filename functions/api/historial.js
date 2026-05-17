@@ -4,7 +4,7 @@ export async function onRequest(context) {
 
   // GET /api/historial — obtener historial (solo Seba)
   if (request.method === 'GET') {
-    const usuario = url.searchParams.get('usuario') || '';
+    const usuario = (url.searchParams.get('usuario') || '').toLowerCase();
 
     // Solo Seba puede ver el historial completo
     if (usuario !== 'seba') {

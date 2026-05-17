@@ -4,7 +4,7 @@ let historialData = [];
 
 function openHistorialModal() {
   // Validar que sea Seba
-  if (!SESSION || SESSION.usuario !== 'seba') {
+  if (!SESSION || (SESSION.usuario || '').toLowerCase() !== 'seba') {
     toast('Solo el administrador puede acceder al historial', 'err');
     return;
   }
