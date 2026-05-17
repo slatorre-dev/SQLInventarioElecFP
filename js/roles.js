@@ -111,6 +111,7 @@ function applyRoleUI(){
     ['btnPed', 'orders.write', 'flex'],
     ['btnQr',  null,           ''],
     ['btnPrint', null,         'flex'],
+    ['btnPrintQr', null,       'flex'],
     ['gsQr',   null,           'inline-flex']
   ];
   rules.forEach(([id, permission, displayType]) => {

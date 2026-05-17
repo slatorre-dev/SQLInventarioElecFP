@@ -177,6 +177,7 @@ function openPrintModal(){
     toast('No hay ítems para imprimir','err');
     return;
   }
+  initPrintColGrid();
   document.getElementById('mPrint').classList.add('open');
 }
 
@@ -184,8 +185,21 @@ function closePrintModal(){
   document.getElementById('mPrint').classList.remove('open');
 }
 
+function openPrintQrModal(){
+  const data = typeof getFiltered === 'function' ? getFiltered() : items;
+  if(!data || !data.length){
+    toast('No hay ítems para imprimir','err');
+    return;
+  }
+  document.getElementById('mPrintQr').classList.add('open');
+}
+
+function closePrintQrModal(){
+  document.getElementById('mPrintQr').classList.remove('open');
+}
+
 function printFromModal(type){
-  closePrintModal();
+  closePrintQrModal();
   const data = typeof getFiltered === 'function' ? getFiltered() : items;
   if(!data || !data.length){
     toast('No hay ítems para imprimir','err');

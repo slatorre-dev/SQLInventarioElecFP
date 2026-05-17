@@ -59,7 +59,8 @@
           <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
         </svg> QR
       </button>
-      <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintModal()" title="Imprimir">🖨️ Imprimir</button>
+      <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintModal()" title="Imprimir inventario">🖨️ Imprimir</button>
+      <button class="tbtn" id="btnPrintQr" style="display:none" onclick="openPrintQrModal()" title="Imprimir QR">🔳 QR</button>
       <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
         <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ Departamento</button>
         <div class="dept-menu" id="deptMenu">
@@ -689,10 +690,29 @@
   </div>
 </div>
 
-<!-- MODAL IMPRIMIR -->
+<!-- MODAL IMPRIMIR INVENTARIO -->
 <div class="mbg" id="mPrint" onclick="if(event.target===this)closePrintModal()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt">🖨️ Imprimir inventario</div><button class="mx" onclick="closePrintModal()">✕</button></div>
+    <div class="mb" style="padding:18px 20px 20px">
+      <p style="margin:0 0 14px;color:var(--muted);font-size:13px">Selecciona las columnas que aparecerán en la impresión:</p>
+      <div class="print-col-grid" id="printColGrid"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-sm" onclick="printColSelectAll()">Seleccionar todo</button>
+        <button class="btn btn-sm" onclick="printColSelectNone()">Ninguno</button>
+      </div>
+      <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn" onclick="closePrintModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="printInv()">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPRIMIR QR -->
+<div class="mbg" id="mPrintQr" onclick="if(event.target===this)closePrintQrModal()">
   <div class="modal" style="max-width:420px">
-    <div class="mh"><div class="mt">🖨️ Imprimir</div><button class="mx" onclick="closePrintModal()">✕</button></div>
+    <div class="mh"><div class="mt">🖨️ Imprimir QR</div><button class="mx" onclick="closePrintQrModal()">✕</button></div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:18px;padding:0 20px;margin-top:12px">¿Qué deseas imprimir?</p>
     <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px">
       <button class="btn btn-p" onclick="printFromModal('items')" style="width:100%;padding:12px;font-size:14px;text-align:left">
@@ -703,7 +723,7 @@
       </button>
     </div>
     <div class="mf" style="margin-top:16px;padding:0 20px 20px">
-      <button class="btn" onclick="closePrintModal()">Cancelar</button>
+      <button class="btn" onclick="closePrintQrModal()">Cancelar</button>
     </div>
   </div>
 </div>
