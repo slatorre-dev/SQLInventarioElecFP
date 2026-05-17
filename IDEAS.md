@@ -222,9 +222,50 @@ CREATE INDEX idx_items_aula ON items(aula);
 12. Web Workers (optimización extrema)
 13. Compresión de imágenes automática
 
+## Mejoras de UX para Auditoría de Datos
+
+### 1. Indicador visual de progreso
+**Descripción:** Mostrar contador de items completados mientras se editan.
+- Display: "5/243 items completados" o barra de progreso
+- Ubicación: En la barra de bulk actions o en un panel flotante
+- Beneficio: El usuario sabe cuántos items quedan sin arreglar
+
+**Prioridad:** Media
+
+### 2. Botón "Marcar grupo como completado"
+**Descripción:** Una vez arreglados todos los items de un grupo (ej. Aula 35), marcarlo visualmente.
+- Opciones: Mostrar como ✓ hecho, cambiar color, mover a sección "completados"
+- Beneficio: Evita revisitar los mismos grupos, reduce confusión
+
+**Prioridad:** Media
+
+### 3. Vista estadística inicial
+**Descripción:** Panel de resumen antes de entrar al trabajo.
+- Contenido: "969 items con problemas: 250 sin módulo, 180 sin aula, 200 sin categoría..."
+- Ubicación: Encima de la tabla de auditoría
+- Beneficio: El usuario ve dónde enfocarse primero (10 min vs. 2 horas)
+
+**Prioridad:** Alta
+
+### 4. Combinación inteligente de filtros (AND/OR)
+**Descripción:** Pasar de filtros exclusivos a lógica AND/OR.
+- Actual: "Sin módulo" O "Sin aula" (uno a uno)
+- Propuesto: "Sin módulo Y sin aula" para ver items que necesitan ambos
+- Beneficio: Mayor granularidad en auditoría
+
+**Prioridad:** Media
+
+### 5. Exportar reporte
+**Descripción:** Generar CSV o PDF con items problemáticos.
+- Formato: Items agrupados por aula/categoría
+- Beneficio: El coordinador puede revisar offline o compartir resultados
+
+**Prioridad:** Baja
+
 ## Estado
 
-- **Última actualización:** 17/05/2026 (Sesión 4)
-- **Versión actual:** v158
-- **Ideas implementadas en esta sesión:** 2 (Historial, Bulk Actions)
-- **Ideas pendientes de review:** Resto de la lista
+- **Última actualización:** 17/05/2026 (Sesión 5)
+- **Versión actual:** v166
+- **Ideas implementadas:** Historial (v147→v156), Bulk Actions (v158), Auditoría (v159→v166)
+- **Ideas pendientes de review:** Control acceso por aula, Búsqueda avanzada, Reportes visuales
+- **Ideas en backlog de auditoría:** Indicador progreso, Marcar grupo completado, Estadísticas, Filtros AND/OR, Exportar reporte
