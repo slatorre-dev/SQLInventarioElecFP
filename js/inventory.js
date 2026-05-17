@@ -132,6 +132,8 @@ function rTable(data,mc){
       const esContenedor = x.es_contenedor == 1;
       const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
       const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
+      const utilTitle = [mantInfo, x.util, x.proveedor].filter(Boolean).join(' · ');
+      const utilVisible = mant ? `🛠️ ${shortText(mantInfo || x.util || x.proveedor, 12)}` : (shortText(x.util || x.proveedor, 15) || '—');
       return`<tr${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
         <td>${x.foto?`<img class="table-photo" src="${x.foto}" alt="">`:'<span class="table-photo table-photo-empty">📷</span>'}</td>
         <td><span class="rbadge">${x.ref||'—'}</span></td>
@@ -139,10 +141,10 @@ function rTable(data,mc){
         <td style="max-width:220px;font-weight:600" title="${x.item}">
           <div class="item-title-line">
             ${parentItem?'<span style="color:var(--muted);margin-right:4px">↳</span>':''}
-            <span class="item-title-text">${x.item}</span>
+            <span class="item-title-text item-title-link" onclick="openModal(${x.id})">${x.item}</span>
             ${esContenedor?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
             ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${parentItem.item}">📦 ${parentItem.ref||parentItem.item}</span>`:''}
-            <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
+            <button type="button" class="qr-name-btn" onclick="event.stopPropagation();openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
         </td>
         <td><span class="qval ${low?'qlow':'qok'}">${x.qty}${low?' ⚠':''}</span></td>
@@ -150,7 +152,7 @@ function rTable(data,mc){
         <td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${cat.i} ${x.cat}</span>`:'—'}<br><span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:10px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span></td>
         <td style="color:var(--muted);font-size:12px" title="${x.loc||''}">${x.loc?(x.loc.length>10?x.loc.slice(0,10)+'…':x.loc):'—'}</td>
         <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:'—'}</td>
-        <td style="color:var(--muted);font-size:12px" title="${mantInfo || x.util || x.proveedor || ''}">${mant?`🛠️ ${shortText(mantInfo,15)} `:''}${shortText(x.util,15)||'—'}${x.proveedor?`<br><span title="${x.proveedor}">🏪 ${shortText(x.proveedor,15)}</span>`:''}</td>
+        <td style="color:var(--muted);font-size:12px" title="${utilTitle}"><span class="table-util-text">${utilVisible}</span></td>
         <td><div style="display:flex;gap:6px">
           <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
           <button class="btn btn-sm" onclick="duplicateItem(${x.id})" title="Duplicar">⧉</button>
