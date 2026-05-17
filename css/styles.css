@@ -1155,8 +1155,23 @@ html, body {
 .badge-prestar,.badge-prestarcaja{background:var(--amber-l);color:var(--amber)}
 .badge-devolver{background:var(--teal-l);color:var(--teal)}
 
+/* AUDITORÍA DE DATOS */
+#mAuditoria .modal{width:min(1200px,100%);max-height:95vh}
+#mAuditoria .auditoria-body{max-height:calc(95vh - 200px);overflow-y:auto}
+#mAuditoria .auditoria-table{font-size:13px}
+#mAuditoria .auditoria-table th{font-weight:700;background:var(--surface2);padding:10px 8px}
+#mAuditoria .auditoria-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+#mAuditoria .auditoria-table .ref-cell{font-family:var(--mono);font-size:11px;color:var(--muted)}
+#mAuditoria .auditoria-table .name-cell{font-weight:500;max-width:200px}
+#mAuditoria .auditoria-table .aula-cell,#mAuditoria .auditoria-table .cat-cell{max-width:140px;color:var(--muted)}
+#mAuditoria .auditoria-table .problemas-cell{max-width:220px}
+#mAuditoria .problemas-badge{background:var(--accent-l);color:var(--accent);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;display:inline-block}
+#mAuditoria .auditoria-group-header{background:var(--surface2)!important;cursor:pointer;font-weight:600}
+#mAuditoria .auditoria-group-header:hover{background:var(--border)!important}
+
 @media(max-width:760px){
   #mHistorial .historial-modal{width:100vw;height:100svh;max-height:100svh;border-radius:0}
   .historial-filter-row{grid-template-columns:1fr}
   .historial-table thead{top:167px}
+  #mAuditoria .modal{width:100vw;height:100svh;max-height:100svh;border-radius:0}
 }

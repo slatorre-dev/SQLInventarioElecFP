@@ -146,6 +146,7 @@ function renderAuditoriaFilas(items) {
       <td class="ref-cell">${escapeHtml(item.ref || '—')}</td>
       <td class="name-cell">${escapeHtml(item.item || '—')}</td>
       <td class="aula-cell">${escapeHtml(item.aula || '—')}</td>
+      <td class="cat-cell">${escapeHtml(item.cat || '—')}</td>
       <td class="problemas-cell">
         <span class="problemas-badge">${escapeHtml(problemasStr)}</span>
       </td>
@@ -177,7 +178,7 @@ function renderAuditoriaAgrupada(items) {
     const groupIndeterminate = groupSelectedCount > 0 && groupSelectedCount < grupoItems.length;
 
     headerTr.innerHTML = `
-      <td colspan="6" style="display:flex;align-items:center;gap:12px;padding:8px 12px">
+      <td colspan="7" style="display:flex;align-items:center;gap:12px;padding:8px 12px">
         <input type="checkbox" id="${groupCheckboxId}" ${groupChecked ? 'checked' : ''}
                onchange="seleccionarGrupo('${grupoKey}', this.checked)"
                onclick="event.stopPropagation()"
@@ -207,6 +208,7 @@ function renderAuditoriaAgrupada(items) {
         <td class="ref-cell">${escapeHtml(item.ref || '—')}</td>
         <td class="name-cell">${escapeHtml(item.item || '—')}</td>
         <td class="aula-cell">${escapeHtml(item.aula || '—')}</td>
+        <td class="cat-cell">${escapeHtml(item.cat || '—')}</td>
         <td class="problemas-cell">
           <span class="problemas-badge">${escapeHtml(problemasStr)}</span>
         </td>
