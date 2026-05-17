@@ -1167,6 +1167,10 @@
         <button class="abtn" onclick="filtrarAuditoria('ref')">Sin referencia</button>
         <button class="abtn" onclick="filtrarAuditoria('loc')">Sin ubicación</button>
         <button class="abtn" onclick="filtrarAuditoria('proveedor')">Sin proveedor</button>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;margin-right:4px">Agrupar:</span>
+        <button class="abtn active" id="audGrpNone" onclick="agruparAuditoria('none')">Sin agrupar</button>
+        <button class="abtn" id="audGrpCat" onclick="agruparAuditoria('cat')">Categoría</button>
+        <button class="abtn" id="audGrpAula" onclick="agruparAuditoria('aula')">Aula</button>
       </div>
       <!-- Información y controles -->
       <div id="auditoriaInfo" class="auditoria-info"></div>

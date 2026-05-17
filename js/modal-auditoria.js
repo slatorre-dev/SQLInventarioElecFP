@@ -17,6 +17,8 @@ const TODOS_LOS_CAMPOS = [...CAMPOS_CRITICOS, ...CAMPOS_SECUNDARIOS];
 let auditoriaData = [];
 let auditoriaFiltroActual = 'all';
 let auditoriaSeleccionados = new Set();
+let auditoriaAgrupar = 'none';
+let gruposColapsados = new Set();
 
 function openAuditoriaModal() {
   if (!can('config.manage')) {
@@ -120,7 +122,17 @@ function renderAuditoria(filtro) {
 
   empty.style.display = 'none';
 
-  // Renderizar filas con checkbox
+  // Renderizar agrupado o normal
+  if (auditoriaAgrupar === 'none') {
+    renderAuditoriaFilas(items);
+  } else {
+    renderAuditoriaAgrupada(items);
+  }
+}
+
+function renderAuditoriaFilas(items) {
+  const tbody = document.getElementById('auditoriaTbody');
+
   items.forEach(item => {
     const tr = document.createElement('tr');
     const problemasStr = item.problemas.join(', ');
@@ -142,6 +154,68 @@ function renderAuditoria(filtro) {
       </td>
     `;
     tbody.appendChild(tr);
+  });
+}
+
+function renderAuditoriaAgrupada(items) {
+  const tbody = document.getElementById('auditoriaTbody');
+  const grupos = getGrupos(items);
+
+  grupos.forEach(([grupoKey, grupoItems]) => {
+    const grpKey = CSS.escape(grupoKey);
+    const isGroupCollapsed = gruposColapsados.has(grupoKey);
+    const groupCheckboxId = `grp-chk-${grpKey}`;
+
+    // Cabecera del grupo
+    const headerTr = document.createElement('tr');
+    headerTr.className = 'auditoria-group-header';
+    headerTr.style.cssText = 'background:var(--surface2);cursor:pointer;font-weight:600;padding:12px 8px';
+    headerTr.onclick = () => toggleGrupoAuditoria(grupoKey);
+
+    const groupSelectedCount = grupoItems.filter(i => auditoriaSeleccionados.has(i.id)).length;
+    const groupChecked = groupSelectedCount === grupoItems.length && grupoItems.length > 0;
+    const groupIndeterminate = groupSelectedCount > 0 && groupSelectedCount < grupoItems.length;
+
+    headerTr.innerHTML = `
+      <td colspan="6" style="display:flex;align-items:center;gap:12px;padding:8px 12px">
+        <input type="checkbox" id="${groupCheckboxId}" ${groupChecked ? 'checked' : ''}
+               onchange="seleccionarGrupo('${grupoKey}', this.checked)"
+               onclick="event.stopPropagation()"
+               style="cursor:pointer;width:16px;height:16px">
+        <strong style="min-width:200px">${escapeHtml(grupoKey)}</strong>
+        <span style="color:var(--muted);font-size:12px">${grupoItems.length} items</span>
+        <span class="group-toggle" id="grp-toggle-${grpKey}" style="margin-left:auto;font-size:12px;color:var(--muted)">${isGroupCollapsed ? '▶' : '▼'}</span>
+      </td>
+    </tr>`;
+    tbody.appendChild(headerTr);
+
+    // Filas del grupo
+    grupoItems.forEach(item => {
+      const rowTr = document.createElement('tr');
+      rowTr.className = 'auditoria-group-row';
+      rowTr.setAttribute('data-group', grupoKey);
+      rowTr.style.display = isGroupCollapsed ? 'none' : '';
+
+      const problemasStr = item.problemas.join(', ');
+      const isChecked = auditoriaSeleccionados.has(item.id);
+
+      rowTr.innerHTML = `
+        <td style="width:32px;text-align:center;padding:6px">
+          <input type="checkbox" class="audit-item-check" data-id="${item.id}" ${isChecked ? 'checked' : ''}
+                 onchange="toggleAuditoriaItem(${item.id})" style="cursor:pointer">
+        </td>
+        <td class="ref-cell">${escapeHtml(item.ref || '—')}</td>
+        <td class="name-cell">${escapeHtml(item.item || '—')}</td>
+        <td class="aula-cell">${escapeHtml(item.aula || '—')}</td>
+        <td class="problemas-cell">
+          <span class="problemas-badge">${escapeHtml(problemasStr)}</span>
+        </td>
+        <td class="action-cell">
+          <button class="mini-btn" onclick="abrirItemParaEditar(${item.id})">✏️ Editar</button>
+        </td>
+      `;
+      tbody.appendChild(rowTr);
+    });
   });
 }
 
@@ -257,6 +331,62 @@ function seleccionarTodos() {
   } else {
     auditoriaData.forEach(item => auditoriaSeleccionados.add(item.id));
   }
+  renderAuditoria(auditoriaFiltroActual);
+}
+
+function agruparAuditoria(modo) {
+  auditoriaAgrupar = modo;
+  gruposColapsados.clear();
+
+  // Actualizar botones activos
+  document.querySelectorAll('#auditoriaFiltros [id^="audGrp"]').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.getElementById(`audGrp${modo === 'none' ? 'None' : modo === 'cat' ? 'Cat' : 'Aula'}`).classList.add('active');
+
+  renderAuditoria(auditoriaFiltroActual);
+}
+
+function getGrupos(items) {
+  const grupos = new Map();
+  items.forEach(item => {
+    const key = auditoriaAgrupar === 'cat'
+      ? (item.cat || '(Sin categoría)')
+      : (item.aula || '(Sin aula)');
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(item);
+  });
+  return [...grupos.entries()].sort((a, b) => b[1].length - a[1].length);
+}
+
+function toggleGrupoAuditoria(key) {
+  if (gruposColapsados.has(key)) {
+    gruposColapsados.delete(key);
+  } else {
+    gruposColapsados.add(key);
+  }
+
+  document.querySelectorAll(`[data-group="${CSS.escape(key)}"]`).forEach(row => {
+    row.style.display = gruposColapsados.has(key) ? 'none' : '';
+  });
+
+  const toggle = document.getElementById(`grp-toggle-${CSS.escape(key)}`);
+  if (toggle) toggle.textContent = gruposColapsados.has(key) ? '▶' : '▼';
+}
+
+function seleccionarGrupo(key, checked) {
+  const itemsGrupo = auditoriaAgrupar === 'cat'
+    ? auditoriaData.filter(i => (i.cat || '(Sin categoría)') === key)
+    : auditoriaData.filter(i => (i.aula || '(Sin aula)') === key);
+
+  itemsGrupo.forEach(i => {
+    if (checked) auditoriaSeleccionados.add(i.id);
+    else auditoriaSeleccionados.delete(i.id);
+  });
+
+  const btnEdit = document.getElementById('audEditMult');
+  btnEdit.style.display = auditoriaSeleccionados.size > 0 ? 'block' : 'none';
+
   renderAuditoria(auditoriaFiltroActual);
 }
 
