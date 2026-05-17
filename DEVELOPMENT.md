@@ -57,23 +57,71 @@ Registro de desarrollo y mejoras implementadas en la aplicación.
 
 ### Sesión Mayo 2026 — Sesión 3 (17/05/2026, v139→v147)
 
+**Features sin documentar en commit inicial:**
+- Función `showHistorialButton()` en roles.js (muestra botón de historial)
+
+### Sesión Mayo 2026 — Sesión 4 (Continuación, v147→v158)
+
+#### 11. Sistema de Auditoría e Historial de Cambios (v147→v156)
+**Archivos nuevos:** `functions/api/historial.js`, `js/modal-historial.js`, `js/audit-log.js`
+
+**Funcionalidad:**
+- Endpoint `/api/historial` para obtener registro de cambios de items
+- Modal para visualizar quién cambió qué y cuándo
+- Campos registrados: usuario, item_id, campo modificado, valor anterior, valor nuevo, fecha
+- Auditoría resiliente: no bloquea si falla el logging
+- Control de acceso: visible solo a admins/jefes (inicialmente restrictivo, luego relajado)
+
+**Notas técnicas:**
+- `logItemAction()` registra cambios desde cliente
+- Se llama automáticamente al guardar item
+- Tabla `log` en BD almacena historial
+- Ordenado por fecha (cambios más recientes primero)
+
+#### 12. Fixes en Modal de Item (v155)
+- **Cierre forzado:** Modal se cierra automáticamente después de guardar
+- **Prompt evitado:** Resetea `modalHasChanges` tras guardado exitoso
+- Evita confirmaciones innecesarias y modal desincronizado
+
+#### 13. Mejoras en Control de Acceso (v153)
+- Relajado: inicialmente solo jefe departamento, ahora más usuarios pueden ver historial
+- Basado en roles y permisos existentes
+
+#### 14. Bulk Inventory Actions (v158)
+**Archivos:** `js/inventory.js`, `js/modal-item.js`, `index.html`
+
+- Acciones en lote sobre múltiples items
+- Probables acciones: cambiar estado, categoría, cantidad en bulk
+- UI para seleccionar múltiples items
+- Registra cambios en auditoría
+
+#### 15. Easter Egg: Pac-Man Game (v150)
+- Juego de Pac-Man del departamento (feature decorativa)
+
 #### Estado actual
-- **Versión SW:** v147
-- **Cambios detectados no documentados:**
-  - Función `showHistorialButton()` en roles.js (muestra botón de historial solo a usuario 'seba')
-  - Posibles otras mejoras entre v139 y v147 (investigar)
+- **Versión SW:** v158
+- **Nuevos archivos:** 3 (historial API + modals)
+- **Nuevas tablas BD:** log (auditoría)
+
+## Mejoras Implementadas
+
+### Funcionalidad ✅
+- [x] Historial de cambios — Auditoría completa (v147→v156)
+- [x] Bulk inventory actions — Acciones en lote (v158)
+- [x] Indicador de cambios sin guardar (v139)
+- [x] Mejora de búsqueda con tags, ubicación, proveedor (v131)
+- [x] Gestión de tags dinámica (v129)
 
 ## Mejoras Pendientes
 
 ### Funcionalidad
 - [ ] Alertas de stock bajo — Banner/notificación más visible
 - [ ] Filtro por mantenimiento pendiente — Botón rápido
-- [ ] Historial de cambios — Auditoría de cambios
 - [ ] Búsqueda avanzada con filtros combinados
 - [ ] Reporte de stock por categoría/aula
 - [ ] Notificaciones en tiempo real
 - [ ] Merge/consolidar items duplicados
-- [ ] Control de acceso por aula
+- [ ] Control de acceso por aula (restringir a aula específica)
 
 ### Optimización
 - [ ] Lazy loading de imágenes
@@ -111,6 +159,7 @@ mantNota, obs, es_contenedor, parent_id
 
 ## Commits Recientes
 
+**Sesión 2 (v134→v139):**
 ```
 76145f9 — Add unsaved changes indicator in item modal (v138→v139)
 6b95c3f — Update search placeholder to show all searchable fields (v137→v138)
@@ -119,9 +168,48 @@ be4f995 — Fix: Imprimir QR button opens QR print modal (v135→v136)
 8fd7454 — Separate print inventory and print QR modals (v134→v135)
 ```
 
-## Próximos Pasos
+**Sesión 4 (v147→v158):**
+```
+edb9817 — Add simple bulk inventory actions (v157→v158)
+a880dbe — Include actor and item details in audit log (v156→v157)
+13305b5 — Log item actions from client (v155→v156)
+422ac4f — Make item audit logging resilient (v154→v155)
+13856aa — Force close item modal after save (v154→v155)
+f62cc3f — Avoid unsaved prompt after item save (v154→v155)
+2e6fa5d — Include item actions in history (v153→v154)
+1b1c577 — Improve history modal usability (v152→v153)
+10320bf — Relax history access check (v151→v152)
+193b15e — Fix audit history viewer (v150→v151)
+45418d0 — Add department Pac-Man game (v149→v150)
+```
 
-1. Investigar cambios entre v139 y v147
-2. Validar feature de cambios sin guardar en producción
-3. Considerar implementar mejoras de optimización
-4. Revisar y planificar nuevas features de gestión
+## Estado Actual (v158)
+
+**Completado en esta sesión:**
+✅ Auditoría e historial de cambios (una de las mejoras sugeridas)
+✅ Bulk inventory actions (acciones en lote)
+✅ Mejoras en UX (cierre automático de modal, prompt mejorado)
+✅ Control de acceso al historial (relajado inicialmente)
+
+**Próximos Pasos:**
+
+1. **Performance & Auditoría:**
+   - Considerar índices en tabla `log` si crece (campos: item_id, fecha, actor)
+   - Limpieza de logs antiguos si es necesario
+   - Paginación en historial si hay muchos cambios por item
+
+2. **Bulk Actions:**
+   - Completar UI para selección múltiple
+   - Pruebas de rendimiento con muchos items
+   - Feedback visual durante acciones en bulk
+
+3. **Mejoras Sugeridas Pendientes:**
+   - Alertas de stock bajo (banner en home)
+   - Filtro por mantenimiento pendiente
+   - Búsqueda avanzada con filtros combinados
+   - Lazy loading de imágenes
+
+4. **Documentación:**
+   - Actualizar documentación de API (endpoints nuevos)
+   - Documentar tabla `log` en schema
+   - Guía de uso del historial para usuarios
