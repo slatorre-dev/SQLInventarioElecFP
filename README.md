@@ -336,6 +336,7 @@ Puntos importantes:
 - No cachea peticiones no GET.
 - No cachea `/api/*`.
 - Para forzar actualizacion se cambia `VERSION`.
+- Cambios visuales de HTML/CSS/JS deben subir `VERSION`; el modal de items usa rejilla de 3 columnas en escritorio y QR compacto desde `v118`.
 
 Esto es importante porque cachear `/api/meta` o `/api/list` produjo problemas de datos antiguos durante la migracion.
 

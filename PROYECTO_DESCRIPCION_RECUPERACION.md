@@ -33,6 +33,7 @@ Objetivos principales:
 - Diferenciacion de items consumibles e inventariables mediante `inventario.tipo_material`; las cajas siguen usando `es_contenedor` y `parent_id`.
 - Campo `inventario.proveedor` para guardar proveedor, tienda o URL de reposicion.
 - Gestion editable de ubicaciones sugeridas mediante tabla `ubicaciones`; tambien se derivan ubicaciones existentes desde `inventario.loc`.
+- Modal de alta/edicion de items ampliado en escritorio, con rejilla de 3 columnas y bloque QR compacto.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.
