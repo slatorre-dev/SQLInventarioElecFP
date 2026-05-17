@@ -46,6 +46,9 @@
     <div class="topbar-btns" id="topbarBtns" onclick="closeMobMenu()">
       <button class="tbtn" id="btnHome" style="display:none" onclick="goHome()" title="Ir al inicio">🏠 Inicio</button>
       <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ Nuevo ítem</button>
+      <button class="tbtn dept-game-btn" id="btnDeptGame" style="display:none" onclick="openDeptGame()" title="Juego del departamento">
+        <img src="icons/dept-electricidad.svg" alt="">
+      </button>
       <button class="tbtn" id="btnPres" style="display:none" onclick="goPrestamos()">⌛ Préstamos</button>
       <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Pedidos<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
       <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 Exportar</button>
@@ -1125,6 +1128,31 @@
   </div>
 </div>
 
+<!-- DEPARTMENT GAME -->
+<div class="mbg" id="mDeptGame" onclick="if(event.target===this)closeDeptGame()">
+  <div class="modal dept-game-modal">
+    <div class="mh">
+      <div class="mt">Comecocos del departamento</div>
+      <button class="mx" onclick="closeDeptGame()">x</button>
+    </div>
+    <div class="dept-game-head">
+      <div><span>Puntos</span><strong id="deptGameScore">0</strong></div>
+      <div><span>Vidas</span><strong id="deptGameLives">3</strong></div>
+      <button class="mini-btn" onclick="restartDeptGame()">Reiniciar</button>
+    </div>
+    <canvas id="deptGameCanvas" width="560" height="560" aria-label="Juego tipo comecocos"></canvas>
+    <div class="dept-game-controls" aria-label="Controles tactiles">
+      <button onclick="deptGameMove('up')" title="Arriba">↑</button>
+      <div>
+        <button onclick="deptGameMove('left')" title="Izquierda">←</button>
+        <button onclick="deptGameMove('down')" title="Abajo">↓</button>
+        <button onclick="deptGameMove('right')" title="Derecha">→</button>
+      </div>
+    </div>
+    <div class="dept-game-status" id="deptGameStatus">Flechas o WASD para moverte.</div>
+  </div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script defer src="js/config.js"></script>
@@ -1150,6 +1178,7 @@
 <script defer src="js/qr-scanner.js"></script>
 <script defer src="js/audit-log.js"></script>
 <script defer src="js/modal-historial.js"></script>
+<script defer src="js/dept-game.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script defer src="js/auth.js"></script>
 </body>

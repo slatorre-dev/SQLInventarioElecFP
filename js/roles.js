@@ -107,6 +107,7 @@ function applyRoleUI(){
   const isAdmin = can('config.manage');
   const rules = [
     ['btnN',   'items.write',  'flex'],
+    ['btnDeptGame', null,      'flex'],
     ['btnPres','loans.write',  'flex'],
     ['btnPed', 'orders.write', 'flex'],
     ['btnQr',  null,           ''],
