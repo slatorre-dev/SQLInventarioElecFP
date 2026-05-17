@@ -1108,3 +1108,39 @@ html, body {
   background: #f3e8ff;
   color: #6b21a8;
 }
+
+#mHistorial{align-items:center;justify-content:center}
+#mHistorial .historial-modal{width:min(1120px,calc(100vw - 32px));height:min(760px,calc(100svh - 32px));max-height:calc(100svh - 32px);padding:18px;display:flex;flex-direction:column;overflow:hidden}
+#mHistorial .mh{flex:0 0 auto;margin-bottom:14px}
+#mHistorial .mh h2{font-size:20px;font-weight:800;margin:0}
+#mHistorial .mbtn-close{background:var(--surface2);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+#mHistorial .mbtn-close:hover{background:var(--border);color:var(--text)}
+.historial-body{flex:1 1 auto;min-height:0;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--white);scrollbar-width:thin}
+.historial-controls{position:sticky;top:0;z-index:20;padding:10px;background:var(--surface2);border:0;border-bottom:1px solid var(--border);border-radius:9px 9px 0 0;margin-bottom:0}
+.historial-filter-row{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(150px,.9fr) minmax(220px,1.5fr) auto;gap:8px;margin-bottom:0}
+.historial-filter{min-width:0;width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;background:var(--white);color:var(--text)}
+.historial-filter:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #2563eb18}
+.historial-body .mini-btn{white-space:nowrap}
+.historial-table{width:100%;min-width:860px;border-collapse:separate;border-spacing:0;font-size:12px;background:var(--white)}
+.historial-table thead{background:var(--surface2);position:sticky;top:59px;z-index:15}
+.historial-table th{padding:10px 12px;text-align:left;font-weight:800;color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap}
+.historial-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.historial-table tr:hover{background:#f8fafc}
+.historial-table td.ts{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap}
+.historial-table td.usr{font-weight:700;color:var(--accent);max-width:150px}
+.historial-table td.act{text-align:left}
+.historial-table td.que,.historial-table td.nom{max-width:140px;color:var(--muted)}
+.historial-table td.det{min-width:260px;max-width:420px;white-space:normal;line-height:1.4}
+.historial-empty{text-align:center;padding:28px;color:var(--muted);font-size:13px}
+.badge{display:inline-flex;align-items:center;justify-content:center;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:var(--surface2);color:var(--text)}
+.badge-add,.badge-useradd{background:var(--green-l);color:var(--green)}
+.badge-update,.badge-userupdate{background:var(--accent-l);color:var(--accent)}
+.badge-delete,.badge-userdelete{background:var(--red-l);color:var(--red)}
+.badge-prestar,.badge-prestarcaja{background:var(--amber-l);color:var(--amber)}
+.badge-devolver{background:var(--teal-l);color:var(--teal)}
+
+@media(max-width:760px){
+  #mHistorial .historial-modal{width:100vw;height:100svh;max-height:100svh;border-radius:0}
+  .historial-filter-row{grid-template-columns:1fr}
+  .historial-table thead{top:167px}
+}
