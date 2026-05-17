@@ -416,7 +416,7 @@
       <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
       <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
       <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
-      <div class="full"><label class="fl">Tags</label><input class="fi-w" id="f_tags" placeholder="Arduino, SMD, 230V, robótica, medida..."></div>
+      <div class="full"><label class="fl">Tags</label><input class="fi-w" id="f_tags" list="tagList" placeholder="Arduino, SMD, 230V, robótica, medida..." autocomplete="off"><datalist id="tagList"></datalist></div>
       <label class="check-row full">
         <input type="checkbox" id="f_mant" onchange="toggleMaintFields()">
         <span><strong>Necesita mantenimiento o reparación</strong><small>Márcalo para que aparezca en el acceso rápido de mantenimiento.</small></span>
@@ -910,6 +910,7 @@
     </div>
     <div class="cats-list" id="catsList"></div>
     <button class="add-cat-btn" onclick="addCatRow()">＋ Añadir categoría</button>
+    <button class="add-cat-btn" onclick="normalizeCategoriesToTags()" style="margin-top:8px;border-color:#7c3aed;color:#7c3aed;background:#faf5ff">↔ Normalizar categorías a tags</button>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">

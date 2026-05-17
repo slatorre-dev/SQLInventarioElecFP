@@ -71,3 +71,23 @@ async function saveCats(){
     toast('Error al sincronizar: '+err.message,'err');
   }
 }
+
+async function normalizeCategoriesToTags(){
+  if(!requirePerm('categories.manage')) return;
+  if(!confirm('Esto reducirá las categorías a grupos principales y moverá categorías como Routers, Fibra óptica, Telecomunicaciones, Ordenadores o Domótica a tags de los ítems. ¿Continuar?')) return;
+  try{
+    const res = await apiPost({action:'normalizeCategoriesTags'});
+    if(!res.ok) throw new Error(res.error);
+    if(res.items) items = res.items;
+    if(res.cats) setCatsFromEntries(res.cats.map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
+    catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
+    renderCatsList();
+    fillModalSelects();
+    fillCatFilter();
+    if(typeof renderHome === 'function') renderHome();
+    if(cf) renderInv();
+    toast(`Categorías normalizadas: ${res.updated||0} ítems actualizados`, 'ok');
+  }catch(err){
+    toast('Error al normalizar: ' + err.message, 'err');
+  }
+}

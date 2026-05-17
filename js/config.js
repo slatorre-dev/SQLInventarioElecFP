@@ -146,19 +146,23 @@ function findModulo(modId){
 // ═════════════════════════════════════════════════════════
 const CATS_DEFAULT={
   'Componentes electrónicos':{c:'#2563eb',bg:'#eff6ff',i:'⚡'},
-  'Herramientas':            {c:'#d97706',bg:'#fffbeb',i:'🔨'},
-  'Equipos de medida':       {c:'#0891b2',bg:'#ecfeff',i:'📊'},
   'Consumibles':             {c:'#7c3aed',bg:'#f5f3ff',i:'📦'},
-  'Fibra óptica':            {c:'#059669',bg:'#ecfdf5',i:'💡'},
-  'Telecomunicaciones':      {c:'#ea580c',bg:'#fff7ed',i:'📡'},
+  'Equipos de medida':       {c:'#0891b2',bg:'#ecfeff',i:'📊'},
+  'Herramientas':            {c:'#d97706',bg:'#fffbeb',i:'🔨'},
+  'Informática':             {c:'#1d4ed8',bg:'#eff6ff',i:'💻'},
   'Material eléctrico':      {c:'#db2777',bg:'#fdf2f8',i:'🔌'},
   'Redes':                   {c:'#0e7490',bg:'#f0fdfa',i:'🌐'},
-  'Domótica':                {c:'#7e22ce',bg:'#faf5ff',i:'🏠'},
-  'Ordenadores':             {c:'#1d4ed8',bg:'#eff6ff',i:'💻'},
+  'Robótica y automatización':{c:'#7e22ce',bg:'#faf5ff',i:'🤖'},
   'Otros':                   {c:'#6b7280',bg:'#f9fafb',i:'🔧'},
 };
+const TAGS_DEFAULT = [
+  '230V','Antenas','Arduino','Cables','Condensadores','Conectores','Domótica','ESP32','Ethernet','Fibra óptica','Herramienta','KNX','Medida','Motores','PLC','Protecciones eléctricas','Raspberry Pi','Relés','Robótica','Routers','Seguridad','Sensores','SMD','Soldadura','Switches','Telecomunicaciones','Tornillería','USB','WiFi'
+];
 let CATS = Object.assign({}, CATS_DEFAULT);
 function catNameCompare(a, b){
+  return String(a || '').localeCompare(String(b || ''), 'es', { sensitivity:'base' });
+}
+function tagNameCompare(a, b){
   return String(a || '').localeCompare(String(b || ''), 'es', { sensitivity:'base' });
 }
 function sortedCatEntries(cats = CATS){

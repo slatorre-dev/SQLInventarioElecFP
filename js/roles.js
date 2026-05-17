@@ -32,6 +32,7 @@ const ACTION_PERMISSIONS = {
   profDelete: 'profesores.manage',
   aulasSync: 'config.manage',
   catsSync: 'categories.manage',
+  normalizeCategoriesTags: 'categories.manage',
   ciclosSync: 'config.manage',
   prestar: 'loans.write',
   devolver: 'loans.write',

@@ -41,6 +41,8 @@ Objetivos principales:
 - Campo `inventario.tags` para etiquetas libres por item; se incluye en busqueda, importacion, exportacion y backup.
 - Ficha rapida flotante al pasar o pulsar sobre foto/nombre del item, con foto, stock, aula, ubicacion, utilidad, proveedor, tags y prestamos activos.
 - Ficha rapida ampliada para mostrar foto y datos con mayor legibilidad.
+- Normalizacion de categorias a grupos principales con boton en Gestionar categorias; categorias antiguas o subtipos pasan a `tags` de los items.
+- Campo tags con sugerencias alfabeticas derivadas de tags existentes y una lista base util.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.

@@ -10,6 +10,80 @@ async function auditLog(db, user, accion, resumen) {
   }
 }
 
+const NORMALIZED_CATS = [
+  { name:'Componentes electrónicos', c:'#2563eb', bg:'#eff6ff', i:'⚡', orden:1 },
+  { name:'Consumibles', c:'#7c3aed', bg:'#f5f3ff', i:'📦', orden:2 },
+  { name:'Equipos de medida', c:'#0891b2', bg:'#ecfeff', i:'📊', orden:3 },
+  { name:'Herramientas', c:'#d97706', bg:'#fffbeb', i:'🔨', orden:4 },
+  { name:'Informática', c:'#1d4ed8', bg:'#eff6ff', i:'💻', orden:5 },
+  { name:'Material eléctrico', c:'#db2777', bg:'#fdf2f8', i:'🔌', orden:6 },
+  { name:'Redes', c:'#0e7490', bg:'#f0fdfa', i:'🌐', orden:7 },
+  { name:'Robótica y automatización', c:'#7e22ce', bg:'#faf5ff', i:'🤖', orden:8 },
+  { name:'Otros', c:'#6b7280', bg:'#f9fafb', i:'🔧', orden:9 },
+];
+
+function normText(v){
+  return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function splitTags(v){
+  return String(v || '').split(/[;,]/).map(t=>t.trim()).filter(Boolean);
+}
+
+function addTag(tags, value){
+  const tag = String(value || '').trim();
+  if(!tag) return;
+  if(!tags.some(t=>normText(t)===normText(tag))) tags.push(tag);
+}
+
+function normalizeItemCategoryAndTags(item){
+  const text = normText([item.cat,item.item,item.ref,item.util,item.loc,item.obs].join(' '));
+  const oldCat = String(item.cat || '').trim();
+  const tags = splitTags(item.tags);
+  let cat = NORMALIZED_CATS.some(c=>normText(c.name)===normText(oldCat)) ? oldCat : 'Otros';
+
+  const rules = [
+    { cat:'Redes', tag:'Routers', keys:['router','routers'] },
+    { cat:'Redes', tag:'Fibra óptica', keys:['fibra','optica','fo '] },
+    { cat:'Redes', tag:'Telecomunicaciones', keys:['telecom','comunicacion'] },
+    { cat:'Redes', tag:'Antenas', keys:['antena','antenas'] },
+    { cat:'Redes', tag:'Switches', keys:['switch','ethernet','rj45','wifi','wi-fi','access point','punto de acceso'] },
+    { cat:'Informática', tag:'Ordenadores', keys:['ordenador','ordenadores','pc','portatil','portátil','monitor','teclado','raton','ratón'] },
+    { cat:'Informática', tag:'Raspberry Pi', keys:['raspberry'] },
+    { cat:'Robótica y automatización', tag:'Arduino', keys:['arduino'] },
+    { cat:'Robótica y automatización', tag:'ESP32', keys:['esp32','esp8266'] },
+    { cat:'Robótica y automatización', tag:'Domótica', keys:['domotica','domótica','knx'] },
+    { cat:'Robótica y automatización', tag:'Robótica', keys:['robot','robotica','robótica','servo','motor','sensor'] },
+    { cat:'Material eléctrico', tag:'Protecciones eléctricas', keys:['proteccion','protección','diferencial','magnetotermico','magnetotérmico','fusible'] },
+    { cat:'Material eléctrico', tag:'Cables', keys:['cable','cables','manguera'] },
+    { cat:'Material eléctrico', tag:'Conectores', keys:['conector','conectores','enchufe','regleta','borne'] },
+    { cat:'Material eléctrico', tag:'230V', keys:['230v','220v','ac '] },
+    { cat:'Herramientas', tag:'Herramienta', keys:['herramienta','destornillador','alicate','pinza','cutter','taladro','ingletadora','soldador'] },
+    { cat:'Herramientas', tag:'Soldadura', keys:['soldadura','soldador','estaño','estano'] },
+    { cat:'Equipos de medida', tag:'Medida', keys:['medida','tester','multimetro','multímetro','osciloscopio','vatimetro','vatímetro','pinza amperimetrica','fuente laboratorio'] },
+    { cat:'Componentes electrónicos', tag:'SMD', keys:['smd'] },
+    { cat:'Componentes electrónicos', tag:'Resistencias', keys:['resistencia','resistencias','res '] },
+    { cat:'Componentes electrónicos', tag:'Condensadores', keys:['condensador','condensadores','cond-'] },
+    { cat:'Componentes electrónicos', tag:'Relés', keys:['rele','relé','relay'] },
+    { cat:'Componentes electrónicos', tag:'Sensores', keys:['sensor','sensores'] },
+    { cat:'Consumibles', tag:'Tornillería', keys:['tornillo','tuerca','arandela','tornilleria','tornillería'] },
+    { cat:'Consumibles', tag:'Consumible', keys:['consumible','brida','cinta','termorretractil','termorretráctil'] },
+  ];
+
+  for(const rule of rules){
+    if(rule.keys.some(k=>text.includes(normText(k)))){
+      cat = rule.cat;
+      addTag(tags, rule.tag);
+    }
+  }
+
+  const oldCatNorm = normText(oldCat);
+  const majorNorms = new Set(NORMALIZED_CATS.map(c=>normText(c.name)));
+  if(oldCat && oldCatNorm !== normText(cat) && !majorNorms.has(oldCatNorm)) addTag(tags, oldCat);
+
+  return { cat, tags: tags.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'})).join(', ') };
+}
+
 export async function onRequestPost({ request, env }) {
   const body = await request.json();
   const { action } = body;
@@ -35,6 +109,29 @@ export async function onRequestPost({ request, env }) {
     }
     await auditLog(env.DB, user, 'catsSync', `Sincronizadas ${cats.length} categorías`);
     return Response.json({ ok: true });
+  }
+
+  if (action === 'normalizeCategoriesTags') {
+    await env.DB.prepare("ALTER TABLE inventario ADD COLUMN tags TEXT DEFAULT ''").run().catch(() => {});
+    const inv = await env.DB.prepare('SELECT * FROM inventario').all();
+    const rows = inv.results || [];
+    const updates = [];
+    for (const item of rows) {
+      const next = normalizeItemCategoryAndTags(item);
+      if (next.cat !== (item.cat || '') || next.tags !== (item.tags || '')) {
+        updates.push({ id:item.id, ...next });
+      }
+    }
+    if (updates.length) {
+      const stmt = env.DB.prepare('UPDATE inventario SET cat=?, tags=? WHERE id=?');
+      await env.DB.batch(updates.map(u => stmt.bind(u.cat, u.tags, u.id)));
+    }
+    await env.DB.prepare('DELETE FROM categorias').run();
+    const catStmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden) VALUES (?,?,?,?,?)');
+    await env.DB.batch(NORMALIZED_CATS.map(c => catStmt.bind(c.name,c.c,c.bg,c.i,c.orden)));
+    await auditLog(env.DB, user, 'normalizeCategoriesTags', `Normalizadas categorias y tags en ${updates.length} items`);
+    const items = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    return Response.json({ ok: true, updated: updates.length, cats: NORMALIZED_CATS, items: items.results || [] });
   }
 
   if (action === 'ubicacionesSync') {

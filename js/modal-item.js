@@ -6,6 +6,7 @@ function fillModalSelects(){
   document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
   document.getElementById('f_cat').innerHTML=sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
   fillLocationSuggestions();
+  fillTagSuggestions();
 }
 
 async function handleCatSelectChange(){
@@ -64,6 +65,23 @@ function fillLocationSuggestions(){
     })
     .sort((a,b) => a.localeCompare(b, 'es', { sensitivity:'base' }));
   list.innerHTML = locs.map(loc => `<option value="${escHtml(loc)}"></option>`).join('');
+}
+
+function fillTagSuggestions(){
+  const list = document.getElementById('tagList');
+  if(!list) return;
+  const seen = new Set();
+  const tags = [...(TAGS_DEFAULT || []), ...(items || []).flatMap(itemTags)]
+    .map(x => String(x || '').trim())
+    .filter(Boolean)
+    .filter(tag => {
+      const key = tag.toLowerCase();
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort(tagNameCompare);
+  list.innerHTML = tags.map(tag => `<option value="${escHtml(tag)}"></option>`).join('');
 }
 
 function updateModSelect(){
@@ -516,12 +534,14 @@ async function saveItem(){
       if(!res.ok) throw new Error(res.error);
       const i=items.findIndex(x=>x.id===eid); items[i]=item;
       await uploadPendingDocs(eid, item.item, item.aula);
+      fillTagSuggestions();
       toast('Ítem actualizado','ok');
     } else {
       const res = await apiPost({action:'add', item:v});
       if(!res.ok) throw new Error(res.error);
       items.push(res.item);
       await uploadPendingDocs(res.item.id, res.item.item, res.item.aula);
+      fillTagSuggestions();
       toast('Ítem añadido','ok');
     }
     closeM();
