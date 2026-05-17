@@ -90,6 +90,7 @@ function renderHistorial(data) {
     <tr>
       <td class="ts">${historialEsc(h.timestamp)}</td>
       <td class="usr">${historialEsc(h.usuario)}</td>
+      <td class="tipo">${historialEsc(h.tipo)}</td>
       <td class="act"><span class="badge ${historialBadgeClass(h.accion)}">${historialEsc(h.accion)}</span></td>
       <td class="que">${historialEsc(h.que)}</td>
       <td class="nom">${historialEsc(h.nombre)}</td>
@@ -108,19 +109,34 @@ function populateActionFilter(data) {
     actions.map(action => `<option value="${historialEsc(action)}">${historialEsc(action)}</option>`).join('');
 
   if (actions.includes(current)) select.value = current;
+  populateTypeFilter(data);
+}
+
+function populateTypeFilter(data) {
+  const select = document.getElementById('filterTipo');
+  const current = select.value;
+  const types = [...new Set((data || []).map(h => h.tipo).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), 'es', { sensitivity: 'base' }));
+
+  select.innerHTML = '<option value="">Todos los tipos</option>' +
+    types.map(type => `<option value="${historialEsc(type)}">${historialEsc(type)}</option>`).join('');
+
+  if (types.includes(current)) select.value = current;
 }
 
 function filtrarHistorial() {
   const usuario = historialText(document.getElementById('filterUsuario').value);
   const accion = document.getElementById('filterAccion').value;
+  const tipo = document.getElementById('filterTipo').value;
   const que = historialText(document.getElementById('filterQue').value);
 
   const filtered = historialData.filter(h => {
     const matchUsr = !usuario || historialText(h.usuario).includes(usuario);
     const matchAct = !accion || h.accion === accion;
-    const haystack = [h.que, h.nombre, h.detalles, h.accion, h.timestamp].map(historialText).join(' ');
+    const matchTipo = !tipo || h.tipo === tipo;
+    const haystack = [h.que, h.nombre, h.detalles, h.accion, h.tipo, h.timestamp].map(historialText).join(' ');
     const matchQue = !que || haystack.includes(que);
-    return matchUsr && matchAct && matchQue;
+    return matchUsr && matchAct && matchTipo && matchQue;
   });
 
   renderHistorial(filtered);
@@ -129,6 +145,7 @@ function filtrarHistorial() {
 function limpiarFiltrosHistorial() {
   document.getElementById('filterUsuario').value = '';
   document.getElementById('filterAccion').value = '';
+  document.getElementById('filterTipo').value = '';
   document.getElementById('filterQue').value = '';
   renderHistorial(historialData);
 }
@@ -136,8 +153,10 @@ function limpiarFiltrosHistorial() {
 document.addEventListener('DOMContentLoaded', () => {
   const usuario = document.getElementById('filterUsuario');
   const accion = document.getElementById('filterAccion');
+  const tipo = document.getElementById('filterTipo');
   const que = document.getElementById('filterQue');
   if (usuario) usuario.addEventListener('input', filtrarHistorial);
   if (accion) accion.addEventListener('change', filtrarHistorial);
+  if (tipo) tipo.addEventListener('change', filtrarHistorial);
   if (que) que.addEventListener('input', filtrarHistorial);
 });

@@ -1102,15 +1102,19 @@
             <option value="loan">Préstamo</option>
             <option value="order">Pedido</option>
           </select>
+          <select id="filterTipo" class="historial-filter">
+            <option value="">Todos los tipos</option>
+          </select>
           <input type="text" id="filterQue" placeholder="Filtrar por elemento..." class="historial-filter">
+          <button class="mini-btn" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
         </div>
-        <button class="mini-btn" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
       </div>
       <table class="historial-table" id="historialTable">
         <thead>
           <tr>
             <th>Timestamp</th>
             <th>Usuario</th>
+            <th>Tipo</th>
             <th>Acción</th>
             <th>Elemento</th>
             <th>Nombre</th>

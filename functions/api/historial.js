@@ -29,13 +29,26 @@ async function ensureLogTable(db) {
 }
 
 function mapLogRow(row) {
+  const accion = String(row.accion || '');
+  const itemId = String(row.itemId || '').trim();
+  const actionKey = normalizeText(accion);
+  let tipo = 'Sistema';
+  if (['add', 'update', 'delete', 'bulkimport'].includes(actionKey)) tipo = 'Items';
+  else if (actionKey.startsWith('user') || ['updateprofile', 'changepassword'].includes(actionKey)) tipo = 'Usuarios';
+  else if (actionKey.startsWith('prof')) tipo = 'Profesores';
+  else if (['prestar', 'prestarcaja', 'devolver'].includes(actionKey)) tipo = 'Prestamos';
+  else if (actionKey.includes('doc')) tipo = 'Documentos';
+  else if (['aulassync', 'catssync', 'ciclossync', 'ubicacionessync', 'normalizecategoriestags'].includes(actionKey)) tipo = 'Configuracion';
+  else if (itemId) tipo = 'Items';
+
   return {
     id: row.id,
     timestamp: row.fecha,
     usuario: row.usuario,
-    accion: row.accion,
-    que: row.itemId,
-    nombre: row.nombre,
+    accion,
+    tipo,
+    que: itemId,
+    nombre: row.itemNombre || row.nombre,
     detalles: row.resumen,
     fecha: row.fecha,
     resumen: row.resumen
@@ -54,10 +67,12 @@ export async function onRequest(context) {
 
       if (itemId) {
         const result = await env.DB.prepare(`
-          SELECT id, fecha, usuario, nombre, rol, accion, itemId, resumen
+          SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
+                 inventario.item AS itemNombre
           FROM log
-          WHERE itemId = ?
-          ORDER BY id DESC
+          LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
+          WHERE log.itemId = ?
+          ORDER BY log.id DESC
           LIMIT 200
         `).bind(String(itemId)).all();
 
@@ -69,10 +84,12 @@ export async function onRequest(context) {
       }
 
       const result = await env.DB.prepare(`
-        SELECT id, fecha, usuario, nombre, rol, accion, itemId, resumen
+        SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
+               inventario.item AS itemNombre
         FROM log
-        ORDER BY id DESC
-        LIMIT 500
+        LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
+        ORDER BY log.id DESC
+        LIMIT 5000
       `).all();
 
       return json((result.results || []).map(mapLogRow));
