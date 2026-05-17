@@ -1,6 +1,82 @@
 // ═════════════════════════════════════════════════════════
 // MODAL ITEM
 // ═════════════════════════════════════════════════════════
+let modalHasChanges = false;
+let modalOriginalValues = {};
+
+function markModalAsChanged(){
+  modalHasChanges = true;
+  updateModalIndicator();
+}
+
+function updateModalIndicator(){
+  const titleEl = document.getElementById('mT');
+  if(!titleEl) return;
+  if(modalHasChanges){
+    if(!titleEl.dataset.hasIndicator){
+      titleEl.innerHTML += ' <span style="color:var(--red);font-size:16px;margin-left:6px">●</span>';
+      titleEl.dataset.hasIndicator = 'true';
+    }
+  } else {
+    titleEl.innerHTML = titleEl.textContent.replace(/\s●\s*$/, '');
+    delete titleEl.dataset.hasIndicator;
+  }
+}
+
+function resetModalChanges(){
+  modalHasChanges = false;
+  updateModalIndicator();
+}
+
+function captureModalOriginalValues(){
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
+  modalOriginalValues = {};
+  fields.forEach(field => {
+    const el = document.getElementById(field);
+    if(el){
+      if(el.type === 'checkbox'){
+        modalOriginalValues[field] = el.checked;
+      } else {
+        modalOriginalValues[field] = el.value;
+      }
+    }
+  });
+  attachModalChangeListeners();
+}
+
+function attachModalChangeListeners(){
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  fields.forEach(field => {
+    const el = document.getElementById(field);
+    if(el){
+      el.removeEventListener('change', checkModalForChanges);
+      el.removeEventListener('input', checkModalForChanges);
+      el.addEventListener('change', checkModalForChanges);
+      el.addEventListener('input', checkModalForChanges);
+    }
+  });
+}
+
+function checkModalForChanges(){
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  let hasChanges = false;
+
+  for(let field of fields){
+    const el = document.getElementById(field);
+    if(!el) continue;
+    const currentVal = el.type === 'checkbox' ? el.checked : el.value;
+    if(currentVal !== modalOriginalValues[field]){
+      hasChanges = true;
+      break;
+    }
+  }
+
+  if(hasChanges !== modalHasChanges){
+    modalHasChanges = hasChanges;
+    updateModalIndicator();
+  }
+}
+
 function fillModalSelects(){
   document.getElementById('f_aula').innerHTML=AULAS.map(a=>`<option value="${a.id}">${a.name} — ${a.desc}</option>`).join('');
   document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
@@ -532,6 +608,9 @@ function openModal(id=null, src=null){
   const btnH = document.getElementById('btnHistorial');
   if (btnH) btnH.style.display = existing ? '' : 'none';
   document.getElementById('mItem').classList.add('open');
+
+  resetModalChanges();
+  captureModalOriginalValues();
 }
 
 function duplicateItem(id){
@@ -549,7 +628,14 @@ function _autoRef(name){
   const nums = items.filter(x=>x.id!==eid).map(x=>x.ref||'').filter(r=>pat.test(r)).map(r=>parseInt(r.split('-')[1])||0);
   return cap + '-' + (nums.length ? Math.max(...nums)+1 : 1);
 }
-function closeM(){document.getElementById('mItem').classList.remove('open');setItemModalReadonly(false)}
+function closeM(){
+  if(modalHasChanges){
+    if(!confirm('Hay cambios sin guardar. ¿Descartar cambios?')) return;
+  }
+  document.getElementById('mItem').classList.remove('open');
+  setItemModalReadonly(false);
+  resetModalChanges();
+}
 
 async function copyItemQrUrl(){
   const url = document.getElementById('itemQrUrl')?.textContent || '';
