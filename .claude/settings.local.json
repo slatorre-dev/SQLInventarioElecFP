@@ -7,7 +7,8 @@
       "Bash(node -c js/modal-cats.js)",
       "Bash(node -c js/modal-item.js)",
       "Bash(git restore *)",
-      "Bash(node -c js/inventory.js)"
+      "Bash(node -c js/inventory.js)",
+      "Bash(node -c js/roles.js)"
     ]
   }
 }

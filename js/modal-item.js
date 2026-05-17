@@ -171,6 +171,76 @@ function closePhotoModal(){
   document.getElementById('mPhotoView')?.classList.remove('open');
 }
 
+function openPrintModal(){
+  if(!cf) return;
+  document.getElementById('mPrint').classList.add('open');
+}
+
+function closePrintModal(){
+  document.getElementById('mPrint').classList.remove('open');
+}
+
+function printFromModal(type){
+  closePrintModal();
+  if(type === 'items'){
+    printBulkItemQrs();
+  } else if(type === 'qr'){
+    const data = getFiltered ? getFiltered() : items;
+    if(!data.length){
+      toast('No hay ítems para imprimir','err');
+      return;
+    }
+    printBulkQrLabels();
+  }
+}
+
+function printBulkQrLabels(){
+  const data = typeof getFiltered === 'function' ? getFiltered() : items;
+  if(!data.length){
+    toast('No hay ítems para imprimir','err');
+    return;
+  }
+  const titulo = cf?.label || 'Inventario';
+  const fecha = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const labels = data.map(it => {
+    const url = itemUrl(it.id);
+    const code = itemCode(it);
+    return `<article class="qr-label">
+      <img src="${qrSrc(url,140)}" alt="QR">
+      <span class="qr-code">${escHtml(code)}</span>
+    </article>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>QR ${escHtml(titulo)}</title>
+  <style>
+    @page{size:A4;margin:8mm}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;margin:0;color:#111;padding:0}
+    .head{margin:0 0 6mm;border-bottom:1px solid #ddd;padding-bottom:3mm}
+    .head h1{font-size:16px;margin:0 0 2px}
+    .head p{font-size:10px;margin:0;color:#666}
+    .sheet{display:grid;grid-template-columns:repeat(5,1fr);gap:4mm}
+    .qr-label{border:1px solid #ddd;border-radius:3px;padding:4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2mm;break-inside:avoid;page-break-inside:avoid}
+    img{width:18mm;height:18mm}
+    .qr-code{font-size:8px;font-weight:600;text-align:center;word-break:break-all;line-height:1.2}
+  </style></head><body>
+    <header class="head">
+      <h1>Códigos QR · ${escHtml(titulo)}</h1>
+      <p>${data.length} códigos · ${escHtml(fecha)}</p>
+    </header>
+    <main class="sheet">${labels}</main>
+    <script>
+      const imgs=[...document.images];
+      Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(r=>{img.onload=img.onerror=r;})))
+        .then(()=>setTimeout(()=>print(),150));
+    <\/script>
+  </body></html>`;
+  const w = window.open('','_blank');
+  if(!w){ toast('El navegador ha bloqueado la ventana de impresión','err'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
 function updateModSelect(){
   const cId = document.getElementById('f_ciclo').value;
   const sel = document.getElementById('f_mod');
@@ -557,12 +627,12 @@ function printBulkItemQrs(){
     .head{margin:0 0 8mm;border-bottom:1px solid #ddd;padding-bottom:4mm}
     .head h1{font-size:18px;margin:0 0 3px}
     .head p{font-size:11px;margin:0;color:#555}
-    .sheet{display:grid;grid-template-columns:repeat(2,1fr);gap:6mm}
-    .label{min-height:52mm;border:1px solid #d7dce5;border-radius:4px;padding:5mm;display:flex;gap:4mm;align-items:center;break-inside:avoid;page-break-inside:avoid}
-    img{width:30mm;height:30mm;flex:0 0 30mm}
-    h2{font-size:13px;line-height:1.2;margin:0 0 3mm;overflow-wrap:anywhere}
-    .meta{font-size:10px;line-height:1.3;color:#333}
-    .url{font-size:7px;line-height:1.2;color:#666;margin-top:3mm;word-break:break-all}
+    .sheet{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm}
+    .label{min-height:40mm;border:1px solid #d7dce5;border-radius:4px;padding:3mm;display:flex;flex-direction:column;gap:2mm;align-items:center;justify-content:center;text-align:center;break-inside:avoid;page-break-inside:avoid}
+    img{width:20mm;height:20mm;flex:0 0 20mm}
+    h2{font-size:9px;line-height:1.1;margin:0;overflow-wrap:anywhere;font-weight:600}
+    .meta{font-size:7px;line-height:1.2;color:#555}
+    .url{font-size:6px;line-height:1.1;color:#777;word-break:break-all}
   </style></head><body>
     <header class="head">
       <h1>Etiquetas QR · ${escHtml(titulo)}</h1>
