@@ -16,7 +16,6 @@ async function ensureContainerCols(db) {
     await db.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('tipo_material_migrated', datetime('now'))").run().catch(() => {});
   }
 }
-
 async function auditLog(db, user, accion, itemId, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
@@ -29,10 +28,30 @@ async function auditLog(db, user, accion, itemId, resumen) {
   }
 }
 
+async function getAuditActor(request, env) {
+  if (request.user?.usuario) return request.user;
+  const usuario = new URL(request.url).searchParams.get('u') || '';
+  if (!usuario) return {};
+  const row = await env.DB.prepare('SELECT usuario, nombre, rol FROM usuarios WHERE usuario=?')
+    .bind(usuario.trim()).first().catch(() => null);
+  return row || { usuario: usuario.trim(), nombre: usuario.trim(), rol: '' };
+}
+
+function itemAuditSummary(prefix, item) {
+  const parts = [
+    item.ref ? `ref ${item.ref}` : '',
+    item.aula ? `aula ${item.aula}` : '',
+    item.cat ? `categoria ${item.cat}` : '',
+    item.qty != null ? `stock ${item.qty}` : '',
+    item.proveedor ? `proveedor ${item.proveedor}` : ''
+  ].filter(Boolean);
+  return `${prefix}: ${item.item || ''}${parts.length ? ' - ' + parts.join(' - ') : ''}`;
+}
+
 export async function onRequestPost({ request, env }) {
   const body = await request.json();
   const { action, item, id } = body;
-  const user = request.user;
+  const user = await getAuditActor(request, env);
 
   await ensureContainerCols(env.DB);
 
@@ -47,7 +66,7 @@ export async function onRequestPost({ request, env }) {
     const vals = HEADERS_INV.map(h => item[h] ?? null);
     await env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')}) VALUES (${HEADERS_INV.map(()=>'?').join(',')})`)
       .bind(...vals).run();
-    await auditLog(env.DB, user, 'add', newId, `Añadido: ${item.item} (${item.ref})`);
+    await auditLog(env.DB, user, 'add', newId, itemAuditSummary('Anadido', item));
     return Response.json({ ok: true, item });
   }
 
@@ -58,7 +77,7 @@ export async function onRequestPost({ request, env }) {
     const sets = FIELDS_UPD.map(h => `${h}=?`).join(',');
     const vals = [...FIELDS_UPD.map(h => item[h] ?? null), item.id];
     await env.DB.prepare(`UPDATE inventario SET ${sets} WHERE id=?`).bind(...vals).run();
-    await auditLog(env.DB, user, 'update', item.id, `Actualizado: ${item.item}`);
+    await auditLog(env.DB, user, 'update', item.id, itemAuditSummary('Actualizado', item));
     return Response.json({ ok: true, item });
   }
 
@@ -73,7 +92,7 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'bulkImport') {
     const newItems = body.items || [];
-    if (!newItems.length) return Response.json({ ok: false, error: 'Sin ítems' });
+    if (!newItems.length) return Response.json({ ok: false, error: 'Sin items' });
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM inventario').first();
     let nextId = (maxRow.m || 0) + 1;
     const stmt = env.DB.prepare(`INSERT OR REPLACE INTO inventario (${HEADERS_INV.join(',')}) VALUES (${HEADERS_INV.map(()=>'?').join(',')})`);
@@ -86,9 +105,9 @@ export async function onRequestPost({ request, env }) {
       return stmt.bind(...HEADERS_INV.map(h => it[h] ?? null));
     });
     await env.DB.batch(batch);
-    await auditLog(env.DB, user, 'bulkImport', '', `Importados ${newItems.length} ítems`);
+    await auditLog(env.DB, user, 'bulkImport', '', `Importados ${newItems.length} items`);
     return Response.json({ ok: true, imported: newItems.length, items: newItems });
   }
 
-  return Response.json({ ok: false, error: 'Acción desconocida' });
+  return Response.json({ ok: false, error: 'Accion desconocida' });
 }

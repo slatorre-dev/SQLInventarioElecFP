@@ -107,6 +107,13 @@ export async function onRequest(context) {
       const itemId = String(data.que || data.itemId || '').trim();
       const resumen = String(data.detalles || data.nombre || '').trim();
       const fecha = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      const actor = user || {};
+      const loginUsuario = url.searchParams.get('u') || data.usuario || '';
+      if (!actor.usuario && loginUsuario) {
+        const row = await env.DB.prepare('SELECT usuario, nombre, rol FROM usuarios WHERE usuario=?')
+          .bind(String(loginUsuario).trim()).first().catch(() => null);
+        Object.assign(actor, row || { usuario: String(loginUsuario).trim(), nombre: String(loginUsuario).trim(), rol: '' });
+      }
 
       if (!accion || !itemId) {
         return json({ ok: false, error: 'Faltan campos requeridos' }, { status: 400 });
@@ -115,7 +122,7 @@ export async function onRequest(context) {
       const result = await env.DB.prepare(`
         INSERT INTO log (fecha, usuario, nombre, rol, accion, itemId, resumen)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).bind(fecha, user.usuario, user.nombre, user.rol, accion, itemId, resumen).run();
+      `).bind(fecha, actor.usuario || '', actor.nombre || '', actor.rol || '', accion, itemId, resumen).run();
 
       return json({ ok: true, id: result.meta?.last_row_id || null }, { status: 201 });
     } catch (err) {
