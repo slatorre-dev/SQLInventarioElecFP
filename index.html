@@ -60,7 +60,6 @@
         </svg> QR
       </button>
       <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintModal()" title="Imprimir inventario">🖨️ Imprimir</button>
-      <button class="tbtn" id="btnPrintQr" style="display:none" onclick="openPrintQrModal()" title="Imprimir QR">🔳 QR</button>
       <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
         <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ Departamento</button>
         <div class="dept-menu" id="deptMenu">
@@ -340,7 +339,7 @@
       <button class="btn btn-p print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openModal()">＋ Añadir ítem</button>
       <button class="btn print-no" data-perm="loans.write" style="padding:10px 22px;font-size:13px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ Nuevo préstamo</button>
       <button class="btn btn-d print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openDelModal()">🗑️ Dar de baja</button>
-      <button class="btn print-no" style="padding:10px 22px;font-size:13px;border-color:var(--accent);color:var(--accent)" onclick="printBulkItemQrs()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> Imprimir QR</button>
+      <button class="btn print-no" style="padding:10px 22px;font-size:13px;border-color:var(--accent);color:var(--accent)" onclick="openPrintQrModal()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> Imprimir QR</button>
       <button class="btn print-no" style="padding:10px 22px;font-size:13px" onclick="openPrintModal()">🖨️ Imprimir</button>
       <button class="btn print-no" style="padding:10px 22px;font-size:13px" onclick="goHome()">🏠 Inicio</button>
     </div>
