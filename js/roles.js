@@ -10,6 +10,7 @@ const ROLE_PERMISSIONS = {
     'docs.write',
     'loans.write',
     'orders.write',
+    'categories.manage',
     'profile.write'
   ],
   'consulta': [
@@ -30,7 +31,7 @@ const ACTION_PERMISSIONS = {
   profUpdate: 'profesores.manage',
   profDelete: 'profesores.manage',
   aulasSync: 'config.manage',
-  catsSync: 'config.manage',
+  catsSync: 'categories.manage',
   ciclosSync: 'config.manage',
   prestar: 'loans.write',
   devolver: 'loans.write',

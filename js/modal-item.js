@@ -15,7 +15,7 @@ async function handleCatSelectChange(){
     return;
   }
   const previous = sel.dataset.prev || sortedCatNames()[0] || '';
-  if(!requirePerm('config.manage', 'No tienes permisos para crear categorías')) {
+  if(!requirePerm('categories.manage', 'No tienes permisos para crear categorías')) {
     sel.value = previous;
     return;
   }

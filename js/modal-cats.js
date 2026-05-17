@@ -8,7 +8,7 @@ function sortCatsEditing(){
 }
 
 function openCatsModal(){
-  if(!requirePerm('config.manage')) return;
+  if(!requirePerm('categories.manage')) return;
   catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
   sortCatsEditing();
   renderCatsList();
