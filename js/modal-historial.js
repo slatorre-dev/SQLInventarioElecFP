@@ -20,12 +20,17 @@ function closeHistorialModal() {
 async function cargarHistorial() {
   const tbody = document.getElementById('historialTbody');
   const empty = document.getElementById('historialEmpty');
+  const table = document.getElementById('historialTable');
 
   tbody.innerHTML = '';
   empty.textContent = 'Cargando...';
+  empty.style.display = 'block';
+  table.style.display = 'none';
 
   try {
+    console.log('[cargarHistorial] Fetching /api/historial?usuario=seba');
     const response = await fetch(`/api/historial?usuario=seba`);
+    console.log('[cargarHistorial] Response status:', response.status);
 
     if (!response.ok) {
       empty.textContent = 'No tienes permisos para ver el historial';
@@ -33,6 +38,7 @@ async function cargarHistorial() {
     }
 
     historialData = await response.json();
+    console.log('[cargarHistorial] Data:', historialData);
 
     if (!historialData || historialData.length === 0) {
       empty.textContent = 'No hay historial registrado aún';
@@ -40,6 +46,7 @@ async function cargarHistorial() {
     }
 
     empty.style.display = 'none';
+    table.style.display = 'table';
     renderHistorial(historialData);
   } catch (err) {
     console.error('Error loading historial:', err);
