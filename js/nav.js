@@ -22,6 +22,16 @@ function _hideHomeButtons(){
   document.getElementById('btnHome').style.display = 'flex';
 }
 
+function fillCatFilter(){
+  const sel = document.getElementById('fCat');
+  if(!sel) return;
+  const current = sel.value;
+  const base = cf ? getBase() : items;
+  const cats = [...new Set(base.map(x=>x.cat).filter(Boolean))].sort((a,b)=>catNameCompare(a,b));
+  sel.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  sel.value = cats.includes(current) ? current : '';
+}
+
 function goHome(){
   _push({page:'home'}, './');
   cf=null; currentCiclo=null;
@@ -154,8 +164,7 @@ function openSub(){
   if(typeof applyRoleUI === 'function') applyRoleUI();
   document.getElementById('srch').value='';
   document.getElementById('fEst').value='';
-  const cats=[...new Set(all.map(x=>x.cat).filter(Boolean))].sort();
-  document.getElementById('fCat').innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  fillCatFilter();
   show('pS'); renderInv(); renderSubStats(all,low);
 }
 
