@@ -131,6 +131,6 @@ function applyRoleUI(){
 }
 
 function showHistorialButton(){
-  const btnHistorial = document.getElementById('btnHistorial');
+  const btnHistorial = document.getElementById('btnHistorialDept');
   if(btnHistorial) btnHistorial.style.display = (SESSION && SESSION.usuario === 'seba') ? 'flex' : 'none';
 }
