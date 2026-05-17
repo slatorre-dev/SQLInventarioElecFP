@@ -171,20 +171,6 @@ function closePhotoModal(){
   document.getElementById('mPhotoView')?.classList.remove('open');
 }
 
-function openPrintModal(){
-  const data = typeof getFiltered === 'function' ? getFiltered() : items;
-  if(!data || !data.length){
-    toast('No hay ítems para imprimir','err');
-    return;
-  }
-  initPrintColGrid();
-  document.getElementById('mPrint').classList.add('open');
-}
-
-function closePrintModal(){
-  document.getElementById('mPrint').classList.remove('open');
-}
-
 function openPrintQrModal(){
   const data = typeof getFiltered === 'function' ? getFiltered() : items;
   if(!data || !data.length){
