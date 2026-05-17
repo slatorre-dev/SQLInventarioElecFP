@@ -35,6 +35,7 @@ Objetivos principales:
 - Gestion editable de ubicaciones sugeridas mediante tabla `ubicaciones`; tambien se derivan ubicaciones existentes desde `inventario.loc`.
 - Modal de alta/edicion de items ampliado en escritorio, con rejilla de 3 columnas, bloque QR compacto y campos redistribuidos para agrupar aula/ubicacion, foto/stock/tipo y ciclo/modulo.
 - Tabla de inventario optimizada: placeholder de foto reducido cuando no hay imagen, columna Utilidad truncada a 15 caracteres visibles y nombre del item clicable para abrir la ficha.
+- Categorias ordenadas alfabeticamente en tarjetas, gestion y desplegables; el selector de categoria del item permite crear una categoria nueva si el usuario tiene permiso de configuracion.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.

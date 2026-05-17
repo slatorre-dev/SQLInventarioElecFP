@@ -31,7 +31,7 @@ function renderHome(){
       <div class="ccard-desc">${a.desc}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
     </div>`;
   }).join('');
-  const catEntries = loading ? Object.entries(CATS) : Object.entries(CATS).filter(([name])=>items.some(x=>x.cat===name));
+  const catEntries = loading ? sortedCatEntries() : sortedCatEntries().filter(([name])=>items.some(x=>x.cat===name));
   document.getElementById('gCats').innerHTML=catEntries.length
     ? catEntries.map(([name,c])=>{
         const n=items.filter(x=>x.cat===name).length;

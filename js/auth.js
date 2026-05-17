@@ -124,7 +124,7 @@ async function loadData(){
     syncSessionUser(meta.user);
     showUserChip();
     if(meta.aulas && meta.aulas.length) AULAS = meta.aulas;
-    if(meta.cats && meta.cats.length) CATS = Object.fromEntries(meta.cats.sort((a,b)=>a.orden-b.orden).map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
+    if(meta.cats && meta.cats.length) setCatsFromEntries(meta.cats.map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
     document.getElementById('btnN').style.display='flex';

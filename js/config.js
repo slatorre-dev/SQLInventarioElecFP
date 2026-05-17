@@ -158,4 +158,16 @@ const CATS_DEFAULT={
   'Otros':                   {c:'#6b7280',bg:'#f9fafb',i:'🔧'},
 };
 let CATS = Object.assign({}, CATS_DEFAULT);
+function catNameCompare(a, b){
+  return String(a || '').localeCompare(String(b || ''), 'es', { sensitivity:'base' });
+}
+function sortedCatEntries(cats = CATS){
+  return Object.entries(cats || {}).sort(([a], [b]) => catNameCompare(a, b));
+}
+function sortedCatNames(cats = CATS){
+  return sortedCatEntries(cats).map(([name]) => name);
+}
+function setCatsFromEntries(entries){
+  CATS = Object.fromEntries((entries || []).sort(([a], [b]) => catNameCompare(a, b)));
+}
 const ESTC={'Bueno':'#059669','Deteriorado':'#d97706','Avería':'#dc2626','Baja':'#9ca3af'};

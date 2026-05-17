@@ -3,15 +3,21 @@
 // ═════════════════════════════════════════════════════════
 let catsEditing = [];
 
+function sortCatsEditing(){
+  catsEditing.sort((a,b)=>catNameCompare(a.name, b.name));
+}
+
 function openCatsModal(){
   if(!requirePerm('config.manage')) return;
-  catsEditing = Object.entries(CATS).map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
+  catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
+  sortCatsEditing();
   renderCatsList();
   document.getElementById('mCats').classList.add('open');
 }
 function closeCatsModal(){document.getElementById('mCats').classList.remove('open')}
 
 function renderCatsList(){
+  sortCatsEditing();
   document.getElementById('catsList').innerHTML = catsEditing.map((cat,i)=>`
     <div class="cat-row">
       <input class="icon-pick" value="${cat.i}" onchange="catsEditing[${i}].i=this.value" maxlength="2" title="Icono emoji">
@@ -48,13 +54,17 @@ async function saveCats(){
   for(const cat of catsEditing){
     if(!cat.name.trim()){toast('Hay categorías sin nombre','err');return}
   }
-  const names = catsEditing.map(c=>c.name.trim());
+  const names = catsEditing.map(c=>c.name.trim().toLowerCase());
   if(new Set(names).size !== names.length){toast('Hay nombres de categoría duplicados','err');return}
-  const payload = catsEditing.map((c,i)=>({name:c.name.trim(), c:c.c, bg:c.bg, i:c.i, orden:i+1}));
+  const clean = catsEditing.map(c=>({name:c.name.trim(), c:c.c, bg:c.bg, i:c.i})).sort((a,b)=>catNameCompare(a.name,b.name));
+  const payload = clean.map((c,i)=>({name:c.name, c:c.c, bg:c.bg, i:c.i, orden:i+1}));
   try {
     const res = await apiPost({action:'catsSync', cats:payload});
     if(!res.ok) throw new Error(res.error);
-    CATS = Object.fromEntries(catsEditing.map(c=>[c.name.trim(), {c:c.c, bg:c.bg, i:c.i}]));
+    setCatsFromEntries(clean.map(c=>[c.name, {c:c.c, bg:c.bg, i:c.i}]));
+    fillCatFilter();
+    fillModalSelects();
+    if(typeof renderHome === 'function') renderHome();
     closeCatsModal();
     toast('Categorías guardadas y sincronizadas','ok');
   } catch(err) {

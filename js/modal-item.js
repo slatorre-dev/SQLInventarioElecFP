@@ -4,8 +4,49 @@
 function fillModalSelects(){
   document.getElementById('f_aula').innerHTML=AULAS.map(a=>`<option value="${a.id}">${a.name} — ${a.desc}</option>`).join('');
   document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
-  document.getElementById('f_cat').innerHTML=Object.keys(CATS).map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('f_cat').innerHTML=sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
   fillLocationSuggestions();
+}
+
+async function handleCatSelectChange(){
+  const sel = document.getElementById('f_cat');
+  if(sel.value !== '__new_category__') {
+    sel.dataset.prev = sel.value;
+    return;
+  }
+  const previous = sel.dataset.prev || sortedCatNames()[0] || '';
+  if(!requirePerm('config.manage', 'No tienes permisos para crear categorías')) {
+    sel.value = previous;
+    return;
+  }
+  const name = String(prompt('Nombre de la nueva categoría:') || '').trim();
+  if(!name){
+    sel.value = previous;
+    return;
+  }
+  const exists = sortedCatNames().find(c => c.toLowerCase() === name.toLowerCase());
+  if(exists){
+    sel.value = exists;
+    sel.dataset.prev = exists;
+    toast('La categoría ya existe', 'ok');
+    return;
+  }
+  const nextCats = Object.assign({}, CATS, { [name]: { i:'🏷️', c:'#6b7280', bg:'#f9fafb' } });
+  const payload = sortedCatEntries(nextCats).map(([catName, v], i)=>({ name:catName, c:v.c, bg:v.bg, i:v.i, orden:i+1 }));
+  try{
+    const res = await apiPost({ action:'catsSync', cats:payload });
+    if(!res.ok) throw new Error(res.error);
+    setCatsFromEntries(sortedCatEntries(nextCats));
+    fillModalSelects();
+    sel.value = name;
+    sel.dataset.prev = name;
+    fillCatFilter();
+    if(typeof renderHome === 'function') renderHome();
+    toast('Categoría añadida', 'ok');
+  }catch(err){
+    sel.value = previous;
+    toast('Error al crear categoría: ' + err.message, 'err');
+  }
 }
 
 function fillLocationSuggestions(){
@@ -279,7 +320,9 @@ function openModal(id=null, src=null){
   document.getElementById('f_qty').value = id ? (m?.qty??1) : 1;
   document.getElementById('f_min').value=m?.min??0;
   document.getElementById('f_tipo_material').value=materialType(m || src || {});
-  document.getElementById('f_cat').value=m?.cat||Object.keys(CATS)[0]||'Componentes electrónicos';
+  const catSel = document.getElementById('f_cat');
+  catSel.value=m?.cat||sortedCatNames()[0]||'Componentes electrónicos';
+  catSel.dataset.prev = catSel.value;
   const itemCiclo = m?.mod ? m.mod.split('__')[0] : (cf?.type==='mod' ? cf.ciclo.id : '');
   document.getElementById('f_ciclo').value = itemCiclo;
   updateModSelect();
