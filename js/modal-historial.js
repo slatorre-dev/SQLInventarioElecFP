@@ -28,12 +28,12 @@ async function cargarHistorial() {
   table.style.display = 'none';
 
   try {
-    console.log('[cargarHistorial] Fetching /api/historial?usuario=seba');
-    const response = await fetch(`/api/historial?usuario=seba`);
+    console.log('[cargarHistorial] Fetching /api/historial');
+    const response = await fetch(`/api/historial`);
     console.log('[cargarHistorial] Response status:', response.status);
 
     if (!response.ok) {
-      empty.textContent = 'No tienes permisos para ver el historial';
+      empty.textContent = 'Error al cargar el historial (status: ' + response.status + ')';
       return;
     }
 

@@ -2,19 +2,10 @@ export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
 
-  // GET /api/historial — obtener historial (solo Seba)
+  // GET /api/historial — obtener historial
   if (request.method === 'GET') {
-    const usuario = (url.searchParams.get('usuario') || '').toLowerCase();
-
-    // Solo Seba puede ver el historial completo
-    if (usuario !== 'seba') {
-      return new Response(JSON.stringify({ error: 'No autorizado' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
     try {
+      // Verificar que la tabla existe, si no devolvemos lista vacía
       const stmt = env.DB.prepare(`
         SELECT id, timestamp, usuario, accion, que, nombre, detalles
         FROM historial
@@ -29,6 +20,13 @@ export async function onRequest(context) {
       });
     } catch (err) {
       console.error('Error fetching historial:', err);
+      // Si la tabla no existe, devolvemos lista vacía en lugar de error
+      if (err.message && err.message.includes('no such table')) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       return new Response(JSON.stringify({ error: err.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
