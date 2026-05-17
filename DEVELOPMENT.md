@@ -213,3 +213,375 @@ f62cc3f — Avoid unsaved prompt after item save (v154→v155)
    - Actualizar documentación de API (endpoints nuevos)
    - Documentar tabla `log` en schema
    - Guía de uso del historial para usuarios
+
+---
+
+## Sesión Mayo 2026 — Sesión 5 (v159→v166) — Auditoría de Datos
+
+### Contexto
+Se requería una herramienta para identificar y limpiar items con campos incompletos. El inventario tenía ~969 items con problemas en campos críticos (módulo, aula, categoría, etc.).
+
+### Archivo Nuevo: `js/modal-auditoria.js`
+
+#### Funcionalidad Principal
+- Modal para auditar integridad de datos del inventario
+- Identifica items con campos faltantes (5 campos críticos + 3 secundarios)
+- Sistema dual de filtrado + agrupación
+- Integración con bulk edit existente
+- Control de acceso: requiere permiso `config.manage`
+
+#### Variables de Estado
+```js
+let auditoriaData = [];              // items con problemas
+let auditoriaFiltroActual = 'all';   // filtro: 'all' | 'cat' | 'mod' | 'aula' | 'ref' | 'loc' | 'proveedor'
+let auditoriaSeleccionados = new Set(); // IDs de items seleccionados
+let auditoriaAgrupar = 'none';       // agrupación: 'none' | 'cat' | 'aula'
+let gruposColapsados = new Set();    // grupos colapsados
+```
+
+#### Campos Auditados
+```js
+const CAMPOS_CRITICOS = [
+  { key: 'cat',  label: 'Categoría' },
+  { key: 'mod',  label: 'Módulo/Ciclo' },
+  { key: 'aula', label: 'Aula' },
+];
+
+const CAMPOS_SECUNDARIOS = [
+  { key: 'ref',       label: 'Referencia' },
+  { key: 'loc',       label: 'Ubicación' },
+  { key: 'proveedor', label: 'Proveedor' },
+];
+```
+
+#### Funciones Principales
+
+**1. `openAuditoriaModal()` / `closeAuditoriaModal()`**
+- Abre/cierra modal con validación de permisos
+- Control z-index para layering correcto
+
+**2. `cargarAuditoria()`**
+- Carga datos desde array global `items`
+- Analiza cada item buscando campos faltantes
+- Inicializa tabla y filtros
+- Renderiza con filtro actual
+
+**3. `getItemProblemas(item)`**
+- Devuelve array de etiquetas de campos faltantes
+- Verifica campos vacíos o solo espacios
+
+**4. `renderAuditoria(filtro)`**
+- Router principal que delega a vista apropiada
+- Actualiza contadores de filtro
+- Muestra información contextual
+
+**5. `renderAuditoriaFilas(items)`**
+- Renderiza tabla normal sin agrupación
+- Cada fila: checkbox, ref, nombre, aula, categoría, problemas, acción
+
+**6. `renderAuditoriaAgrupada(items)`**
+- Renderiza grupos colapsables
+- Estructura: cabecera de grupo + filas del grupo
+- Checkbox de grupo: selecciona/deselecciona todos
+- Toggle colapso con click en cabecera
+- Mostra contador de items en grupo
+
+**7. `agruparAuditoria(modo)`**
+- Cambia modo de agrupación
+- Limpia estado colapsado (expande todos)
+- Actualiza botones activos
+- Redibuja tabla
+
+**8. `getGrupos(items)`**
+- Agrupa items por campo seleccionado
+- Ordena grupos por cantidad de items (descendente)
+- Items sin el campo de agrupación van a grupo final: "(Sin aula)" o "(Sin categoría)"
+- Retorna array de pares [clave, items[]]
+
+**9. `toggleGrupoAuditoria(key)`**
+- Toggle estado colapsado de un grupo
+- Muestra/oculta filas del grupo con `display:none`
+- Actualiza símbolo: ▼ (expandido) / ▶ (colapsado)
+
+**10. `seleccionarGrupo(key, checked)`**
+- Selecciona/deselecciona todos los items de un grupo
+- Actualiza `auditoriaSeleccionados`
+- Redibuja tabla
+
+**11. `filtrarAuditoria(filtro)`**
+- Cambia filtro activo
+- Actualiza botones activos
+- Redibuja tabla
+
+**12. `toggleAuditoriaItem(itemId)`**
+- Selecciona/deselecciona item individual
+- Muestra/oculta botón de edición en lote
+- Redibuja
+
+**13. `updateFiltroButtons()`**
+- Calcula contador para cada tipo de problema
+- Actualiza texto de botones: "Sin módulo (245)"
+- Se ejecuta al cargar datos
+
+**14. `abrirItemParaEditar(itemId)`**
+- Abre modal de edición de item (sin cerrar auditoría)
+- **Fix z-index:** aumenta z-index del modal auditoría a 500 antes de abrir item
+- Al cerrar modal de item, restaura z-index a 501
+- Permite navegar entre items sin perder contexto de auditoría
+
+**15. `editarSeleccionados()`**
+- Prepara edición en lote de items seleccionados
+- Llena Set global `bulkSelected` con IDs
+- Cierra modal de auditoría
+- Muestra barra de bulk actions
+- Integración con sistema existente de inventory.js
+
+**16. `seleccionarTodos()`**
+- Selecciona/deselecciona todos los items visibles (filtrados)
+- Toggle: si todos seleccionados → deselecciona; si no → selecciona
+
+**17. `escapeHtml(text)`**
+- Sanitiza HTML para evitar XSS
+- Usa `textContent` + `innerHTML`
+
+---
+
+### Cambios en `index.html`
+
+#### Botón de Acceso
+Añadido en menú Departamento:
+```html
+<button class="dept-menu-item" id="btnAuditoriaDept" data-perm="config.manage" 
+        onclick="closeDeptMenu();openAuditoriaModal()">
+  🔍 Auditoría de datos
+</button>
+```
+
+#### Modal HTML Completo
+```html
+<div class="modal-backdrop" id="mAuditoriaBackdrop" onclick="closeAuditoriaModal()">
+  <div class="modal" id="mAuditoria">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <h2 style="margin:0">🔍 Auditoría de Datos</h2>
+      <button class="close-btn" onclick="closeAuditoriaModal()">✕</button>
+    </div>
+
+    <!-- Filtros y Agrupación -->
+    <div id="auditoriaFiltros" style="margin-bottom:20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <!-- Filtros de campos -->
+      <span style="color:var(--muted);font-size:12px">Filtrar por:</span>
+      <button class="abtn active" onclick="filtrarAuditoria('all')">Todos</button>
+      <button class="abtn" onclick="filtrarAuditoria('cat')">Sin categoría</button>
+      <button class="abtn" onclick="filtrarAuditoria('mod')">Sin módulo</button>
+      <button class="abtn" onclick="filtrarAuditoria('aula')">Sin aula</button>
+      <button class="abtn" onclick="filtrarAuditoria('ref')">Sin referencia</button>
+      <button class="abtn" onclick="filtrarAuditoria('loc')">Sin ubicación</button>
+      <button class="abtn" onclick="filtrarAuditoria('proveedor')">Sin proveedor</button>
+      
+      <!-- Separador -->
+      <span style="color:var(--muted);font-size:12px;margin-left:4px">Agrupar por:</span>
+      
+      <!-- Agrupación -->
+      <button class="abtn active" id="audGrpNone" onclick="agruparAuditoria('none')">Sin agrupar</button>
+      <button class="abtn" id="audGrpCat" onclick="agruparAuditoria('cat')">Categoría</button>
+      <button class="abtn" id="audGrpAula" onclick="agruparAuditoria('aula')">Aula</button>
+    </div>
+
+    <!-- Información y controles -->
+    <div id="auditoriaInfo" style="margin-bottom:12px;font-size:13px;color:var(--text)"></div>
+    
+    <div style="margin-bottom:12px;display:flex;gap:8px">
+      <button class="btn-primary" id="audSelAll" onclick="seleccionarTodos()" style="display:none">
+        ☑️ Seleccionar todos
+      </button>
+      <button class="btn-accent" id="audEditMult" onclick="editarSeleccionados()" style="display:none">
+        ✏️ Editar seleccionados
+      </button>
+    </div>
+
+    <!-- Tabla -->
+    <div style="max-height:calc(100vh - 320px);overflow-y:auto;border:1px solid var(--border);border-radius:6px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--surface2);sticky:top:0">
+            <th style="padding:8px;text-align:center;width:32px">☑</th>
+            <th style="padding:8px;text-align:left;min-width:80px">Ref</th>
+            <th style="padding:8px;text-align:left;min-width:150px">Nombre</th>
+            <th style="padding:8px;text-align:left;min-width:80px">Aula</th>
+            <th style="padding:8px;text-align:left;min-width:100px">Categoría</th>
+            <th style="padding:8px;text-align:left;min-width:200px">Campos faltantes</th>
+            <th style="padding:8px;text-align:center;width:90px">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="auditoriaTbody"></tbody>
+      </table>
+    </div>
+
+    <div id="auditoriaEmpty" style="padding:40px;text-align:center;color:var(--muted);display:none"></div>
+  </div>
+</div>
+```
+
+---
+
+### Cambios en `js/modal-item.js`
+
+#### Fix: Unsaved Changes Warning (v166)
+
+**Problema:** Al navegar entre items en auditoría, el flag `modalHasChanges` persistía, mostrando falsa alarma de "cambios sin guardar"
+
+**Solución:** Resetear flag al inicio de `openModal()`:
+```js
+function openModal(id) {
+  // ... código existente ...
+  eid = id;
+  fillModalSelects();
+  
+  // NUEVO: Reset change detection para item nuevo
+  modalHasChanges = false;
+  updateModalIndicator();
+  
+  // ... resto del código ...
+}
+```
+
+**Ubicación:** Al comienzo de la función, tras `fillModalSelects()`
+
+---
+
+### Cambios en CSS (`styles.css`)
+
+Añadidas clases para auditoría (aplicadas inline en HTML):
+
+```css
+/* Modal auditoría ancho */
+#mAuditoria .modal {
+  width: 1200px;
+  max-width: 100vw;
+}
+
+/* Tabla scrolleable */
+#mAuditoria table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#mAuditoria th, #mAuditoria td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Badges de problemas */
+.problemas-badge {
+  background: var(--red-bg, #ffe0e0);
+  color: var(--red);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+/* Header de grupo colapsable */
+.auditoria-group-header {
+  background: var(--surface2);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auditoria-group-header:hover {
+  background: var(--surface3);
+}
+
+/* Toggle collapso */
+.group-toggle {
+  font-size: 12px;
+  color: var(--muted);
+  user-select: none;
+}
+```
+
+---
+
+### Service Worker Update
+
+Versión bumped de v158 → v166 en `sw.js` para forzar recarga de caché:
+
+```js
+const VERSION = 'v166';
+```
+
+**Cambios por versión:**
+- v159: Auditoría básica + filtros
+- v160: Fix z-index modal edición
+- v161: Fix bulk edit integration
+- v162: Fix agrupación items sin campo
+- v163: Añadir columna categoría
+- v164-165: (reservadas)
+- v166: Fix unsaved changes warning
+
+---
+
+### Bugs Encontrados y Solucionados
+
+| Bug | Versión | Causa | Solución |
+|-----|---------|-------|----------|
+| Datos no cargan | v159 | Variable `INVENTORY` equivocada | Usar `items` |
+| Modal edición detrás de auditoría | v160 | z-index no configurado | Manipular z-index dinámicamente |
+| Bulk edit no funciona | v161 | Llamada a función no existente | Integrar con sistema existente |
+| Agrupación mezcla items sin campo | v162 | Lógica de agrupación incorrecta | Separar en grupo final "(Sin aula)" |
+| Falta columna categoría | v163 | Columna no añadida a HTML/render | Añadir th y td |
+| Falso aviso "cambios sin guardar" | v166 | Flag `modalHasChanges` no reseteado | Resetear al abrir nuevo item |
+
+---
+
+### Flujo de Uso Completo
+
+1. **Acceso** → Menú Departamento → "🔍 Auditoría de datos"
+2. **Cargar datos** → Se analizan ~969 items, se detectan problemas
+3. **Filtrar** → Seleccionar campo problemático: "Sin módulo"
+4. **Agrupar** → "Agrupar por Aula" → items organizados en grupos
+5. **Seleccionar** → Clickear grupo o items individuales
+6. **Editar** → Opción A: editar en lote (bulk); Opción B: editar individual
+7. **Guardar** → Cambios se registran en auditoría automáticamente
+
+---
+
+### Características
+
+✅ **Implementadas:**
+- Modal amplio (1200px) con scroll
+- Tabla con 7 columnas (checkbox, ref, nombre, aula, categoría, problemas, acción)
+- Filtrado por 7 tipos de problemas
+- Agrupación por categoría o aula
+- Grupos colapsables con toggle
+- Checkbox de grupo para selección masiva
+- Edición individual sin cerrar modal
+- Edición en lote con bulk actions existente
+- Contador de items problemáticos
+- Contador de items seleccionados
+- Integración total con sistema existente
+- Z-index correcto para modales superpuestos
+
+⏳ **Backlog:**
+- Indicador visual de progreso
+- Marcar grupos como completados
+- Vista estadística inicial (reporte de problemas)
+- Filtros AND/OR combinados
+- Exportar reporte CSV/PDF
+
+---
+
+### Commits Relacionados
+
+```
+7815642 Update IDEAS.md with audit UX improvements backlog (v166)
+5c5117b Fix unsaved changes warning when opening new item from audit modal (v165→v166)
+[anteriores: commits de auditoría v159→v165]
+```
+
+---
+
+**Última actualización:** 17/05/2026 — Sesión 5 (v166)
