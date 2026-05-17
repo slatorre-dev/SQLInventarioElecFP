@@ -782,6 +782,7 @@ async function saveItem(){
       if(!res.ok) throw new Error(res.error);
       const i=items.findIndex(x=>x.id===eid); items[i]=item;
       await uploadPendingDocs(eid, item.item, item.aula);
+      if(typeof logHistorial === 'function') logHistorial('itemUpdate', item.id, item.item, `Item actualizado: ${item.item} (${item.ref || item.code || item.id})`);
       fillTagSuggestions();
       toast('Ítem actualizado','ok');
     } else {
@@ -789,6 +790,7 @@ async function saveItem(){
       if(!res.ok) throw new Error(res.error);
       items.push(res.item);
       await uploadPendingDocs(res.item.id, res.item.item, res.item.aula);
+      if(typeof logHistorial === 'function') logHistorial('itemAdd', res.item.id, res.item.item, `Item añadido: ${res.item.item} (${res.item.ref || res.item.code || res.item.id})`);
       fillTagSuggestions();
       toast('Ítem añadido','ok');
     }
@@ -813,6 +815,7 @@ function confDel(id){
     try {
       const res = await apiPost({action:'delete', id:dId});
       if(!res.ok) throw new Error(res.error);
+      if(typeof logHistorial === 'function' && it) logHistorial('itemDelete', dId, it.item, `Item eliminado: ${it.item} (${it.ref || it.code || it.id})`);
       items = items.filter(x=>x.id!==dId);
       closeConf();
       if(cf) openSub(); else renderHome();
@@ -890,6 +893,7 @@ async function saveBaja(){
     if(!res.ok) throw new Error(res.error);
     const idx = items.findIndex(x=>x.id===bajaId);
     items[idx] = updated;
+    if(typeof logHistorial === 'function') logHistorial('itemBaja', updated.id, updated.item, `Baja de ${cant} unidad${cant!==1?'es':''}: ${updated.item}. Motivo: ${motivo}`);
     closeBaja();
     if(cf) openSub(); else renderHome();
     toast(restante===0 ? 'Ítem dado de baja completamente' : `${cant} unidad${cant!==1?'es':''} dada${cant!==1?'s':''} de baja · Quedan ${restante}`,'ok');

@@ -33,7 +33,7 @@ function mapLogRow(row) {
   const itemId = String(row.itemId || '').trim();
   const actionKey = normalizeText(accion);
   let tipo = 'Sistema';
-  if (['add', 'update', 'delete', 'bulkimport'].includes(actionKey)) tipo = 'Items';
+  if (['add', 'update', 'delete', 'bulkimport', 'itemadd', 'itemupdate', 'itemdelete', 'itembaja'].includes(actionKey)) tipo = 'Items';
   else if (actionKey.startsWith('user') || ['updateprofile', 'changepassword'].includes(actionKey)) tipo = 'Usuarios';
   else if (actionKey.startsWith('prof')) tipo = 'Profesores';
   else if (['prestar', 'prestarcaja', 'devolver'].includes(actionKey)) tipo = 'Prestamos';
