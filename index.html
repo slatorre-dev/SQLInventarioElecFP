@@ -81,6 +81,7 @@
           <a class="dept-menu-item" href="https://docs.google.com/spreadsheets/d/1VNk8sXg4Gjudjn6hHWTUxlWXIvJUFCHBwLkAZ1FC13Y/edit?gid=919419425#gid=919419425" target="_blank" rel="noopener" onclick="closeDeptMenu()">📊 Ver hoja de cálculo</a>
           <div class="dept-menu-sep"></div>
           <button class="dept-menu-item" id="btnHistorialDept" style="display:none" onclick="closeDeptMenu();openHistorialModal()">📋 Historial de acciones</button>
+          <button class="dept-menu-item" id="btnAuditoriaDept" data-perm="config.manage" onclick="closeDeptMenu();openAuditoriaModal()">🔍 Auditoría de datos</button>
         </div>
       </div>
     </div>
@@ -1149,6 +1150,47 @@
   </div>
 </div>
 
+<!-- ══ MODAL AUDITORÍA DE DATOS ══ -->
+<div class="mbg" id="mAuditoria" onclick="if(event.target===this)closeAuditoriaModal()" style="display:none">
+  <div class="modal auditoria-modal">
+    <div class="mh">
+      <h2>🔍 Auditoría de datos — Items incompletos</h2>
+      <button class="mbtn-close" onclick="closeAuditoriaModal()">✕</button>
+    </div>
+    <div class="auditoria-body">
+      <!-- Filtros por tipo de problema -->
+      <div id="auditoriaFiltros" class="auditoria-filtros">
+        <button class="abtn active" id="audFiltAll" onclick="filtrarAuditoria('all')">Todos</button>
+        <button class="abtn" onclick="filtrarAuditoria('cat')">Sin categoría</button>
+        <button class="abtn" onclick="filtrarAuditoria('mod')">Sin módulo</button>
+        <button class="abtn" onclick="filtrarAuditoria('aula')">Sin aula</button>
+        <button class="abtn" onclick="filtrarAuditoria('ref')">Sin referencia</button>
+        <button class="abtn" onclick="filtrarAuditoria('loc')">Sin ubicación</button>
+        <button class="abtn" onclick="filtrarAuditoria('proveedor')">Sin proveedor</button>
+      </div>
+      <!-- Información -->
+      <div id="auditoriaInfo" class="auditoria-info"></div>
+      <!-- Tabla -->
+      <table class="inv-table auditoria-table" id="auditoriaTable">
+        <thead>
+          <tr>
+            <th>Ref</th>
+            <th>Nombre</th>
+            <th>Aula</th>
+            <th>Campos faltantes</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="auditoriaTbody"></tbody>
+      </table>
+      <div id="auditoriaEmpty" style="text-align:center;padding:2rem;color:#999;display:none">No se encontraron problemas ✓</div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeAuditoriaModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- DEPARTMENT GAME -->
 <div class="mbg" id="mDeptGame" onclick="if(event.target===this)closeDeptGame()">
   <div class="modal dept-game-modal">
@@ -1199,6 +1241,7 @@
 <script defer src="js/qr-scanner.js"></script>
 <script defer src="js/audit-log.js"></script>
 <script defer src="js/modal-historial.js"></script>
+<script defer src="js/modal-auditoria.js"></script>
 <script defer src="js/dept-game.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script defer src="js/auth.js"></script>
