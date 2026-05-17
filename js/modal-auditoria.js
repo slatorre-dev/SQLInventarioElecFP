@@ -349,14 +349,34 @@ function agruparAuditoria(modo) {
 
 function getGrupos(items) {
   const grupos = new Map();
+  const sinGrupo = [];
+
   items.forEach(item => {
-    const key = auditoriaAgrupar === 'cat'
-      ? (item.cat || '(Sin categoría)')
-      : (item.aula || '(Sin aula)');
-    if (!grupos.has(key)) grupos.set(key, []);
-    grupos.get(key).push(item);
+    let key;
+    if (auditoriaAgrupar === 'cat') {
+      key = item.cat;
+    } else {
+      key = item.aula;
+    }
+
+    if (!key || key.toString().trim() === '') {
+      sinGrupo.push(item);
+    } else {
+      if (!grupos.has(key)) grupos.set(key, []);
+      grupos.get(key).push(item);
+    }
   });
-  return [...grupos.entries()].sort((a, b) => b[1].length - a[1].length);
+
+  // Ordenar grupos con items de mayor a menor
+  const resultado = [...grupos.entries()].sort((a, b) => b[1].length - a[1].length);
+
+  // Agregar grupo "(Sin aula)" o "(Sin categoría)" al final
+  if (sinGrupo.length > 0) {
+    const sinGrupoLabel = auditoriaAgrupar === 'cat' ? '(Sin categoría)' : '(Sin aula)';
+    resultado.push([sinGrupoLabel, sinGrupo]);
+  }
+
+  return resultado;
 }
 
 function toggleGrupoAuditoria(key) {
