@@ -16,6 +16,7 @@ const TODOS_LOS_CAMPOS = [...CAMPOS_CRITICOS, ...CAMPOS_SECUNDARIOS];
 
 let auditoriaData = [];
 let auditoriaFiltroActual = 'all';
+let auditoriaSeleccionados = new Set();
 
 function openAuditoriaModal() {
   if (!can('config.manage')) {
@@ -39,11 +40,14 @@ function closeAuditoriaModal() {
 function cargarAuditoria() {
   const empty = document.getElementById('auditoriaEmpty');
   empty.style.display = 'none';
+  auditoriaSeleccionados.clear();
 
   // Usar items ya cargado en memoria
   if (!items || items.length === 0) {
     empty.textContent = 'Cargando...';
     empty.style.display = 'block';
+    document.getElementById('audSelAll').style.display = 'none';
+    document.getElementById('audEditMult').style.display = 'none';
     return;
   }
 
@@ -53,8 +57,10 @@ function cargarAuditoria() {
     problemas: getItemProblemas(item)
   })).filter(item => item.problemas.length > 0);
 
-  console.log('auditoriaData:', auditoriaData);
-  console.log('items sample:', items.slice(0, 3));
+  // Mostrar controles de selección si hay items
+  const hasItems = auditoriaData.length > 0;
+  document.getElementById('audSelAll').style.display = hasItems ? 'block' : 'none';
+  document.getElementById('audEditMult').style.display = hasItems && auditoriaSeleccionados.size > 0 ? 'block' : 'none';
 
   // Renderizar con filtro actual
   renderAuditoria(auditoriaFiltroActual);
@@ -90,12 +96,19 @@ function renderAuditoria(filtro) {
   // Actualizar información
   const total = auditoriaData.length;
   const mostrados = items.length;
+  const seleccionados = auditoriaSeleccionados.size;
+
+  let infoText = '';
   if (filtro === 'all') {
-    info.innerHTML = `<strong>${total} items con campos faltantes</strong>`;
+    infoText = `<strong>${total} items con campos faltantes</strong>`;
   } else {
     const fieldName = TODOS_LOS_CAMPOS.find(f => f.key === filtro)?.label || filtro;
-    info.innerHTML = `<strong>${mostrados} items sin ${fieldName}</strong> (de ${total} total)`;
+    infoText = `<strong>${mostrados} items sin ${fieldName}</strong> (de ${total} total)`;
   }
+  if (seleccionados > 0) {
+    infoText += ` · <strong style="color:var(--blue)">${seleccionados} seleccionados</strong>`;
+  }
+  info.innerHTML = infoText;
 
   if (items.length === 0) {
     empty.textContent = filtro === 'all'
@@ -107,12 +120,17 @@ function renderAuditoria(filtro) {
 
   empty.style.display = 'none';
 
-  // Renderizar filas
+  // Renderizar filas con checkbox
   items.forEach(item => {
     const tr = document.createElement('tr');
     const problemasStr = item.problemas.join(', ');
+    const isChecked = auditoriaSeleccionados.has(item.id);
 
     tr.innerHTML = `
+      <td style="width:32px;text-align:center">
+        <input type="checkbox" class="audit-item-check" data-id="${item.id}" ${isChecked ? 'checked' : ''}
+               onchange="toggleAuditoriaItem(${item.id})">
+      </td>
       <td class="ref-cell">${escapeHtml(item.ref || '—')}</td>
       <td class="name-cell">${escapeHtml(item.item || '—')}</td>
       <td class="aula-cell">${escapeHtml(item.aula || '—')}</td>
@@ -171,6 +189,19 @@ function updateFiltroButtons() {
   });
 }
 
+function toggleAuditoriaItem(itemId) {
+  if (auditoriaSeleccionados.has(itemId)) {
+    auditoriaSeleccionados.delete(itemId);
+  } else {
+    auditoriaSeleccionados.add(itemId);
+  }
+  // Mostrar/ocultar botón de edición en lote
+  const btnEdit = document.getElementById('audEditMult');
+  btnEdit.style.display = auditoriaSeleccionados.size > 0 ? 'block' : 'none';
+
+  renderAuditoria(auditoriaFiltroActual);
+}
+
 function abrirItemParaEditar(itemId) {
   const item = items.find(i => i.id === itemId);
   if (!item) {
@@ -178,8 +209,32 @@ function abrirItemParaEditar(itemId) {
     return;
   }
 
-  // Abrir modal de edición
-  openItemModal(item.id);
+  // Abrir modal de edición (no cierra la auditoría)
+  openModal(item.id);
+}
+
+function editarSeleccionados() {
+  if (auditoriaSeleccionados.size === 0) {
+    toast('Selecciona al menos un item', 'warn');
+    return;
+  }
+
+  // Usar la función de bulk edit existente en inventory.js
+  const ids = Array.from(auditoriaSeleccionados);
+  if (typeof openBulkEditModal === 'function') {
+    openBulkEditModal(ids);
+  } else {
+    toast('Función de edición en lote no disponible', 'err');
+  }
+}
+
+function seleccionarTodos() {
+  if (auditoriaSeleccionados.size === auditoriaData.length) {
+    auditoriaSeleccionados.clear();
+  } else {
+    auditoriaData.forEach(item => auditoriaSeleccionados.add(item.id));
+  }
+  renderAuditoria(auditoriaFiltroActual);
 }
 
 function escapeHtml(text) {

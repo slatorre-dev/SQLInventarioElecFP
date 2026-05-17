@@ -1168,12 +1168,17 @@
         <button class="abtn" onclick="filtrarAuditoria('loc')">Sin ubicación</button>
         <button class="abtn" onclick="filtrarAuditoria('proveedor')">Sin proveedor</button>
       </div>
-      <!-- Información -->
+      <!-- Información y controles -->
       <div id="auditoriaInfo" class="auditoria-info"></div>
+      <div class="auditoria-controls" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="mini-btn" id="audSelAll" onclick="seleccionarTodos()" style="display:none">☐ Seleccionar todos</button>
+        <button class="mini-btn" id="audEditMult" onclick="editarSeleccionados()" style="display:none;background:var(--blue);color:white">✏️ Editar seleccionados</button>
+      </div>
       <!-- Tabla -->
       <table class="inv-table auditoria-table" id="auditoriaTable">
         <thead>
           <tr>
+            <th style="width:32px;text-align:center">☑</th>
             <th>Ref</th>
             <th>Nombre</th>
             <th>Aula</th>
