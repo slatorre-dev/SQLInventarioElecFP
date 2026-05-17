@@ -20,9 +20,10 @@ async function ensureContainerCols(db) {
 async function auditLog(db, user, accion, itemId, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
+    const actor = user || {};
     await db.prepare("CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT '', usuario TEXT DEFAULT '', nombre TEXT DEFAULT '', rol TEXT DEFAULT '', accion TEXT DEFAULT '', itemId TEXT DEFAULT '', resumen TEXT DEFAULT '')").run();
     await db.prepare('INSERT INTO log (fecha,usuario,nombre,rol,accion,itemId,resumen) VALUES (?,?,?,?,?,?,?)')
-      .bind(fecha, user.usuario, user.nombre, user.rol, accion, String(itemId ?? ''), resumen).run();
+      .bind(fecha, actor.usuario || '', actor.nombre || '', actor.rol || '', accion, String(itemId ?? ''), resumen).run();
   } catch (error) {
     console.warn('auditLog failed', error?.message || error);
   }
