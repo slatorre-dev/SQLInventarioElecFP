@@ -158,6 +158,7 @@ const CATS_DEFAULT={
 const TAGS_DEFAULT = [
   '230V','Antenas','Arduino','Cables','Condensadores','Conectores','Domótica','ESP32','Ethernet','Fibra óptica','Herramienta','KNX','Medida','Motores','PLC','Protecciones eléctricas','Raspberry Pi','Relés','Robótica','Routers','Seguridad','Sensores','SMD','Soldadura','Switches','Telecomunicaciones','Tornillería','USB','WiFi'
 ];
+let TAGS = TAGS_DEFAULT.slice();
 let CATS = Object.assign({}, CATS_DEFAULT);
 function catNameCompare(a, b){
   return String(a || '').localeCompare(String(b || ''), 'es', { sensitivity:'base' });

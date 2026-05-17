@@ -12,6 +12,7 @@ function openCatsModal(){
   catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
   sortCatsEditing();
   renderCatsList();
+  renderTagsList();
   document.getElementById('mCats').classList.add('open');
 }
 function closeCatsModal(){document.getElementById('mCats').classList.remove('open')}
@@ -90,4 +91,56 @@ async function normalizeCategoriesToTags(){
   }catch(err){
     toast('Error al normalizar: ' + err.message, 'err');
   }
+}
+
+// ═════════════════════════════════════════════════════════
+// GESTIÓN DE TAGS
+// ═════════════════════════════════════════════════════════
+function renderTagsList(){
+  const list = document.getElementById('tagsList');
+  if(!list) return;
+  const sorted = [...TAGS].sort(tagNameCompare);
+  list.innerHTML = sorted.map((tag, i) => `
+    <div class="tag-row">
+      <span class="tag-name">${tag}</span>
+      <button class="del-btn" onclick="removeTag('${tag.replace(/'/g, '\\\'')}')" title="Eliminar">🗑</button>
+    </div>
+  `).join('');
+}
+
+function addTagRow(){
+  const input = document.getElementById('newTagInput');
+  const tag = (input?.value || '').trim();
+  if(!tag){
+    toast('Escribe el nombre del tag','err');
+    return;
+  }
+  if(TAGS.includes(tag)){
+    toast('Este tag ya existe','err');
+    return;
+  }
+  if(tag.length > 50){
+    toast('El tag no puede exceder 50 caracteres','err');
+    return;
+  }
+  TAGS.push(tag);
+  TAGS.sort(tagNameCompare);
+  input.value = '';
+  renderTagsList();
+  fillTagSuggestions();
+  toast(`Tag "${tag}" añadido`,'ok');
+}
+
+function removeTag(tag){
+  const idx = TAGS.indexOf(tag);
+  if(idx === -1) return;
+  const usados = items.filter(x => (x.tags || '').split(',').map(t => t.trim()).includes(tag)).length;
+  if(usados > 0){
+    if(!confirm(`Este tag se usa en ${usados} ítem(s). ¿Continuar con la eliminación?`)) return;
+  }
+  TAGS.splice(idx, 1);
+  renderTagsList();
+  fillTagSuggestions();
+  if(usados > 0) toast(`Tag "${tag}" eliminado de ${usados} ítem(s)`,'ok');
+  else toast(`Tag "${tag}" eliminado`,'ok');
 }

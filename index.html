@@ -911,6 +911,16 @@
     <div class="cats-list" id="catsList"></div>
     <button class="add-cat-btn" onclick="addCatRow()">＋ Añadir categoría</button>
     <button class="add-cat-btn" onclick="normalizeCategoriesToTags()" style="margin-top:8px;border-color:#7c3aed;color:#7c3aed;background:#faf5ff">↔ Normalizar categorías a tags</button>
+    <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
+    <div style="margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">🏷️ Tags disponibles</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Gestiona los tags sugeridos en el formulario de ítems.</p>
+      <div class="tags-list" id="tagsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;max-height:120px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"></div>
+      <div style="display:flex;gap:6px">
+        <input class="fi-w" id="newTagInput" style="flex:1" placeholder="Nuevo tag..." autocomplete="off">
+        <button class="add-cat-btn" onclick="addTagRow()" style="flex:0 0 auto;padding:6px 14px">＋ Añadir</button>
+      </div>
+    </div>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">

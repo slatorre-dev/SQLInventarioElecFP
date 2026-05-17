@@ -71,7 +71,7 @@ function fillTagSuggestions(){
   const list = document.getElementById('tagList');
   if(!list) return;
   const seen = new Set();
-  const tags = [...(TAGS_DEFAULT || []), ...(items || []).flatMap(itemTags)]
+  const tags = [...(TAGS || []), ...(items || []).flatMap(itemTags)]
     .map(x => String(x || '').trim())
     .filter(Boolean)
     .filter(tag => {
@@ -82,6 +82,24 @@ function fillTagSuggestions(){
     })
     .sort(tagNameCompare);
   list.innerHTML = tags.map(tag => `<option value="${escHtml(tag)}"></option>`).join('');
+}
+
+function initTagsAutocomplete(){
+  const input = document.getElementById('f_tags');
+  if(!input) return;
+  input.addEventListener('input', () => fillTagSuggestions());
+  input.addEventListener('blur', () => {
+    const val = input.value.trim();
+    if(val){
+      const tags = val.split(',').map(t => t.trim()).filter(Boolean);
+      const newTags = tags.filter(t => !TAGS.includes(t) && t.length > 0 && t.length <= 50);
+      if(newTags.length > 0){
+        TAGS.push(...newTags);
+        TAGS.sort(tagNameCompare);
+        fillTagSuggestions();
+      }
+    }
+  });
 }
 
 function updateModSelect(){
@@ -330,6 +348,7 @@ function openModal(id=null, src=null){
   if(existing && !m) return;
   const readonly = existing && !can('items.write');
   fillMaintenanceResponsibles();
+  initTagsAutocomplete();
   document.getElementById('mT').textContent = existing ? (readonly ? 'Ver ítem' : 'Editar ítem') : src ? '📋 Duplicar ítem' : 'Nuevo ítem';
   document.getElementById('f_ref').value = id ? (m?.ref||'') : '';
   document.getElementById('f_aula').value=m?.aula||(cf?.type==='aula'?cf.id:AULAS[0]?.id);
