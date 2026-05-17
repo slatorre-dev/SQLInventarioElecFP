@@ -24,15 +24,18 @@ Registro de ideas y mejoras sugeridas para futuras sesiones.
 
 **Prioridad:** Media
 
-### 3. Historial de Cambios
+### 3. Historial de Cambios ✅ IMPLEMENTADO
 **Descripción:** Auditoría de quién cambió qué y cuándo.
 
-**Implementación sugerida:**
-- Nueva tabla en BD: `item_history` (id, item_id, campo, valor_anterior, valor_nuevo, usuario, fecha)
-- Botón "Historial" en modal de item
-- Vista con cambios ordenados por fecha
+**Implementado en v147→v156:**
+- Tabla `log` en BD (id, actor, item_id, campo, valor_anterior, valor_nuevo, fecha, detalles)
+- Endpoint `/api/historial` para obtener registro
+- Modal de historial con detalles de cambios
+- Botón "Historial" en modal de item (solo si hay cambios)
+- Vista con cambios ordenados por fecha (más recientes primero)
+- Control de acceso: visible a admins/jefes
 
-**Prioridad:** Alta (para compliance/auditoría)
+**Status:** ✅ COMPLETADO
 
 ### 4. Búsqueda Avanzada
 **Descripción:** Filtros combinados avanzados.
@@ -76,6 +79,17 @@ Registro de ideas y mejoras sugeridas para futuras sesiones.
 - Consolidar cantidad
 
 **Prioridad:** Media
+
+### 8. Bulk Inventory Actions ✅ IMPLEMENTADO
+**Descripción:** Acciones en lote sobre múltiples items.
+
+**Implementado en v158:**
+- UI para seleccionar múltiples items
+- Acciones en lote: cambiar estado, categoría, cantidad, etc.
+- Cambios registrados en auditoría automáticamente
+- Integrado con modal de item
+
+**Status:** ✅ COMPLETADO
 
 ### 8. Control de Acceso por Aula
 **Descripción:** Profesores solo ven y editan items de su aula.
@@ -185,26 +199,32 @@ CREATE INDEX idx_items_aula ON items(aula);
 
 ## Priorización Sugerida
 
+### ✅ COMPLETADOS
+1. ✅ Historial de cambios (v147→v156)
+2. ✅ Bulk inventory actions (v158)
+
 ### Hacer Ahora (Próximas 2 sesiones)
-1. Historial de cambios (auditoría importante)
-2. Indexación de BD (búsqueda rápida)
-3. Lazy loading de imágenes
-4. Consolidar items duplicados
+1. Indexación de BD (búsqueda rápida) — URGENTE si log table crece
+2. Lazy loading de imágenes
+3. Alertas de stock bajo (mejor UX)
+4. Filtro por mantenimiento pendiente
 
 ### Hacer Después (Próximas 4-8 sesiones)
-5. Alertas de stock bajo (mejor UX)
-6. Filtro mantenimiento (workflow útil)
-7. Control acceso por aula (seguridad)
-8. Búsqueda avanzada
+5. Consolidar items duplicados (workflow)
+6. Control acceso por aula (seguridad)
+7. Búsqueda avanzada con filtros
+8. Paginación en listados grandes
 
 ### Hacer Luego (Backlog)
-9. Reporte visual (nice to have)
+9. Reporte visual de stock (nice to have)
 10. Notificaciones tiempo real (infraestructura)
 11. Code splitting (optimización)
 12. Web Workers (optimización extrema)
+13. Compresión de imágenes automática
 
 ## Estado
 
-- **Última actualización:** 17/05/2026
-- **Versión actual:** v147
-- **Ideas pendientes de review:** Todas las anteriores
+- **Última actualización:** 17/05/2026 (Sesión 4)
+- **Versión actual:** v158
+- **Ideas implementadas en esta sesión:** 2 (Historial, Bulk Actions)
+- **Ideas pendientes de review:** Resto de la lista
