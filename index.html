@@ -691,19 +691,19 @@
 
 <!-- MODAL IMPRIMIR -->
 <div class="mbg" id="mPrint" onclick="if(event.target===this)closePrintModal()">
-  <div class="modal" style="width:min(520px,100%)">
-    <div class="mh"><div class="mt">🖨️ Imprimir inventario</div><button class="mx" onclick="closePrintModal()">✕</button></div>
-    <div class="mb" style="padding:18px 20px 20px">
-      <p style="margin:0 0 14px;color:var(--muted);font-size:13px">Selecciona las columnas que aparecerán en la impresión:</p>
-      <div class="print-col-grid" id="printColGrid"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn btn-sm" onclick="printColSelectAll()">Seleccionar todo</button>
-        <button class="btn btn-sm" onclick="printColSelectNone()">Ninguno</button>
-      </div>
-      <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
-        <button class="btn" onclick="closePrintModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="printInv()">🖨️ Imprimir</button>
-      </div>
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><div class="mt">🖨️ Imprimir</div><button class="mx" onclick="closePrintModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;padding:0 20px;margin-top:12px">¿Qué deseas imprimir?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px">
+      <button class="btn btn-p" onclick="printFromModal('items')" style="width:100%;padding:12px;font-size:14px;text-align:left">
+        <span style="font-size:18px;margin-right:8px">📋</span>Etiquetas QR por item<br><small style="font-size:11px;color:var(--muted);font-weight:400">4 etiquetas por fila con detalles completos</small>
+      </button>
+      <button class="btn" onclick="printFromModal('qr')" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left">
+        <span style="font-size:18px;margin-right:8px">🔳</span>Solo Códigos QR<br><small style="font-size:11px;color:var(--muted);font-weight:400">5 etiquetas compactas por fila</small>
+      </button>
+    </div>
+    <div class="mf" style="margin-top:16px;padding:0 20px 20px">
+      <button class="btn" onclick="closePrintModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1023,25 +1023,6 @@
         <button class="btn" onclick="closePedidos()">Cerrar</button>
         <button class="btn btn-p" onclick="printPedidos()">🖨 Imprimir / PDF</button>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL IMPRIMIR -->
-<div class="mbg" id="mPrint" onclick="if(event.target===this)closePrintModal()">
-  <div class="modal" style="max-width:420px">
-    <div class="mh"><div class="mt">🖨️ Imprimir</div><button class="mx" onclick="closePrintModal()">✕</button></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:18px">¿Qué deseas imprimir?</p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-p" onclick="printFromModal('items')" style="width:100%;padding:12px;font-size:14px">
-        <span style="font-size:18px">📋</span><br>Etiquetas QR por item
-      </button>
-      <button class="btn" onclick="printFromModal('qr')" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent)">
-        <span style="font-size:18px">🔳</span><br>Solo Códigos QR
-      </button>
-    </div>
-    <div class="mf" style="margin-top:16px">
-      <button class="btn" onclick="closePrintModal()">Cancelar</button>
     </div>
   </div>
 </div>
