@@ -478,3 +478,25 @@ b227d58 Remove OAuth environment diagnostics
 - `PROYECTO_DESCRIPCION_RECUPERACION.md`: recuperacion completa del proyecto.
 - `MIGRACION_CLOUDFLARE_D1.md`: migracion desde Google Sheets.
 - `claude.md`: notas de trabajo con D1 remoto.
+
+## 18. Documentacion de desarrollo
+
+Para seguimiento del desarrollo y mejoras implementadas:
+
+- **`DEVELOPMENT.md`**: Registro de todas las sesiones de desarrollo, features implementadas, commits y próximos pasos.
+- **`IDEAS.md`**: Ideas y mejoras sugeridas, con priorización y estimación de impacto. Incluye mejoras de gestión de inventario y optimizaciones de performance.
+
+### Últimas sesiones
+
+**Sesión Mayo 2026 (v139→v147):**
+- Separación de modales de impresión (inventario vs QR)
+- Feature de indicador de cambios sin guardar en modal de items
+- Mejoras en placeholder de búsqueda
+- Control de acceso por usuario específico (historial)
+
+**Próximas mejoras sugeridas:**
+- Historial de cambios (auditoría)
+- Indexación de base de datos para búsqueda rápida
+- Filtro por mantenimiento pendiente
+- Lazy loading de imágenes
+- Consolidación de items duplicados
