@@ -1,7 +1,20 @@
-function canReadFullHistory(user) {
-  const usuario = String(user?.usuario || '').trim().toLowerCase();
-  const rol = String(user?.rol || '').trim().toLowerCase();
-  return usuario === 'seba' || ['admin', 'administrador', 'jefe', 'jefe departamento', 'jefe de departamento'].includes(rol);
+function normalizeText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function canReadFullHistory(user, url) {
+  const usuario = normalizeText(user?.usuario);
+  const loginUsuario = normalizeText(url.searchParams.get('u'));
+  const rol = normalizeText(user?.rol);
+  return usuario === 'seba' ||
+    loginUsuario === 'seba' ||
+    rol.includes('admin') ||
+    rol.includes('jefe') ||
+    rol.includes('departamento');
 }
 
 function json(data, init = {}) {
@@ -51,7 +64,7 @@ export async function onRequest(context) {
         return json({ ok: true, logs: (result.results || []).map(mapLogRow) });
       }
 
-      if (!canReadFullHistory(user)) {
+      if (!canReadFullHistory(user, url)) {
         return json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
 
