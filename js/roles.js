@@ -5,6 +5,15 @@ const ROLE_PERMISSIONS = {
   'jefe de departamento': ['*'],
   'administrador': ['*'],
   'admin': ['*'],
+  'jefe': ['*'],
+  'professor': [
+    'items.write',
+    'docs.write',
+    'loans.write',
+    'orders.write',
+    'categories.manage',
+    'profile.write'
+  ],
   'profesor': [
     'items.write',
     'docs.write',
@@ -34,6 +43,7 @@ const ACTION_PERMISSIONS = {
   catsSync: 'categories.manage',
   normalizeCategoriesTags: 'categories.manage',
   ciclosSync: 'config.manage',
+  ubicacionesSync: 'config.manage',
   prestar: 'loans.write',
   devolver: 'loans.write',
   getDocs: 'docs.read',
