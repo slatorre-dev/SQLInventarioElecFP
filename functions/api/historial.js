@@ -1,74 +1,98 @@
+function canReadFullHistory(user) {
+  const usuario = String(user?.usuario || '').trim().toLowerCase();
+  const rol = String(user?.rol || '').trim().toLowerCase();
+  return usuario === 'seba' || ['admin', 'administrador', 'jefe', 'jefe departamento', 'jefe de departamento'].includes(rol);
+}
+
+function json(data, init = {}) {
+  return new Response(JSON.stringify(data), {
+    ...init,
+    headers: { 'Content-Type': 'application/json', ...(init.headers || {}) }
+  });
+}
+
+async function ensureLogTable(db) {
+  await db.prepare("CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT '', usuario TEXT DEFAULT '', nombre TEXT DEFAULT '', rol TEXT DEFAULT '', accion TEXT DEFAULT '', itemId TEXT DEFAULT '', resumen TEXT DEFAULT '')").run();
+}
+
+function mapLogRow(row) {
+  return {
+    id: row.id,
+    timestamp: row.fecha,
+    usuario: row.usuario,
+    accion: row.accion,
+    que: row.itemId,
+    nombre: row.nombre,
+    detalles: row.resumen,
+    fecha: row.fecha,
+    resumen: row.resumen
+  };
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
+  const user = request.user;
 
-  // GET /api/historial — obtener historial
   if (request.method === 'GET') {
     try {
-      // Verificar que la tabla existe, si no devolvemos lista vacía
-      const stmt = env.DB.prepare(`
-        SELECT id, timestamp, usuario, accion, que, nombre, detalles
-        FROM historial
-        ORDER BY timestamp DESC
-        LIMIT 500
-      `);
-      const result = stmt.all();
+      await ensureLogTable(env.DB);
+      const itemId = url.searchParams.get('itemId');
 
-      return new Response(JSON.stringify(result.results || []), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      if (itemId) {
+        const result = await env.DB.prepare(`
+          SELECT id, fecha, usuario, nombre, rol, accion, itemId, resumen
+          FROM log
+          WHERE itemId = ?
+          ORDER BY id DESC
+          LIMIT 200
+        `).bind(String(itemId)).all();
+
+        return json({ ok: true, logs: (result.results || []).map(mapLogRow) });
+      }
+
+      if (!canReadFullHistory(user)) {
+        return json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+
+      const result = await env.DB.prepare(`
+        SELECT id, fecha, usuario, nombre, rol, accion, itemId, resumen
+        FROM log
+        ORDER BY id DESC
+        LIMIT 500
+      `).all();
+
+      return json((result.results || []).map(mapLogRow));
     } catch (err) {
       console.error('Error fetching historial:', err);
-      // Si la tabla no existe, devolvemos lista vacía en lugar de error
-      if (err.message && err.message.includes('no such table')) {
-        return new Response(JSON.stringify([]), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return json({ ok: false, error: err.message }, { status: 500 });
     }
   }
 
-  // POST /api/historial — registrar evento (log)
   if (request.method === 'POST') {
     try {
+      await ensureLogTable(env.DB);
       const data = await request.json();
-      const { usuario, accion, que, nombre, detalles } = data;
+      const accion = String(data.accion || '').trim();
+      const itemId = String(data.que || data.itemId || '').trim();
+      const resumen = String(data.detalles || data.nombre || '').trim();
+      const fecha = new Date().toISOString().replace('T', ' ').slice(0, 19);
 
-      if (!usuario || !accion || !que) {
-        return new Response(JSON.stringify({ error: 'Faltan campos requeridos' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
+      if (!accion || !itemId) {
+        return json({ ok: false, error: 'Faltan campos requeridos' }, { status: 400 });
       }
 
-      const stmt = env.DB.prepare(`
-        INSERT INTO historial (usuario, accion, que, nombre, detalles)
-        VALUES (?, ?, ?, ?, ?)
-      `);
-      stmt.bind(usuario, accion, que, nombre || null, detalles || null);
-      const result = stmt.run();
+      const result = await env.DB.prepare(`
+        INSERT INTO log (fecha, usuario, nombre, rol, accion, itemId, resumen)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(fecha, user.usuario, user.nombre, user.rol, accion, itemId, resumen).run();
 
-      return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
-        status: 201,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return json({ ok: true, id: result.meta?.last_row_id || null }, { status: 201 });
     } catch (err) {
       console.error('Error logging historial:', err);
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return json({ ok: false, error: err.message }, { status: 500 });
     }
   }
 
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  return json({ ok: false, error: 'Method not allowed' }, { status: 405 });
 }

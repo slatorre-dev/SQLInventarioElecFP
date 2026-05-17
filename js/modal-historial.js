@@ -9,12 +9,16 @@ function openHistorialModal() {
     return;
   }
 
-  document.getElementById('mHistorial').style.display = 'flex';
+  const modal = document.getElementById('mHistorial');
+  modal.style.display = 'flex';
+  modal.classList.add('open');
   cargarHistorial();
 }
 
 function closeHistorialModal() {
-  document.getElementById('mHistorial').style.display = 'none';
+  const modal = document.getElementById('mHistorial');
+  modal.classList.remove('open');
+  modal.style.display = 'none';
 }
 
 async function cargarHistorial() {
@@ -28,16 +32,7 @@ async function cargarHistorial() {
   table.style.display = 'none';
 
   try {
-    console.log('[cargarHistorial] Fetching /api/historial');
-    const response = await fetch(`/api/historial`);
-    console.log('[cargarHistorial] Response status:', response.status);
-
-    if (!response.ok) {
-      empty.textContent = 'Error al cargar el historial (status: ' + response.status + ')';
-      return;
-    }
-
-    historialData = await response.json();
+    historialData = await apiGet('historial');
     console.log('[cargarHistorial] Data:', historialData);
 
     if (!historialData || historialData.length === 0) {

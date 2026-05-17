@@ -581,7 +581,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .cfoot .btn{flex:0 0 auto}
   .vtog{display:none!important}
   .tw{display:none!important}
-  #mHistorial .tw{display:table!important}
+  #mItemHistorial .tw{display:table!important}
   .mbg{backdrop-filter:none!important}
   .brand-logo,.login-icon,.profile-avatar-big,.user-avatar,#loadBar{
     background:var(--accent)!important;

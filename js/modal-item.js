@@ -1025,9 +1025,9 @@ async function openHistorial(){
   const it = items.find(x=>Number(x.id)===Number(eid));
   document.getElementById('histModalTitle').textContent = `📋 Historial — ${it ? it.item : '#' + eid}`;
   document.getElementById('histBody').innerHTML = '<p style="color:var(--muted);text-align:center">Cargando...</p>';
-  document.getElementById('mHistorial').classList.add('open');
+  document.getElementById('mItemHistorial').classList.add('open');
   try {
-    const res = await apiGet({ action: 'getItemLog', itemId: eid });
+    const res = await apiGet('historial', { itemId: eid });
     const logs = res.logs || [];
     if (!logs.length) {
       document.getElementById('histBody').innerHTML = '<p style="color:var(--muted);text-align:center">Sin historial para este ítem.</p>';
@@ -1051,5 +1051,5 @@ async function openHistorial(){
 }
 
 function closeHistorial(){
-  document.getElementById('mHistorial').classList.remove('open');
+  document.getElementById('mItemHistorial').classList.remove('open');
 }
