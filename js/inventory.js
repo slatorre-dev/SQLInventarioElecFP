@@ -27,9 +27,11 @@ function getFiltered(){
   const q=document.getElementById('srch').value;
   const fc=document.getElementById('fCat').value;
   const fe=document.getElementById('fEst').value;
+  const ft=document.getElementById('fTipo').value;
   return getBase().filter(x=>{
     if(fc&&x.cat!==fc)return false;
     if(fe&&x.est!==fe)return false;
+    if(ft&&x.tipo_material!==ft)return false;
     if(q&&!fuzzyMatch(q,[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor,x.tags].join(' ')))return false;
     return true;
   }).sort((a,b)=>{
@@ -71,6 +73,7 @@ function getPageSig(data){
     document.getElementById('srch')?.value || '',
     document.getElementById('fCat')?.value || '',
     document.getElementById('fEst')?.value || '',
+    document.getElementById('fTipo')?.value || '',
     sk, sa ? '1' : '0',
     data.length
   ].join('|');

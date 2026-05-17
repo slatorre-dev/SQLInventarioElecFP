@@ -84,22 +84,91 @@ function fillTagSuggestions(){
   list.innerHTML = tags.map(tag => `<option value="${escHtml(tag)}"></option>`).join('');
 }
 
+function cleanTag(tag){
+  return String(tag || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[^\w\s\-áéíóúñàèìòù]/gi, '')
+    .trim()
+    .substring(0, 50);
+}
+
 function initTagsAutocomplete(){
   const input = document.getElementById('f_tags');
   if(!input) return;
-  input.addEventListener('input', () => fillTagSuggestions());
+  input.addEventListener('input', () => {
+    fillTagSuggestions();
+    showTagsDropdown();
+  });
   input.addEventListener('blur', () => {
+    setTimeout(() => hideTagsDropdown(), 150);
     const val = input.value.trim();
     if(val){
-      const tags = val.split(',').map(t => t.trim()).filter(Boolean);
-      const newTags = tags.filter(t => !TAGS.includes(t) && t.length > 0 && t.length <= 50);
+      const tags = val.split(',').map(cleanTag).filter(Boolean);
+      const newTags = tags.filter(t => !TAGS.includes(t) && t.length > 0);
       if(newTags.length > 0){
         TAGS.push(...newTags);
         TAGS.sort(tagNameCompare);
         fillTagSuggestions();
       }
+      input.value = tags.join(', ');
     }
   });
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') e.preventDefault();
+  });
+}
+
+function showTagsDropdown(){
+  const input = document.getElementById('f_tags');
+  if(!input) return;
+  const val = (input.value || '').split(',').pop().trim().toLowerCase();
+  const dd = document.getElementById('tagsDropdown');
+  if(!dd) return;
+
+  const suggestions = val
+    ? TAGS.filter(t => t.toLowerCase().includes(val)).slice(0, 8)
+    : TAGS.slice(0, 8);
+
+  if(!suggestions.length){
+    dd.style.display = 'none';
+    return;
+  }
+
+  dd.innerHTML = suggestions.map(tag => `
+    <div class="dd-item" onclick="addTagFromDropdown('${tag.replace(/'/g, '\\\'')}')">
+      ${escHtml(tag)}
+    </div>
+  `).join('');
+  dd.style.display = 'block';
+}
+
+function hideTagsDropdown(){
+  const dd = document.getElementById('tagsDropdown');
+  if(dd) dd.style.display = 'none';
+}
+
+function addTagFromDropdown(tag){
+  const input = document.getElementById('f_tags');
+  if(!input) return;
+  const parts = input.value.split(',');
+  parts[parts.length - 1] = tag;
+  input.value = parts.join(', ');
+  input.focus();
+  hideTagsDropdown();
+}
+
+function viewPhotoModal(){
+  const src = document.getElementById('f_foto')?.value;
+  if(!src) return;
+  const modal = document.getElementById('mPhotoView');
+  if(!modal) return;
+  document.getElementById('photoViewImg').src = src;
+  modal.classList.add('open');
+}
+
+function closePhotoModal(){
+  document.getElementById('mPhotoView')?.classList.remove('open');
 }
 
 function updateModSelect(){

@@ -350,12 +350,13 @@
     </div>
     <div class="stats-strip" id="sStats"></div>
     <div class="toolbar">
-      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" placeholder="Buscar ítem, referencia..." oninput="renderInv()"></div>
+      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()"></div>
       <div style="display:flex;gap:4px;align-items:center">
         <select id="fCat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
         <button class="mini-btn" onclick="openCatsModal()" title="Gestionar categorías">⚙️</button>
       </div>
       <select id="fEst" onchange="renderInv()"><option value="">Todos los estados</option><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
+      <select id="fTipo" onchange="renderInv()"><option value="">Todos los tipos</option><option value="consumible">Consumibles</option><option value="inventariable">Inventariables</option></select>
       <div class="vtog">
         <button class="vbtn on" id="vT" onclick="sv('table')" title="Tabla">☰</button>
         <button class="vbtn" id="vC" onclick="sv('cards')" title="Tarjetas">⊞</button>
@@ -386,7 +387,7 @@
         <label class="fl">Foto principal</label>
         <input type="hidden" id="f_foto">
         <div class="photo-picker">
-          <div class="photo-preview" id="f_foto_preview"><span>📷</span></div>
+          <div class="photo-preview" id="f_foto_preview" onclick="viewPhotoModal()" style="cursor:pointer"><span>📷</span></div>
           <div class="item-stock-strip">
             <div><label class="fl">Cantidad</label><input class="fi-w" id="f_qty" type="number" min="0" value="1"></div>
             <div><label class="fl">Stock mínimo</label><input class="fi-w" id="f_min" type="number" min="0" value="5"></div>
@@ -416,7 +417,13 @@
       <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
       <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
       <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
-      <div class="full"><label class="fl">Tags</label><input class="fi-w" id="f_tags" list="tagList" placeholder="Arduino, SMD, 230V, robótica, medida..." autocomplete="off"><datalist id="tagList"></datalist></div>
+      <div class="full"><label class="fl">Tags</label>
+        <div style="position:relative">
+          <input class="fi-w" id="f_tags" placeholder="Arduino, SMD, 230V, robótica, medida..." autocomplete="off" style="padding-right:30px">
+          <datalist id="tagList"></datalist>
+          <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+        </div>
+      </div>
       <label class="check-row full">
         <input type="checkbox" id="f_mant" onchange="toggleMaintFields()">
         <span><strong>Necesita mantenimiento o reparación</strong><small>Márcalo para que aparezca en el acceso rápido de mantenimiento.</small></span>
@@ -561,6 +568,16 @@
     <div class="mb" id="histBody" style="padding:16px;min-height:120px"></div>
     <div class="mf">
       <button class="btn" onclick="closeHistorial()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER FOTO -->
+<div class="mbg" id="mPhotoView" onclick="if(event.target===this)closePhotoModal()">
+  <div class="modal" style="width:min(520px,100%);background:transparent;border:none;box-shadow:none;padding:0">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center">
+      <img id="photoViewImg" src="" alt="Foto" style="max-width:100%;max-height:80vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+      <button class="mx" onclick="closePhotoModal()" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">✕</button>
     </div>
   </div>
 </div>
