@@ -40,6 +40,7 @@ Objetivos principales:
 - `fillCatFilter()` centraliza el refresco del filtro de categorias tras guardar o crear categorias, evitando errores al sincronizar.
 - Campo `inventario.tags` para etiquetas libres por item; se incluye en busqueda, importacion, exportacion y backup.
 - Ficha rapida flotante al pasar o pulsar sobre foto/nombre del item, con foto, stock, aula, ubicacion, utilidad, proveedor, tags y prestamos activos.
+- Ficha rapida ampliada para mostrar foto y datos con mayor legibilidad.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.

@@ -174,8 +174,8 @@ function showQuickItem(id, ev){
 function moveQuickItem(ev){
   const box = document.getElementById('quickItemPreview');
   if(!box || !box.classList.contains('show')) return;
-  const x = Math.min((ev?.clientX || 20) + 18, window.innerWidth - 330);
-  const y = Math.min((ev?.clientY || 20) + 18, window.innerHeight - 270);
+  const x = Math.min((ev?.clientX || 20) + 18, window.innerWidth - 440);
+  const y = Math.min((ev?.clientY || 20) + 18, window.innerHeight - 340);
   box.style.left = Math.max(12, x) + 'px';
   box.style.top = Math.max(12, y) + 'px';
 }
