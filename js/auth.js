@@ -68,6 +68,7 @@ function showUserChip(){
   document.getElementById('userName').textContent = SESSION.nombre || SESSION.usuario;
   document.getElementById('userChip').style.display = 'flex';
   if(typeof applyRoleUI === 'function') applyRoleUI();
+  if(typeof showHistorialButton === 'function') showHistorialButton();
 }
 
 function syncSessionUser(user){
