@@ -40,18 +40,21 @@ function cargarAuditoria() {
   const empty = document.getElementById('auditoriaEmpty');
   empty.style.display = 'none';
 
-  // Usar INVENTORY ya cargado en memoria
-  if (!INVENTORY || INVENTORY.length === 0) {
+  // Usar items ya cargado en memoria
+  if (!items || items.length === 0) {
     empty.textContent = 'Cargando...';
     empty.style.display = 'block';
     return;
   }
 
   // Analizar cada item y encontrar campos faltantes
-  auditoriaData = INVENTORY.map(item => ({
+  auditoriaData = items.map(item => ({
     ...item,
     problemas: getItemProblemas(item)
   })).filter(item => item.problemas.length > 0);
+
+  console.log('auditoriaData:', auditoriaData);
+  console.log('items sample:', items.slice(0, 3));
 
   // Renderizar con filtro actual
   renderAuditoria(auditoriaFiltroActual);
@@ -169,7 +172,7 @@ function updateFiltroButtons() {
 }
 
 function abrirItemParaEditar(itemId) {
-  const item = INVENTORY.find(i => i.id === itemId);
+  const item = items.find(i => i.id === itemId);
   if (!item) {
     toast('Item no encontrado', 'err');
     return;
