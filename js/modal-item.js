@@ -172,7 +172,11 @@ function closePhotoModal(){
 }
 
 function openPrintModal(){
-  if(!cf) return;
+  const data = typeof getFiltered === 'function' ? getFiltered() : items;
+  if(!data || !data.length){
+    toast('No hay ítems para imprimir','err');
+    return;
+  }
   document.getElementById('mPrint').classList.add('open');
 }
 
@@ -182,14 +186,14 @@ function closePrintModal(){
 
 function printFromModal(type){
   closePrintModal();
+  const data = typeof getFiltered === 'function' ? getFiltered() : items;
+  if(!data || !data.length){
+    toast('No hay ítems para imprimir','err');
+    return;
+  }
   if(type === 'items'){
     printBulkItemQrs();
   } else if(type === 'qr'){
-    const data = getFiltered ? getFiltered() : items;
-    if(!data.length){
-      toast('No hay ítems para imprimir','err');
-      return;
-    }
     printBulkQrLabels();
   }
 }
