@@ -209,8 +209,19 @@ function abrirItemParaEditar(itemId) {
     return;
   }
 
+  // Aumentar z-index del modal de auditoría para que el modal de item esté delante
+  const auditoriaModal = document.getElementById('mAuditoria').parentElement;
+  if (auditoriaModal) auditoriaModal.style.zIndex = '500';
+
   // Abrir modal de edición (no cierra la auditoría)
   openModal(item.id);
+
+  // Restaurar z-index después de cerrar el modal de item
+  const originalClose = window.closeM;
+  window.closeM = function() {
+    originalClose?.call(this);
+    if (auditoriaModal) auditoriaModal.style.zIndex = '501';
+  };
 }
 
 function editarSeleccionados() {
@@ -219,12 +230,24 @@ function editarSeleccionados() {
     return;
   }
 
-  // Usar la función de bulk edit existente en inventory.js
-  const ids = Array.from(auditoriaSeleccionados);
-  if (typeof openBulkEditModal === 'function') {
-    openBulkEditModal(ids);
+  // Llenar bulkSelected con los IDs (el sistema de bulk edit de inventory.js)
+  if (typeof bulkSelected !== 'undefined') {
+    bulkSelected.clear();
+    auditoriaSeleccionados.forEach(id => {
+      bulkSelected.add(String(id));
+    });
+
+    // Cerrar auditoría
+    closeAuditoriaModal();
+
+    // Mostrar barra de bulk actions
+    if (typeof renderBulkBar === 'function') {
+      renderBulkBar();
+    }
+
+    toast(`${auditoriaSeleccionados.size} items seleccionados para edición en lote`, 'ok');
   } else {
-    toast('Función de edición en lote no disponible', 'err');
+    toast('Sistema de edición en lote no disponible', 'err');
   }
 }
 
