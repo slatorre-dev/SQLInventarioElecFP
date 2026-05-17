@@ -34,6 +34,7 @@ Objetivos principales:
 - Campo `inventario.proveedor` para guardar proveedor, tienda o URL de reposicion.
 - Gestion editable de ubicaciones sugeridas mediante tabla `ubicaciones`; tambien se derivan ubicaciones existentes desde `inventario.loc`.
 - Modal de alta/edicion de items ampliado en escritorio, con rejilla de 3 columnas, bloque QR compacto y campos redistribuidos para agrupar aula/ubicacion, foto/stock/tipo y ciclo/modulo.
+- Tabla de inventario optimizada: placeholder de foto reducido cuando no hay imagen y columna Utilidad truncada a 15 caracteres visibles.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.
