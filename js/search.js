@@ -57,7 +57,7 @@ function globalSearch(q){
     return;
   }
   const matches=items.filter(x=>{
-    const text=[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor].join(' ');
+    const text=[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor,x.tags].join(' ');
     return fuzzyMatch(q,text);
   });
   gsIdx=-1;

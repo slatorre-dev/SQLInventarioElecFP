@@ -30,7 +30,7 @@ function getFiltered(){
   return getBase().filter(x=>{
     if(fc&&x.cat!==fc)return false;
     if(fe&&x.est!==fe)return false;
-    if(q&&!fuzzyMatch(q,[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor].join(' ')))return false;
+    if(q&&!fuzzyMatch(q,[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor,x.tags].join(' ')))return false;
     return true;
   }).sort((a,b)=>{
     let av=a[sk]??'',bv=b[sk]??'';
@@ -124,6 +124,66 @@ function shortText(v,max=15){
   return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }
 
+function itemTags(item){
+  return String(item?.tags || '').split(/[;,]/).map(t=>t.trim()).filter(Boolean);
+}
+
+function itemActiveLoans(id){
+  return (prestamos || []).filter(p => String(p.itemId)===String(id) && (p.estado==='Activo' || p.estado==='Parcial'));
+}
+
+function quickItemHtml(item){
+  const aula = AULAS.find(a=>a.id===item.aula)?.name || item.aula || '—';
+  const active = itemActiveLoans(item.id);
+  const tags = itemTags(item);
+  return `<div class="quick-item-card">
+    <div class="quick-item-head">
+      <div class="quick-item-photo">${item.foto?`<img src="${item.foto}" alt="">`:'📷'}</div>
+      <div class="quick-item-title">
+        <strong>${escHtml(item.item || '')}</strong>
+        <span>${escHtml(item.ref || itemCode(item) || '')}</span>
+      </div>
+    </div>
+    <div class="quick-item-grid">
+      <div><span>Stock</span><strong>${item.qty ?? '—'} / mín. ${item.min ?? '—'}</strong></div>
+      <div><span>Aula</span><strong>${escHtml(aula)}</strong></div>
+      <div><span>Ubicación</span><strong>${escHtml(item.loc || '—')}</strong></div>
+      <div><span>Estado</span><strong>${escHtml(item.est || '—')}</strong></div>
+      <div><span>Utilidad</span><strong>${escHtml(item.util || '—')}</strong></div>
+      <div><span>Proveedor</span><strong>${escHtml(item.proveedor || '—')}</strong></div>
+    </div>
+    ${tags.length?`<div class="quick-tags">${tags.slice(0,6).map(t=>`<span>${escHtml(t)}</span>`).join('')}</div>`:''}
+    <div class="quick-loans">${active.length ? `${active.length} préstamo${active.length!==1?'s':''} activo${active.length!==1?'s':''}` : 'Sin préstamos activos'}</div>
+  </div>`;
+}
+
+function showQuickItem(id, ev){
+  const item = items.find(x=>Number(x.id)===Number(id));
+  if(!item) return;
+  let box = document.getElementById('quickItemPreview');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'quickItemPreview';
+    document.body.appendChild(box);
+  }
+  box.innerHTML = quickItemHtml(item);
+  box.classList.add('show');
+  moveQuickItem(ev);
+}
+
+function moveQuickItem(ev){
+  const box = document.getElementById('quickItemPreview');
+  if(!box || !box.classList.contains('show')) return;
+  const x = Math.min((ev?.clientX || 20) + 18, window.innerWidth - 330);
+  const y = Math.min((ev?.clientY || 20) + 18, window.innerHeight - 270);
+  box.style.left = Math.max(12, x) + 'px';
+  box.style.top = Math.max(12, y) + 'px';
+}
+
+function hideQuickItem(){
+  document.getElementById('quickItemPreview')?.classList.remove('show');
+}
+
 function rTable(data,mc){
   mc.innerHTML=`<div class="tw"><div class="tw-scroll"><table>
     <thead><tr><th>Foto</th>${th2('ref','Ref.')}${th2('aula','Aula')}${th2('item','Ítem')}${th2('qty','Cant.')}<th>Mín.</th>${th2('cat','Categoría')}${th2('loc','Ubicación')}${th2('est','Estado')}${th2('util','Utilidad')}<th>Acciones</th></tr></thead>
@@ -132,16 +192,17 @@ function rTable(data,mc){
       const esContenedor = x.es_contenedor == 1;
       const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
       const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
-      const utilTitle = [mantInfo, x.util, x.proveedor].filter(Boolean).join(' · ');
+      const tags = itemTags(x);
+      const utilTitle = [mantInfo, x.util, x.proveedor, x.tags].filter(Boolean).join(' · ');
       const utilVisible = mant ? `🛠️ ${shortText(mantInfo || x.util || x.proveedor, 12)}` : (shortText(x.util || x.proveedor, 15) || '—');
       return`<tr${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
-        <td>${x.foto?`<img class="table-photo" src="${x.foto}" alt="">`:'<span class="table-photo table-photo-empty">📷</span>'}</td>
+        <td>${x.foto?`<img class="table-photo quick-item-trigger" src="${x.foto}" alt="" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:`<span class="table-photo table-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">📷</span>`}</td>
         <td><span class="rbadge">${x.ref||'—'}</span></td>
         <td style="font-size:12px;color:var(--muted)">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</td>
         <td style="max-width:220px;font-weight:600" title="${x.item}">
           <div class="item-title-line">
             ${parentItem?'<span style="color:var(--muted);margin-right:4px">↳</span>':''}
-            <span class="item-title-text item-title-link" onclick="openModal(${x.id})">${x.item}</span>
+            <span class="item-title-text item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${x.item}</span>
             ${esContenedor?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
             ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${parentItem.item}">📦 ${parentItem.ref||parentItem.item}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="event.stopPropagation();openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
@@ -149,7 +210,7 @@ function rTable(data,mc){
         </td>
         <td><span class="qval ${low?'qlow':'qok'}">${x.qty}${low?' ⚠':''}</span></td>
         <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${x.min}</td>
-        <td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${cat.i} ${x.cat}</span>`:'—'}<br><span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:10px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span></td>
+        <td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${cat.i} ${x.cat}</span>`:'—'}<br><span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:10px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>${tags.length?`<br><span class="tag-mini">${escHtml(tags.slice(0,3).join(', '))}</span>`:''}</td>
         <td style="color:var(--muted);font-size:12px" title="${x.loc||''}">${x.loc?(x.loc.length>10?x.loc.slice(0,10)+'…':x.loc):'—'}</td>
         <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:'—'}</td>
         <td style="color:var(--muted);font-size:12px" title="${utilTitle}"><span class="table-util-text">${utilVisible}</span></td>
@@ -171,16 +232,16 @@ function rTable(data,mc){
 
 function rCards(data,mc){
   mc.innerHTML=`<div class="cgrid">${data.map(x=>{
-    const low=isLowStock(x),mant=needsMaintenance(x),mantStatus=x.mantEstado||'Pendiente',cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',mod=findModulo(x.mod),tipo=materialType(x);
+    const low=isLowStock(x),mant=needsMaintenance(x),mantStatus=x.mantEstado||'Pendiente',cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',mod=findModulo(x.mod),tipo=materialType(x),tags=itemTags(x);
     const esContenedor2 = x.es_contenedor == 1;
     const parentItem2 = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos2 = esContenedor2 ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
     return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}">
-      ${x.foto?`<img class="card-photo" src="${x.foto}" alt="Foto de ${x.item}">`:''}
+      ${x.foto?`<img class="card-photo quick-item-trigger" src="${x.foto}" alt="Foto de ${x.item}" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:''}
       <div class="ch">
         <div class="card-title-wrap">
           <div class="item-title-line">
-            <div class="cname">${parentItem2?'↳ ':''}${x.item}</div>
+            <div class="cname item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${parentItem2?'↳ ':''}${x.item}</div>
             ${esContenedor2?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
@@ -194,12 +255,14 @@ function rCards(data,mc){
         ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:''}
         ${mant?`<span class="cpill maintenance-pill">🛠️ ${mantStatus}</span>`:''}
         ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${mod.ciclo.icon||'📚'} ${mod.name}</span>`:''}
+        ${tags.slice(0,4).map(t=>`<span class="tag-pill">${escHtml(t)}</span>`).join('')}
       </div>
       <div class="cfg">
         <div><div class="cfl">Aula</div><div class="cfv">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</div></div>
         <div><div class="cfl">Ubicación</div><div class="cfv">${x.loc||'—'}</div></div>
         <div><div class="cfl">Utilidad</div><div class="cfv" style="font-size:11px" title="${x.util||''}">${shortText(x.util)||'—'}</div></div>
         <div><div class="cfl">Proveedor</div><div class="cfv" style="font-size:11px" title="${x.proveedor||''}">${shortText(x.proveedor)||'—'}</div></div>
+        <div><div class="cfl">Tags</div><div class="cfv" style="font-size:11px" title="${x.tags||''}">${shortText(x.tags)||'—'}</div></div>
         <div><div class="cfl">Revisión</div><div class="cfv" style="font-family:var(--mono);font-size:11px">${x.fecha||'—'}</div></div>
       </div>
       ${mant?`<div class="maint-note">
@@ -291,10 +354,10 @@ function delPickerSelect(itemId){
 // ═════════════════════════════════════════════════════════
 function exportCSV(){
   const data=getFiltered();
-  const h='Referencia,Aula,Módulo,Ítem,Cantidad,Mínimo,Tipo material,Categoría,Ubicación,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,Revisión,Observaciones';
+  const h='Referencia,Aula,Módulo,Ítem,Cantidad,Mínimo,Tipo material,Categoría,Tags,Ubicación,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,Revisión,Observaciones';
   const rows=data.map(x=>{
     const m = findModulo(x.mod);
-    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.loc,x.est,needsMaintenance(x)?'Sí':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
+    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.tags,x.loc,x.est,needsMaintenance(x)?'Sí':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',');
   });
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent([h,...rows].join('\n'));a.download='inventario.csv';a.click();
   toast('CSV exportado','ok');
@@ -331,10 +394,10 @@ function downloadText(filename, mime, text){
 }
 
 function inventoryCsvRows(data){
-  const h='Referencia,Aula,MÃ³dulo,Ãtem,Cantidad,MÃ­nimo,Tipo material,CategorÃ­a,UbicaciÃ³n,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,RevisiÃ³n,Observaciones';
+  const h='Referencia,Aula,MÃ³dulo,Ãtem,Cantidad,MÃ­nimo,Tipo material,CategorÃ­a,Tags,UbicaciÃ³n,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,RevisiÃ³n,Observaciones';
   const rows=data.map(x=>{
     const m = findModulo(x.mod);
-    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.loc,x.est,needsMaintenance(x)?'SÃ­':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(csvCell).join(',');
+    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.tags,x.loc,x.est,needsMaintenance(x)?'SÃ­':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(csvCell).join(',');
   });
   return '\uFEFF' + [h,...rows].join('\n');
 }
@@ -394,6 +457,7 @@ const PRINT_COLS = [
   { key:'est',       label:'Estado',        default:true  },
   { key:'util',      label:'Utilidad',      default:false },
   { key:'proveedor', label:'Proveedor',     default:false },
+  { key:'tags',      label:'Tags',          default:false },
   { key:'mant',      label:'Mantenimiento', default:false },
   { key:'obs',       label:'Observaciones', default:false },
 ];
@@ -462,6 +526,7 @@ function printInv(){
       if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
       if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
       if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
+      if(c.key==='tags')  return `<td style="font-size:11px">${x.tags||'—'}</td>`;
       if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
       if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
       return '<td>—</td>';

@@ -38,6 +38,8 @@ Objetivos principales:
 - Categorias ordenadas alfabeticamente en tarjetas, gestion y desplegables; el selector de categoria del item permite crear una categoria nueva si el usuario tiene permiso de configuracion.
 - El rol `profesor` incluye `categories.manage`, limitado a crear/editar categorias sin dar acceso general a aulas, ciclos, ubicaciones o usuarios.
 - `fillCatFilter()` centraliza el refresco del filtro de categorias tras guardar o crear categorias, evitando errores al sincronizar.
+- Campo `inventario.tags` para etiquetas libres por item; se incluye en busqueda, importacion, exportacion y backup.
+- Ficha rapida flotante al pasar o pulsar sobre foto/nombre del item, con foto, stock, aula, ubicacion, utilidad, proveedor, tags y prestamos activos.
 - Prestamos y devoluciones.
 - Profesores prestatarios.
 - Usuarios de la app, incluyendo roles, modulos asignados y reset de contrasena desde administracion.

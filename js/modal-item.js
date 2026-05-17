@@ -296,7 +296,7 @@ async function saveHijosCaja(){
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_tags','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
@@ -331,6 +331,7 @@ function openModal(id=null, src=null){
   document.getElementById('f_est').value=m?.est||'Bueno';
   document.getElementById('f_util').value=m?.util||'';
   document.getElementById('f_proveedor').value=m?.proveedor||'';
+  document.getElementById('f_tags').value=m?.tags||'';
   document.getElementById('f_fecha').value=m?.fecha||new Date().toISOString().split('T')[0];
   document.getElementById('f_mant').checked=isMaintenanceMarked(m);
   document.getElementById('f_mantFecha').value=m?.mantFecha||'';
@@ -495,6 +496,7 @@ async function saveItem(){
     est:document.getElementById('f_est').value,
     util:document.getElementById('f_util').value.trim(),
     proveedor:document.getElementById('f_proveedor').value.trim(),
+    tags:document.getElementById('f_tags').value.trim(),
     fecha:document.getElementById('f_fecha').value,
     mant:document.getElementById('f_mant').checked ? '1' : '',
     mantFecha:document.getElementById('f_mantFecha').value,
