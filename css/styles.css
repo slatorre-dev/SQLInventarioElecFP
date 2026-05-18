@@ -947,6 +947,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
 @media(max-width:960px){
   #mItem .modal{width:min(680px,100%)}
   #mItem .fg{grid-template-columns:1fr 1fr}
+  .photo-preview{width:36.8px!important;flex-basis:36.8px!important}
+  #mItem .photo-preview{width:48px!important;flex-basis:48px!important}
 }
 
 @media(max-width:640px){
