@@ -178,6 +178,14 @@ function renderBulkActionControl(){
     box.innerHTML = '<input id="bulkTags" list="tagList" placeholder="tag1, tag2">';
   } else if(action === 'mant'){
     box.innerHTML = '<select id="bulkMant"><option value="1">Marcar mantenimiento</option><option value="">Quitar mantenimiento</option></select>';
+  } else if(action === 'foto'){
+    box.innerHTML = `<div style="display:flex;gap:8px;align-items:center">
+      <input id="bulkFotoUrl" type="url" placeholder="URL de la imagen (Drive, etc.)" style="flex:1">
+      <input id="bulkFotoFile" type="file" accept="image/*" style="flex:1" onchange="handleBulkPhotoUpload()">
+    </div>
+    <div id="bulkFotoPreview" style="margin-top:8px;padding:8px;border-radius:4px;background:var(--surface2);display:none">
+      <img id="bulkFotoImg" style="max-width:100px;max-height:100px;border-radius:4px">
+    </div>`;
   } else {
     box.innerHTML = '';
   }
@@ -198,6 +206,23 @@ function mergeTags(current, incoming, replace=false){
   return [...new Map(all.map(t=>[t.toLowerCase(), t])).values()].join(', ');
 }
 
+function handleBulkPhotoUpload(){
+  const file = document.getElementById('bulkFotoFile')?.files?.[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    document.getElementById('bulkFotoUrl').value = dataUrl;
+    const preview = document.getElementById('bulkFotoPreview');
+    const img = document.getElementById('bulkFotoImg');
+    if(preview && img){
+      img.src = dataUrl;
+      preview.style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
 async function applyBulkAction(){
   if(!requirePerm('items.write')) return;
   const selected = getSelectedItems();
@@ -208,6 +233,11 @@ async function applyBulkAction(){
   else if(action === 'cat') patch = { cat: document.getElementById('bulkCat').value };
   else if(action === 'mod') patch = { mod: document.getElementById('bulkMod').value };
   else if(action === 'mant') patch = { mant: document.getElementById('bulkMant').value, mantEstado: document.getElementById('bulkMant').value ? 'Pendiente' : '' };
+  else if(action === 'foto') {
+    const url = document.getElementById('bulkFotoUrl').value.trim();
+    if(!url){ toast('Indica una URL o carga una imagen','err'); return; }
+    patch = { foto: url };
+  }
   else if(action === 'tagsAdd' || action === 'tagsReplace') {
     const tags = document.getElementById('bulkTags').value;
     if(!tags.trim()){ toast('Indica tags para aplicar','err'); return; }

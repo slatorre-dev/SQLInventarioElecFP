@@ -8,7 +8,9 @@
       "Bash(node -c js/modal-item.js)",
       "Bash(git restore *)",
       "Bash(node -c js/inventory.js)",
-      "Bash(node -c js/roles.js)"
+      "Bash(node -c js/roles.js)",
+      "Bash(Select-String -Path \"d:\\\\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\\\\Github\\\\SQLInventarioElecFP\\\\index.html\" -Pattern \"bulkBar|bulkAction\")",
+      "Bash(Select-Object -First 20)"
     ]
   }
 }
