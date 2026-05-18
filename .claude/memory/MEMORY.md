@@ -3,6 +3,7 @@
 ## Feedback & Workflow
 - [Bump SW siempre](feedback_sw_bump.md) — Incrementar versión sw.js y hacer commit+push en cada sesión de cambios
 - [Session workflow](feedback_session_workflow.md) — Estructura de memoria para features, commits atómicos, actualizar memory.md
+- [GitHub always save](feedback_github_always.md) — Guardar SIEMPRE en GitHub (commit+push) al final de cada sesión
 
 ## Project & Features
 - [SQLInventarioElecFP](project_sqlinventario.md) — Migración inventario IES El Bosco a Cloudflare D1 + Drive OAuth
