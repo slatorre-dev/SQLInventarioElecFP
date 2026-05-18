@@ -892,7 +892,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
     overflow:visible;
   }
   .topbar-btns.open{display:flex}
-  .topbar-btns .tbtn{width:100%;justify-content:flex-start}
+  .topbar-btns .tbtn{width:100%;justify-content:flex-start;font-size:0}
+  .topbar-btns .tbtn svg,.topbar-btns .tbtn img{font-size:16px}
   .dept-menu-wrap{position:static;display:flex !important;flex-direction:column;width:100%}
   .dept-menu{position:relative;top:auto;right:auto;box-shadow:none;border:none;background:none;padding:0;margin-top:4px;min-width:auto;width:100%;display:flex !important;flex-direction:column}
 
