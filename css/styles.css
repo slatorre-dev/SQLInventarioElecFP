@@ -955,6 +955,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
   #mItem .fg{grid-template-columns:1fr}
   #itemQrBox .qr-panel{align-items:flex-start}
   #itemQrBox .qr-img{width:96px;height:96px}
+  .photo-preview{width:46px!important;flex-basis:46px!important}
+  #mItem .photo-preview{width:60px!important;flex-basis:60px!important}
 }
 
 @media (max-width:1200px){
