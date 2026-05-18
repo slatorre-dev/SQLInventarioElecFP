@@ -893,8 +893,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
   }
   .topbar-btns.open{display:flex}
   .topbar-btns .tbtn{width:100%;justify-content:flex-start}
-  .dept-menu-wrap{position:static}
-  .dept-menu{position:relative;top:auto;right:auto;box-shadow:none;border:none;background:none;padding:0;margin-top:8px;min-width:auto;flex-direction:column}
+  .dept-menu-wrap{position:static;display:flex !important;flex-direction:column;width:100%}
+  .dept-menu{position:relative;top:auto;right:auto;box-shadow:none;border:none;background:none;padding:0;margin-top:4px;min-width:auto;width:100%;display:flex !important;flex-direction:column}
 
   /* ── VISTAS: permitir toggle en móvil ── */
 
