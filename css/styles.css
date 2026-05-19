@@ -584,7 +584,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .sub-header{padding:16px 14px!important}
   .sub-body,.home-body,.ciclo-body{max-width:none!important;padding:14px!important}
   .home-hero{padding:22px 14px 16px!important}
-  .stats-strip{grid-template-columns:1fr 1fr!important;margin-bottom:18px!important}
+  .stats-strip{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;margin-bottom:12px!important}
   .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
   .cgrid{display:flex!important;flex-direction:column!important;gap:12px!important}
   .icard,.ccard,.scard,.login-card,.modal,.cbox,.gsearch,.gsr,.docs-card,.pres-card,.loan-banner,.tw,.pager,.profile-section{
@@ -944,6 +944,14 @@ textarea.fi-w{resize:vertical;min-height:60px}
 
   /* ── BÚSQUEDA GLOBAL ── */
   .gsearch-wrap{margin:16px 12px 0}
+
+  /* ── LISTA DE ÍTEMS ── */
+  .list-row{flex-wrap:wrap;gap:8px;padding:10px 12px}
+  .list-photo,.list-photo-empty{width:40px;height:40px;font-size:16px;flex-shrink:0}
+  .list-name{white-space:normal;font-size:12px}
+  .list-qty{min-width:44px}
+  .list-actions{flex:0 0 100%;margin-left:0;padding-left:66px;justify-content:flex-end;gap:4px}
+  .list-action-btn{width:28px;height:28px;font-size:12px}
 
   /* ── PRÉSTAMOS ── */
   .pres-card{grid-template-columns:1fr;gap:10px}
@@ -1682,36 +1690,13 @@ html, body {
 }
 
 @media (max-width: 480px) {
-  .list-row {
-    gap: 8px;
-    padding: 10px;
-  }
-
   .list-check input[type="checkbox"] {
     width: 16px;
     height: 16px;
   }
 
-  .list-photo,
-  .list-photo-empty {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-
   .list-actions {
-    gap: 4px;
-  }
-
-  .list-action-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
-
-  .list-qty {
-    min-width: 48px;
+    padding-left: 56px; /* 16px check + 8px gap + 40px photo + 8px gap */
   }
 
   .list-qty-num {
