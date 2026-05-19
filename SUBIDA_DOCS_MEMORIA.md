@@ -1,73 +1,83 @@
-# Memoria de configuracion de documentos adjuntos
+﻿# Memoria completa: configuración de documentos adjuntos y OAuth de Google
 
-Fecha: 2026-05-16
+Fecha: 2026-05-19
 Proyecto: SQLInventarioElecFP
-Estado actual: Google Drive con OAuth de usuario real como via principal.
+Estado actual: Google Drive con OAuth de usuario real como vía principal para documentos adjuntos, más envío de correo con Gmail API para restablecimiento de contraseña y notificaciones de préstamos.
 
 ## 1. Resumen ejecutivo
 
-La aplicacion permite adjuntar documentos a los items del inventario. Los metadatos se guardan en Cloudflare D1 y los archivos se guardan en Google Drive.
+Esta memoria describe el funcionamiento actual del módulo de documentos adjuntos en el proyecto `SQLInventarioElecFP`.
 
-La arquitectura actual es:
+- Los metadatos de los documentos se guardan en la base de datos remota Cloudflare D1 (`DB` binding).
+- Los archivos binarios se suben a Google Drive.
+- El backend usa Cloudflare Pages Functions.
+- El acceso a Google Drive se logra mediante OAuth de usuario real con `refresh_token`.
+- Existe un fallback heredado con cuenta de servicio (`service account`), pero no es la opción recomendada.
+- El mismo OAuth también soporta envío de correo mediante Gmail API para recuperación de contraseña y avisos de préstamo.
 
-```text
+## 2. Arquitectura general
+
+```
 Navegador
-  -> /api/docs (Cloudflare Pages Functions)
-  -> Google Drive API con OAuth de usuario real
-  -> D1 tabla documentos para guardar metadatos
+  -> /api/docs (Cloudflare Pages Function)
+  -> Google Drive API
+  -> D1 tabla documentos
 ```
 
-Se descarto Cloudflare R2 como almacenamiento principal porque su activacion exige tarjeta bancaria en Cloudflare, y este proyecto no debe depender de una tarjeta personal.
+Adicionalmente:
 
-Tambien se descarto usar solo service account para Drive porque Google Drive no concede cuota de almacenamiento propia a las cuentas de servicio. Ese metodo solo funciona bien si se usa una Unidad compartida de Google Workspace o delegacion de dominio.
+- `/api/auth` usa Gmail API para restablecer contraseñas.
+- `/api/prestar` puede enviar notificaciones por correo a responsables de módulos.
+- `/api/backup` también puede usar OAuth para operaciones de copia de seguridad a Drive.
 
-Por tanto, la solucion estable elegida es:
+## 3. Componentes implicados
 
-- Subir a Drive usando OAuth de una cuenta real.
-- Usar la cuota de Drive de esa cuenta real.
-- Mantener los documentos antiguos ya guardados en Drive.
-- Guardar en D1 los `driveId` y `driveUrl` de cada archivo.
-
-## 2. Archivos implicados
-
-### Backend
+### 3.1 Backend
 
 - `functions/api/docs.js`
-  - Gestiona `getDocs`, `uploadDoc` y `deleteDoc`.
-  - Obtiene tokens de Google.
-  - Crea/busca subcarpetas por aula.
-  - Sube archivos a Drive.
-  - Guarda metadatos en D1.
+  - `getDocs`: lee documentos asociados a un `itemId`.
+  - `uploadDoc`: sube un archivo a Drive, crea la carpeta de aula si hace falta y guarda metadatos en D1.
+  - `deleteDoc`: elimina el archivo de Drive (cuando es posible) y borra el metadato.
+  - `getGoogleAccessToken`: obtiene el token de acceso con OAuth o, en fallback, con service account.
+  - `findOrCreateDriveFolder`: localiza o crea carpetas de aula dentro de la carpeta raíz de Drive.
+  - `uploadFileToDrive`: hace un multipart upload a Google Drive y trata de fijar permisos de lectura pública si es posible.
 
 - `functions/api/oauth/start.js`
-  - Inicia el flujo OAuth con Google.
-  - Redirige al usuario a la pantalla de consentimiento.
-  - Requiere usuario/contraseña de la app mediante `u` y `p`.
+  - Inicia el flujo OAuth.
+  - Crea la URL de autorización de Google con los scopes necesarios.
+  - Redirige a Google para que el usuario real acepte permisos.
 
 - `functions/api/oauth/callback.js`
-  - Recibe el `code` de Google.
-  - Lo intercambia por tokens.
-  - Muestra el `refresh_token` para guardarlo como secreto en Cloudflare.
+  - Recibe el código de Google.
+  - Intercambia el `code` por tokens y muestra el `refresh_token` para copiarlo a Cloudflare.
 
 - `functions/api/_middleware.js`
-  - Autentica las rutas `/api/*`.
-  - Deja publico `/api/oauth/callback` porque Google redirige sin `u`/`p`.
-  - `/api/oauth/start` sigue protegido por usuario y password de la app.
+  - Controla el acceso a las rutas `/api/*`.
+  - Exime las rutas públicas: `/api/auth`, `/api/oauth/callback`, `/api/oauth/start`, `/api/backup`.
+  - Para el resto de rutas espera credenciales de app `u` / `p` en query params.
 
-### Frontend
+- `functions/api/auth.js`
+  - Gestiona login y solicitud de restablecimiento de contraseña.
+  - Envía correos usando Gmail API si están configurados los secretos.
+
+- `functions/api/prestar.js`
+  - Gestiona préstamos y devoluciones.
+  - Puede enviar notificaciones de préstamo al responsable de módulo usando Gmail API.
+
+- `functions/api/backup.js`
+  - Realiza copias de seguridad a Drive.
+  - Usa un `DRIVE_FOLDER_ID` interno distinto del root de documentos adjuntos.
+
+### 3.2 Frontend
 
 - `js/docs.js`
-  - Gestiona documentos pendientes.
-  - Convierte imagenes grandes a JPG comprimido antes de subir.
-  - Llama a `apiPost({ action: 'uploadDoc', ... })`.
-  - Muestra los documentos existentes y permite eliminarlos.
+  - Gestiona selección y envío de archivos.
+  - Convierte imágenes grandes a JPG comprimido antes de subir.
+  - Llama a `/api/docs` con `action: 'uploadDoc'`, `getDocs` y `deleteDoc`.
 
-### Base de datos
+### 3.3 Base de datos / D1
 
-- `migrations/0001_schema.sql`
-  - Define tabla `documentos`.
-
-Tabla relevante:
+Tabla principal en `migrations/0001_schema.sql`:
 
 ```sql
 CREATE TABLE IF NOT EXISTS documentos (
@@ -82,414 +92,325 @@ CREATE TABLE IF NOT EXISTS documentos (
 );
 ```
 
-## 3. Secretos y variables de Cloudflare
+Otras tablas relacionadas:
 
-Configurar en Cloudflare Pages, entorno `Production`:
+- `usuarios`: autenticación de la app.
+- `reset_tokens`: tokens de restablecimiento de contraseña generados por `/api/auth`.
+- `prestamos`: registros de préstamos que pueden activar correos.
+
+## 4. Flujo actual de documentos adjuntos
+
+1. El frontend pide documentos de un item con `getDocs`.
+2. El usuario selecciona un archivo y `js/docs.js` envía `uploadDoc` con:
+   - `itemId`
+   - `itemNombre`
+   - `aulaId`
+   - `aulaName`
+   - `fileName`
+   - `mimeType`
+   - `data` (base64)
+3. El backend valida parámetros y obtiene la carpeta raíz de Drive.
+4. Busca o crea la carpeta de aula dentro de la raíz.
+5. Sube el archivo a Drive con un multipart upload.
+6. Intenta fijar permiso `reader` tipo `anyone`.
+7. Guarda metadatos en D1.
+
+### Resultado guardado
+
+- `itemId` y `itemNombre` para referencia del inventario.
+- `aulaId` y `fileName`.
+- `driveId` y `driveUrl` para acceso web.
+- `fecha` en formato ISO.
+
+## 5. Flujo OAuth completo
+
+### 5.1 Generación del refresh token
+
+1. Configurar `GOOGLE_OAUTH_CLIENT_ID` y `GOOGLE_OAUTH_CLIENT_SECRET` en Cloudflare Pages.
+2. Desplegar para que las variables estén disponibles.
+3. Abrir:
 
 ```text
-GOOGLE_OAUTH_CLIENT_ID
-GOOGLE_OAUTH_CLIENT_SECRET
-GOOGLE_OAUTH_REFRESH_TOKEN
-GOOGLE_DRIVE_ROOT_FOLDER_ID
+https://TU_DOMINIO/api/oauth/start
 ```
 
-### GOOGLE_OAUTH_CLIENT_ID
+4. Google redirige a `/api/oauth/callback`.
+5. El callback muestra el `refresh_token`.
+6. Guardar el token como secreto `GOOGLE_OAUTH_REFRESH_TOKEN` en Cloudflare.
+7. Redeploy.
 
-ID del cliente OAuth 2.0 de Google Cloud.
+> Nota: en el código actual `/api/oauth/start` no valida `u`/`p`; la ruta es accesible públicamente. El permiso real lo controla Google mediante el consent screen y la cuenta usada para autorizar.
 
-Formato aproximado:
+### 5.2 Scopes usados
+
+El endpoint `oauth/start.js` solicita:
+
+- `https://www.googleapis.com/auth/drive.file`
+- `https://www.googleapis.com/auth/gmail.send`
+
+Esto es necesario porque:
+
+- `drive.file` permite subir y gestionar archivos creados por la app.
+- `gmail.send` permite enviar correos desde Gmail para recuperación de contraseña y notificaciones.
+
+### 5.3 Obtención del access token
+
+El backend usa `refresh_token` para llamar a:
 
 ```text
-374986567801-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+https://oauth2.googleapis.com/token
 ```
 
-### GOOGLE_OAUTH_CLIENT_SECRET
+y recibe un `access_token` que luego sirve para Drive y Gmail.
 
-Secreto del cliente OAuth 2.0.
+## 6. Variables de entorno y secretos
 
-Debe tratarse como secreto. No debe subirse al repositorio ni compartirse.
+### Variables de Drive / OAuth
 
-### GOOGLE_OAUTH_REFRESH_TOKEN
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REFRESH_TOKEN`
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID`
 
-Token persistente que permite a Cloudflare obtener access tokens nuevos sin pedir autorizacion cada vez.
+### Variables opcionales y fallback
 
-Se obtiene abriendo:
+- `GOOGLE_SERVICE_ACCOUNT`: fallback heredado con cuenta de servicio.
+- `DRIVE_FOLDER_ID`: fallback en `functions/api/docs.js` si no existe `GOOGLE_DRIVE_ROOT_FOLDER_ID`.
+- `MAIL_FROM`: remitente usado en correos; si no está, usa `inventarioelec@iesjuanbosco.es`.
+- `RESEND_API_KEY`: aparece referenciada en el README para servicios de correo externos.
 
-```text
-https://TU_DOMINIO/api/oauth/start?u=USUARIO_APP&p=PASSWORD_APP
-```
+### Recomendación de configuración
 
-Ese endpoint redirige a Google. Tras aceptar permisos, `/api/oauth/callback` muestra el refresh token.
+- Guardar todos los secretos en Cloudflare Pages `Production`.
+- Siempre redeploy tras cambiar variables.
+- No subir `client_secret*.json`, `credentials*.json`, `GOOGLE_OAUTH_REFRESH_TOKEN` ni JSON de service account al repositorio.
 
-### GOOGLE_DRIVE_ROOT_FOLDER_ID
+## 7. Comportamiento de Google Drive
 
-ID de la carpeta raiz de Drive donde se guardaran documentos.
+### Carpeta raíz
+
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID` debe ser el ID de la carpeta donde se guardan los documentos.
+- No debe incluir la URL completa, solo el ID.
 
 Ejemplo:
-
-```text
-https://drive.google.com/drive/folders/1Ld7IhlJ1cmihza6CMskMSxHty0Qujbg
-```
-
-Valor que hay que guardar:
 
 ```text
 1Ld7IhlJ1cmihza6CMskMSxHty0Qujbg
 ```
 
-## 4. Configuracion en Google Cloud
+### Estructura de carpetas
 
-### 4.1 Habilitar Drive API
+El backend crea o usa subcarpetas dentro de esa raíz según `aulaName`.
 
-1. Abrir Google Cloud Console.
-2. Seleccionar el proyecto del inventario.
-3. Ir a `APIs y servicios` -> `Biblioteca`.
-4. Buscar `Google Drive API`.
-5. Habilitarla.
+Ejemplo:
 
-### 4.2 Pantalla de consentimiento OAuth
-
-1. Ir a `APIs y servicios` -> `Pantalla de consentimiento de OAuth`.
-2. Configurar la app.
-3. Nombre recomendado:
-
-```text
-Inventario Taller FP
+```
+Drive root
+  +- Aula 35
+  +- Aula 36
+  +- Aulas generales
 ```
 
-4. Scope recomendado:
+### Normalización de nombres
 
-```text
-https://www.googleapis.com/auth/drive.file
+- Si `aulaName` está vacío, usa `Aula`.
+- El nombre se limpia para evitar comillas simples en la consulta de Drive.
+
+### Permisos del archivo
+
+- Tras subir el archivo, el backend intenta otorgar lectura pública (`anyone` reader).
+- Si ese paso falla, la subida continúa y el documento se guarda con el URL de Drive.
+- Esto evita que una falla en la configuración de permisos bloquee la operación.
+
+### Fallback de carpeta raíz
+
+`functions/api/docs.js` usa:
+
+```js
+const rootFolderId = env.GOOGLE_DRIVE_ROOT_FOLDER_ID || env.DRIVE_FOLDER_ID;
 ```
 
-Este scope permite que la aplicacion cree y gestione archivos que ella misma crea. Es mas limitado que acceso completo a Drive.
+Por tanto, `DRIVE_FOLDER_ID` funciona como respaldo si se usa una configuración heredada.
 
-### 4.3 Cliente OAuth
+## 8. Gmail / notificaciones por correo
 
-1. Ir a `APIs y servicios` -> `Credenciales`.
-2. `Crear credenciales` -> `ID de cliente de OAuth`.
-3. Tipo:
+El proyecto usa los mismos credenciales OAuth para Gmail cuando existen:
 
-```text
-Aplicacion web
-```
+- `functions/api/auth.js`: envío de correo de restablecimiento de contraseña.
+- `functions/api/prestar.js`: envío de notificación a responsables de módulo cuando hay préstamos.
 
-4. URI de redireccion autorizada:
+### Importante
 
-```text
-https://TU_DOMINIO/api/oauth/callback
-```
+- Si no se configura `GOOGLE_OAUTH_REFRESH_TOKEN`, las funciones de correo fallarán.
+- El scope `gmail.send` debe estar autorizado junto con `drive.file`.
 
-Ejemplo real:
+## 9. Fallback de service account
 
-```text
-https://inventarioelec.pages.dev/api/oauth/callback
-```
+El código aún incluye un fallback con `GOOGLE_SERVICE_ACCOUNT`:
 
-La URI debe coincidir exactamente con la URL que usa la app.
+- Usa JWT OAuth con `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer`.
+- Scope: `https://www.googleapis.com/auth/drive`.
 
-## 5. Flujo OAuth paso a paso
+### Limitaciones
 
-### Paso 1: Guardar client id y secret
+- Las cuentas de servicio no tienen almacenamiento personal de Drive.
+- Por eso el proyecto recomienda no usar este fallback salvo con:
+  - Unidad compartida de Google Workspace.
+  - Cuenta de servicio añadida como Editor / Gestor de contenido.
 
-En Cloudflare Pages, entorno `Production`, crear:
+### Mensaje de error específico
 
-```text
-GOOGLE_OAUTH_CLIENT_ID
-GOOGLE_OAUTH_CLIENT_SECRET
-GOOGLE_DRIVE_ROOT_FOLDER_ID
-```
+Si falla, el backend devuelve un mensaje explicando que la cuenta de servicio no tiene cuota propia y recomienda usar una carpeta en una Unidad compartida.
 
-### Paso 2: Desplegar
+## 10. Endpoints y comportamiento
 
-Las variables de Cloudflare Pages solo se aplican en el siguiente deployment.
+### `/api/docs` (POST)
 
-Formas de redeploy:
+Acciones:
+
+- `getDocs`
+- `uploadDoc`
+- `deleteDoc`
+
+#### `getDocs`
+
+- Parámetro requerido: `itemId`
+- Devuelve todos los documentos asociados a ese item.
+
+#### `uploadDoc`
+
+- Parámetros obligatorios: `itemId`, `fileName`, `data`.
+- Usa `aulaName` o `aulaId` para crear/seleccionar carpeta.
+- Inserta el registro en `documentos` y devuelve el objeto completo.
+
+#### `deleteDoc`
+
+- Parámetro obligatorio: `docId`.
+- Si llega `driveId`, intenta borrar el archivo en Drive.
+- Borra el registro de la tabla aunque la eliminación en Drive falle.
+
+### `/api/oauth/start` (GET)
+
+- Inicia el flujo OAuth.
+- Redirige a Google con los scopes necesarios.
+- Actualmente la ruta es pública.
+
+### `/api/oauth/callback` (GET)
+
+- Recibe `code` de Google.
+- Intercambia el código por `access_token` y `refresh_token`.
+- Muestra el `refresh_token` en pantalla para copiarlo.
+
+### `/api/auth` (GET/POST)
+
+- Gestiona login y solicitud de restablecimiento.
+- Envía correos con Gmail.
+- Exenta del middleware de autenticación.
+
+### `/api/backup` (GET/POST)
+
+- Realiza copias de seguridad a Drive.
+- Exenta del middleware de autenticación.
+
+## 11. Seguridad y autenticación
+
+### Middleware
+
+`functions/api/_middleware.js` aplica:
+
+- Rutas públicas: `/api/auth`, `/api/oauth/callback`, `/api/oauth/start`, `/api/backup`.
+- Resto de rutas exigirá `u` y `p` en la query string y los validará contra la tabla `usuarios`.
+
+### Notas para revisiones
+
+- Verificar que los endpoints expuestos públicamente no acceden a datos sensibles sin protección.
+- `oauth/start` es parte del flujo de autorización y puede dejarse pública si se acepta que Google valide la cuenta.
+- Si se desea endurecer, se puede proteger `oauth/start` con autenticación adicional.
+
+## 12. Despliegue y D1 remota
+
+### D1 remota
+
+- El proyecto usa Cloudflare D1 remota.
+- No usar `wrangler pages dev` para pruebas de base de datos remota.
+- Usar `wrangler d1 ... --remote` para comandos SQL con la base remota.
+
+### Redeploy
+
+Tras cambiar variables de entorno:
 
 ```bash
 git commit --allow-empty -m "Trigger Cloudflare redeploy"
 git push
 ```
 
-o desde Cloudflare:
+O desde Cloudflare Pages: `Deployments -> Retry deployment`.
 
-```text
-Deployments -> ultimo deployment -> Retry deployment / Redeploy
-```
-
-### Paso 3: Generar refresh token
-
-Abrir:
-
-```text
-https://TU_DOMINIO/api/oauth/start?u=USUARIO_APP&p=PASSWORD_APP
-```
-
-Importante:
-
-- `USUARIO_APP` y `PASSWORD_APP` son credenciales de la aplicacion, no de Google.
-- Deben existir en la tabla `usuarios`.
-- Si la password tiene caracteres especiales, debe ir codificada en URL.
-
-### Paso 4: Autorizar en Google
-
-Aceptar permisos con la cuenta real que debe almacenar los documentos en Drive.
-
-### Paso 5: Guardar refresh token
-
-El callback muestra un token largo. Guardarlo en Cloudflare:
-
-```text
-GOOGLE_OAUTH_REFRESH_TOKEN
-```
-
-Volver a redeploy.
-
-## 6. Funcionamiento interno del backend
-
-### 6.1 getGoogleAccessToken(env)
-
-El backend usa esta prioridad:
-
-1. Si existe `GOOGLE_OAUTH_REFRESH_TOKEN`, usa OAuth de usuario real.
-2. Si no existe, intenta usar el metodo antiguo de service account con `GOOGLE_SERVICE_ACCOUNT`.
-
-El metodo principal actual es OAuth.
-
-Con OAuth:
-
-```text
-refresh_token -> https://oauth2.googleapis.com/token -> access_token
-```
-
-Ese `access_token` se usa para llamar a Drive API.
-
-### 6.2 findOrCreateDriveFolder
-
-Busca una subcarpeta dentro de `GOOGLE_DRIVE_ROOT_FOLDER_ID` con el nombre del aula.
-
-Ejemplo:
-
-```text
-Documentos Inventario/
-  Aula 35/
-  Aula 36/
-  Departamento/
-```
-
-Si la carpeta de aula no existe, la crea.
-
-### 6.3 uploadFileToDrive
-
-Sube el archivo con multipart upload a:
-
-```text
-https://www.googleapis.com/upload/drive/v3/files
-```
-
-Guarda:
-
-- `driveId`
-- `driveUrl`
-
-### 6.4 deleteDoc
-
-Cuando se elimina un documento:
-
-1. Intenta borrar el archivo en Drive si tiene `driveId`.
-2. Aunque Drive falle, elimina el metadato en D1.
-
-Esto evita que la app quede bloqueada por un fallo puntual de Drive.
-
-## 7. Endpoints
-
-### POST /api/docs
-
-Usa `action` en el body.
-
-#### getDocs
-
-Entrada:
-
-```json
-{
-  "action": "getDocs",
-  "itemId": 123
-}
-```
-
-Respuesta:
-
-```json
-{
-  "ok": true,
-  "docs": []
-}
-```
-
-#### uploadDoc
-
-Entrada:
-
-```json
-{
-  "action": "uploadDoc",
-  "itemId": 123,
-  "itemNombre": "Fuente alimentacion",
-  "aulaId": "aula35",
-  "aulaName": "Aula 35",
-  "fileName": "manual.pdf",
-  "mimeType": "application/pdf",
-  "data": "BASE64..."
-}
-```
-
-Respuesta:
-
-```json
-{
-  "ok": true,
-  "doc": {
-    "id": 1,
-    "driveId": "...",
-    "driveUrl": "..."
-  }
-}
-```
-
-#### deleteDoc
-
-Entrada:
-
-```json
-{
-  "action": "deleteDoc",
-  "docId": 1,
-  "driveId": "..."
-}
-```
-
-## 8. Service account: estado y motivo del cambio
-
-El proyecto conserva codigo de service account como fallback, pero no es la via recomendada.
-
-Problema encontrado:
-
-```text
-Service Accounts do not have storage quota
-```
-
-Causa:
-
-- La cuenta de servicio no tiene almacenamiento propio en Drive.
-- Compartir una carpeta normal de "Mi unidad" no siempre resuelve el problema.
-
-Soluciones posibles:
-
-1. Unidad compartida de Google Workspace.
-2. Delegacion de dominio.
-3. OAuth de usuario real.
-
-Se eligio OAuth de usuario real porque:
-
-- No requiere tarjeta bancaria.
-- Usa el almacenamiento de la cuenta real.
-- Funciona con carpetas normales de Drive.
-- Encaja con Cloudflare Pages Functions.
-
-## 9. R2: decision tomada
-
-Se implemento y revirtio una version de subida a Cloudflare R2.
-
-Motivo del revert:
-
-- Activar R2 exige tarjeta bancaria en Cloudflare.
-- El proyecto es para el centro/empresa y no debe depender de una tarjeta personal.
-
-Commit revertido:
-
-```text
-29bc0b6 Revert "Use R2 for new document uploads"
-```
-
-## 10. Seguridad
-
-No subir nunca al repositorio:
-
-- `client_secret*.json`
-- `credentials*.json`
-- JSON de service account
-- refresh tokens
-- client secrets
-
-`.gitignore` incluye:
-
-```text
-client_secret*.json
-credentials*.json
-```
-
-Si se filtra un secreto:
-
-1. Revocarlo en Google Cloud o Google Account.
-2. Generar uno nuevo.
-3. Actualizar Cloudflare.
-4. Redeploy.
-
-## 11. Errores comunes
+## 13. Errores comunes y solución
 
 ### `No autorizado`
 
-La URL `/api/oauth/start` usa credenciales de la app:
-
-```text
-?u=USUARIO_APP&p=PASSWORD_APP
-```
-
-No son credenciales de Google.
+- La ruta `/api/oauth/start` no necesita `u`/`p`.
+- El resto de `/api/docs` sí necesita credenciales de aplicación en query params.
+- Comprueba que estás llamando a la ruta correcta.
 
 ### `Falta GOOGLE_OAUTH_CLIENT_ID`
 
-La variable no esta disponible en el deployment actual.
-
-Revisar:
-
-- Esta en entorno `Production`.
-- Nombre exacto.
-- Se hizo redeploy despues de crearla.
+- El secreto no está configurado en el entorno de Cloudflare.
+- Revisar `Production` y redeploy.
 
 ### `redirect_uri_mismatch`
 
-La URL configurada en Google Cloud no coincide con:
+- El URI autorizado en Google Cloud debe ser exactamente:
 
 ```text
 https://TU_DOMINIO/api/oauth/callback
 ```
 
-Debe coincidir protocolo, dominio y ruta.
+- Coincidir protocolo, dominio y ruta.
 
-### Google no devuelve refresh_token
+### `Google no devolvió refresh_token`
 
-Puede pasar si ya se autorizo antes.
-
-Soluciones:
-
+- Ocurre si la app ya estaba autorizada y Google no fuerza la renovación.
 - Revocar acceso de la app desde la cuenta Google.
-- Volver a abrir `/api/oauth/start`.
-- El endpoint usa `prompt=consent` y `access_type=offline`.
+- Abrir nuevamente `/api/oauth/start`.
+- El endpoint ya usa `prompt=consent` y `access_type=offline`.
 
-### Error de cuota de service account
+### `Service Accounts do not have storage quota`
 
-Significa que no se esta usando OAuth o falta `GOOGLE_OAUTH_REFRESH_TOKEN`, por lo que el backend cae al fallback antiguo.
+- Significa que se está usando el fallback de service account.
+- El backend debería preferir `GOOGLE_OAUTH_REFRESH_TOKEN`.
+- Configura el refresh token y redeploy.
+- Si se mantiene service account, pon la carpeta raíz dentro de una Unidad compartida y da permisos a la cuenta de servicio.
 
-Configurar el refresh token y redeploy.
+## 14. Recomendaciones para revisiones futuras
 
-## 12. Estado final verificado
+- Confirmar que `GOOGLE_OAUTH_REFRESH_TOKEN` está en uso y que `GOOGLE_SERVICE_ACCOUNT` no es la ruta principal.
+- Revisar el `scope` de OAuth antes de cambiarlo: `drive.file` + `gmail.send`.
+- Verificar en Cloudflare Pages que los secretos están en `Production` y no en otro entorno.
+- Probar la subida de documentos con varios tipos de archivos y nombres con espacios.
+- Comprobar que la carpeta de aula se crea correctamente y los `driveUrl` funcionan.
+- Revisar si `/api/oauth/start` debería protegerse en el futuro.
 
-- OAuth autorizado correctamente.
-- `GOOGLE_OAUTH_REFRESH_TOKEN` configurado en Cloudflare.
-- Subida a Drive funcionando.
-- Diagnosticos temporales de variables eliminados.
-- R2 revertido.
-- Documentos antiguos de Drive compatibles.
+## 15. Documentación relacionada
+
+- `README.md` sección "Documentos adjuntos en Drive"
+- `functions/api/docs.js`
+- `functions/api/oauth/start.js`
+- `functions/api/oauth/callback.js`
+- `functions/api/_middleware.js`
+- `functions/api/auth.js`
+- `functions/api/prestar.js`
+- `functions/api/backup.js`
+- `migrations/0001_schema.sql`
+
+## 16. Resumen de variables críticas
+
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+- `GOOGLE_OAUTH_REFRESH_TOKEN`
+- `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+- `DRIVE_FOLDER_ID` (fallback)
+- `GOOGLE_SERVICE_ACCOUNT` (fallback opcional)
+- `MAIL_FROM` (opcional)
+- `RESEND_API_KEY` (según README para correo)
