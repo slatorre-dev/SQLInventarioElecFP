@@ -26,7 +26,7 @@ function getBase(){
 function getFiltered(){
   const q=document.getElementById('srch').value;
   const fc=document.getElementById('fCat').value;
-  const fe=document.getElementById('fEst').value;
+  const fe=document.getElementById('fEst')?.value??'';
   const ft=document.getElementById('fTipo').value;
   return getBase().filter(x=>{
     if(fc&&x.cat!==fc)return false;

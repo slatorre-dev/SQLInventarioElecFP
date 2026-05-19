@@ -165,7 +165,6 @@ function openSub(){
   const _fab=document.getElementById('fabNuevo');
   if(_fab) _fab.style.display=(!noActions && typeof can==='function' && can('items.write')) ? 'flex' : 'none';
   document.getElementById('srch').value='';
-  document.getElementById('fEst').value='';
   fillCatFilter();
   show('pS'); renderInv(); renderSubStats(all,low);
 }
