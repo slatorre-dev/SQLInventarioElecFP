@@ -115,7 +115,7 @@ body{
 .login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:26px}
 .login-field{margin-bottom:14px}
 .login-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
-.login-field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s}
+.login-field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:var(--font);font-size:16px;outline:none;transition:border-color .2s,box-shadow .2s}
 .login-field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2563eb18;background:var(--white)}
 .login-error{background:var(--red-l);color:var(--red);border:1px solid #fca5a5;border-radius:9px;padding:10px 14px;font-size:12px;font-weight:600;margin-bottom:14px;display:none}
 .login-error.show{display:block;animation:shake .3s}
@@ -1187,4 +1187,299 @@ html, body {
   .historial-filter-row{grid-template-columns:1fr}
   .historial-table thead{top:167px}
   #mAuditoria .modal{width:100vw;height:100svh;max-height:100svh;border-radius:0}
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+/* ══ MEJORAS RESPONSIVAS V2 - Mayo 2026 ══ */
+/* ═══════════════════════════════════════════════════════════ */
+
+/* ── TABLET (768px - 1024px) ── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Modales adaptados a tablet */
+  .modal {
+    width: min(85vw, 700px) !important;
+  }
+
+  /* Tabla con scroll horizontal mejor */
+  .tw {
+    font-size: 12px;
+  }
+
+  /* Grid filtros: 2 columnas en tablet */
+  .historial-filter-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Items grid: 2 columnas */
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .photo-preview {
+    width: 50px !important;
+    flex-basis: 50px !important;
+  }
+}
+
+/* ── MÓVIL GRANDE (640px - 768px) ── */
+@media (min-width: 640px) and (max-width: 767px) {
+  /* Botones más grandes pero sin ocupar 100% */
+  .tbtn {
+    padding: 10px 14px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  /* Topbar compacta */
+  .topbar {
+    padding: 8px 12px;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  /* Modales con padding reducido */
+  .modal {
+    width: min(90vw, 680px) !important;
+    padding: 18px 16px !important;
+  }
+
+  /* Grid 2 columnas */
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Filtros en 2 columnas */
+  .historial-filter-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ── MÓVIL PEQUEÑO (< 640px) ── */
+@media (max-width: 639px) {
+  /* Topbar ultra compacto */
+  .topbar {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .brand-name {
+    display: none;
+  }
+
+  .app-version {
+    display: none;
+  }
+
+  /* Botones: altura mínima accesible */
+  .tbtn {
+    padding: 10px 14px;
+    min-height: 44px;
+    min-width: 44px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .dept-game-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .mob-menu-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Inputs: mínimo 16px para evitar zoom en iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Modales: pantalla completa o casi */
+  .modal {
+    width: min(95vw, 100%) !important;
+    padding: 16px 14px !important;
+    margin: 0 !important;
+    border-radius: 12px 12px 0 0 !important;
+    max-height: 90vh !important;
+  }
+
+  /* Vista móvil para tabla: tarjetas apiladas */
+  .tw {
+    display: none !important;
+  }
+
+  /* Si existe vista móvil alternativa, mostrarla */
+  .item-card-mobile {
+    display: block !important;
+  }
+
+  /* Grids: 1 columna */
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-preview {
+    width: 50px !important;
+    flex-basis: 50px !important;
+  }
+
+  /* Filtros: 1 columna */
+  .historial-filter-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tabs más compactos */
+  .pres-tabs {
+    gap: 4px;
+    padding: 3px;
+  }
+
+  .pres-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  /* Cards de préstamos: layout simplificado */
+  .pres-card {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Stats: 2 columnas */
+  .stats-strip {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .scard {
+    padding: 14px 12px;
+  }
+
+  /* Breadcrumb: ocultar si es necesario */
+  .breadcrumb {
+    font-size: 12px;
+    gap: 3px;
+  }
+
+  /* User chip: solo avatar */
+  .user-chip {
+    padding: 3px;
+  }
+
+  /* Toast messages: full width con margen */
+  .toasts {
+    bottom: 12px;
+    right: 10px;
+    left: 10px;
+  }
+
+  .toast {
+    max-width: 100%;
+    padding: 12px 14px;
+  }
+
+  /* Espaciado general más generoso en móvil */
+  .page {
+    padding: 12px;
+  }
+
+  /* Formularios: campos más grandes */
+  .fg {
+    gap: 12px;
+  }
+
+  .fg > * {
+    width: 100%;
+  }
+}
+
+/* ── MÓVIL EXTRA PEQUEÑO (< 480px) ── */
+@media (max-width: 479px) {
+  .topbar {
+    padding: 8px 8px;
+    min-height: 52px;
+  }
+
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  /* Texto de conexión muy compacto */
+  .conn-status {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  /* Botones aún más grandes */
+  .tbtn {
+    padding: 11px 14px;
+    min-height: 48px;
+  }
+
+  /* Icons solo en botones */
+  .tbtn {
+    gap: 4px;
+  }
+
+  /* Modales: sin padding lateral */
+  .modal {
+    padding: 14px 12px !important;
+    border-radius: 16px 16px 0 0 !important;
+  }
+
+  .mhead {
+    margin-bottom: 16px;
+  }
+
+  .mhead h2 {
+    font-size: 18px;
+  }
+
+  /* Tabs centrados */
+  .pres-tabs {
+    justify-content: center;
+  }
+
+  /* Stats: 2 columnas compactas */
+  .stats-strip {
+    gap: 8px;
+  }
+
+  .scard {
+    padding: 12px 10px;
+  }
+
+  .scard-num {
+    font-size: 20px;
+  }
+
+  /* Menos padding en secciones */
+  .profile-section,
+  .pres-group {
+    padding: 16px 12px;
+  }
+
+  /* Imagen hero reducida */
+  .home-hero {
+    padding: 20px 12px 16px;
+  }
+
+  .home-hero h1 {
+    font-size: 20px;
+  }
 }
