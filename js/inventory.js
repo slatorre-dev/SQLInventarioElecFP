@@ -52,7 +52,9 @@ function renderInv(){
   const mode = getInvRenderMode();
   _lastInvRenderMode = mode;
   const page = getInvPage(data);
-  mode === 'table' ? rTable(page.items,mc) : rCards(page.items,mc);
+  if(mode === 'table') rTable(page.items,mc);
+  else if(mode === 'list') rList(page.items,mc);
+  else rCards(page.items,mc);
   renderPager(mc,page);
 }
 
@@ -65,7 +67,9 @@ function isTouchLike(){
   return matchMedia('(hover: none), (pointer: coarse)').matches;
 }
 function getInvRenderMode(){
-  return (view==='table' && window.innerWidth > 900 && !isTouchLike()) ? 'table' : 'cards';
+  if(view==='table' && window.innerWidth > 900 && !isTouchLike()) return 'table';
+  if(window.innerWidth < 640 && isTouchLike()) return 'list';
+  return 'cards';
 }
 
 function getPageSig(data){
@@ -495,6 +499,37 @@ function rCards(data,mc){
         }
         <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
         <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function rList(data,mc){
+  mc.innerHTML=`<div class="list-view">${data.map(x=>{
+    const low=isLowStock(x),mant=needsMaintenance(x),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',tipo=materialType(x),tags=itemTags(x);
+    const esContenedor = x.es_contenedor == 1;
+    const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
+    const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
+    const selected = bulkSelected.has(String(x.id));
+    return`<div class="list-row${low?' low':''}${selected?' bulk-list-selected':''}">
+      <label class="list-check" onclick="event.stopPropagation()">
+        <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
+      </label>
+      ${x.foto?`<img class="list-photo quick-item-trigger" src="${x.foto}" alt="" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">`:
+        `<div class="list-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">📷</div>`}
+      <div class="list-info">
+        <div class="list-name item-title-link" onclick="openModal(${x.id})">${parentItem?'↳ ':''}${x.item}${esContenedor?` 📦${numHijos}`:''}</div>
+        <div class="list-meta">${x.ref?`<span class="list-badge">${x.ref}</span>`:''}${x.cat?` <span class="list-cat">${cat.i} ${x.cat}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}</div>
+      </div>
+      <div class="list-qty ${low?'low':''}">
+        <div class="list-qty-num">${x.qty}</div>
+        <div class="list-qty-min">mín.${x.min}</div>
+      </div>
+      <div class="list-actions">
+        <button class="btn btn-xs" onclick="openModal(${x.id})" title="Editar">✏️</button>
+        <button class="btn btn-xs btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
+        <button class="btn btn-xs btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})">🛒</button>
+        <button class="btn btn-xs btn-d" onclick="openDelModal(${x.id})">🗑️</button>
       </div>
     </div>`;
   }).join('')}</div>`;
