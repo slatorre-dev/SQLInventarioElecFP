@@ -225,7 +225,7 @@
     <h1>¿Qué deseas consultar?</h1>
     <h2>Acciones rápidas</h2>
     <p>Selecciona un aula o un ciclo formativo para ver su inventario</p>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+    <div class="action-strip" style="justify-content:center;gap:10px;margin-top:18px">
       <button class="btn btn-p icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem rápido</span></button>
       <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
@@ -341,7 +341,7 @@
     <div class="sub-tag" id="sTag"></div>
     <div class="sub-title" id="sTitle"></div>
     <div class="sub-meta" id="sMeta"></div>
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    <div class="action-strip">
       <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
       <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:10px 22px;font-size:13px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>

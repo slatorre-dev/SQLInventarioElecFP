@@ -371,6 +371,7 @@ body{
 .sub-title{font-size:28px;font-weight:800;letter-spacing:-.4px;margin-bottom:6px;background:linear-gradient(135deg,#059669,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .sub-meta{font-size:13px;color:var(--muted);font-weight:500}
 .sub-body{max-width:1600px;margin:0 auto;padding:26px 28px}
+.action-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;background:var(--white);padding:16px 18px;border-radius:14px;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px;background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
@@ -918,10 +919,17 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .scard-num{font-size:18px}
 
   /* ── SUBPAGE HEADER ── */
-  .sub-header{padding:16px 14px 14px}
-  .sub-title{font-size:19px}
-  .ciclo-page-header{padding:16px 14px}
-  .ciclo-title{font-size:19px}
+  .sub-header{padding:10px 14px 8px}
+  .sub-tag{margin-bottom:4px;font-size:9px;padding:3px 10px;letter-spacing:.5px}
+  .sub-title{font-size:16px;margin-bottom:2px}
+  .sub-meta{font-size:11px}
+  .ciclo-page-header{padding:10px 14px 8px}
+  .ciclo-title{font-size:16px}
+
+  /* ── ACTION STRIP ── */
+  .action-strip{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start!important;margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px;padding-bottom:4px;scrollbar-width:none;gap:6px;margin-top:8px}
+  .action-strip::-webkit-scrollbar{display:none}
+  .action-strip .btn{flex-shrink:0}
 
   /* ── TOOLBAR FILTROS ── */
   .toolbar{flex-direction:column;align-items:stretch}
