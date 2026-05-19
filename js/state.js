@@ -39,7 +39,12 @@ function isLowStock(item){
   return isConsumible(item) && Number(item?.qty) <= Number(item?.min);
 }
 
-function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const fab=document.getElementById('fabNuevo');
+  if(fab && id!=='pS') fab.style.display='none';
+}
 
 function needsMaintenance(item){
   const status = String(item?.mantEstado || '').trim().toLowerCase();

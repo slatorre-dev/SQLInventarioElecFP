@@ -162,6 +162,8 @@ function openSub(){
   document.getElementById('btnE').style.display = noActions ? 'none' : 'flex';
   _hideHomeButtons();
   if(typeof applyRoleUI === 'function') applyRoleUI();
+  const _fab=document.getElementById('fabNuevo');
+  if(_fab) _fab.style.display=(!noActions && typeof can==='function' && can('items.write')) ? '' : 'none';
   document.getElementById('srch').value='';
   document.getElementById('fEst').value='';
   fillCatFilter();
