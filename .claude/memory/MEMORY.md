@@ -14,3 +14,4 @@
 - [Auditoría de Datos](feature_auditoria_datos.md) — Modal para limpiar items con campos incompletos (v159→v166)
 - [Mejoras Auditoría UX](feature_auditoria_mejoras.md) — Propuestas de mejoras: indicador progreso, estadísticas, filtros AND/OR, exportar reporte
 - [Documentación Completa](DEVELOPMENT.md#sesión-mayo-2026--sesión-5) — TODO implementado en auditoría: fixes, agrupaciones, filtrados, integración bulk edit
+- [Sesión 19/05/2026](session_mayo_20260519.md) — Sticky header PC, FAB nuevo ítem, encoding CSV, roles 3 canónicos, fix nav crítico (fEst), topbar cleanup
