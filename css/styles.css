@@ -1499,8 +1499,8 @@ html, body {
 
 .list-row {
   display: grid;
-  grid-template-columns: 36px 48px 1fr 70px 100px;
-  gap: 12px;
+  grid-template-columns: 36px 48px 1fr 65px auto;
+  gap: 10px;
   align-items: center;
   background: var(--white);
   border: 1px solid var(--border);
@@ -1625,38 +1625,63 @@ html, body {
   display: flex;
   gap: 4px;
   justify-content: flex-end;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .btn-xs {
-  padding: 6px 8px !important;
-  min-height: auto !important;
-  min-width: auto !important;
-  font-size: 12px !important;
+  padding: 6px 6px !important;
+  min-height: 32px !important;
+  min-width: 32px !important;
+  font-size: 13px !important;
   border-radius: 6px !important;
-  width: auto !important;
-  height: auto !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+  border: 1px solid var(--border) !important;
+  background: var(--white) !important;
+  color: var(--text) !important;
 }
 
 @media (max-width: 480px) {
   .list-row {
-    grid-template-columns: 32px 44px 1fr 60px;
-    gap: 10px;
+    grid-template-columns: 32px 40px 1fr auto;
+    gap: 8px;
     padding: 10px;
   }
 
   .list-photo,
   .list-photo-empty {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
   }
 
   .list-actions {
-    display: flex;
     gap: 2px;
   }
 
   .btn-xs {
-    padding: 5px 6px !important;
+    padding: 4px 4px !important;
+    min-height: 28px !important;
+    min-width: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
     font-size: 11px !important;
+  }
+
+  .list-qty {
+    min-width: 50px;
+  }
+
+  .list-qty-num {
+    font-size: 14px;
+  }
+
+  .list-qty-min {
+    font-size: 9px;
   }
 }
