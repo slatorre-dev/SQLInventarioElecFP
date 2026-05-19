@@ -521,15 +521,17 @@ function rList(data,mc){
         <div class="list-name item-title-link" onclick="openModal(${x.id})">${parentItem?'↳ ':''}${x.item}${esContenedor?` 📦${numHijos}`:''}</div>
         <div class="list-meta">${x.ref?`<span class="list-badge">${x.ref}</span>`:''}${x.cat?` <span class="list-cat">${cat.i} ${x.cat}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}</div>
       </div>
-      <div class="list-qty ${low?'low':''}">
-        <div class="list-qty-num">${x.qty}</div>
-        <div class="list-qty-min">mín.${x.min}</div>
-      </div>
-      <div class="list-actions">
-        <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar">✏️</button>
-        <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
-        <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
-        <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar">🗑️</button>
+      <div class="list-footer">
+        <div class="list-qty ${low?'low':''}">
+          <div class="list-qty-num">${x.qty}</div>
+          <div class="list-qty-min">mín.${x.min}</div>
+        </div>
+        <div class="list-actions">
+          <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar">✏️</button>
+          <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
+          <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
+          <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar">🗑️</button>
+        </div>
       </div>
     </div>`;
   }).join('')}</div>`;
