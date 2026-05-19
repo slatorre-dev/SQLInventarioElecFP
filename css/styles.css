@@ -1703,3 +1703,12 @@ html, body {
     font-size: 9px;
   }
 }
+
+/* ── STATS MÓVIL: 4 en una fila, icono + número ─────────── */
+@media (max-width: 640px) {
+  .stats-strip{grid-template-columns:repeat(4,1fr)!important;gap:6px!important;margin-bottom:12px!important}
+  .scard{flex-direction:row!important;align-items:center!important;justify-content:center!important;padding:7px 4px!important;gap:5px!important}
+  .scard-icon{font-size:14px!important;display:block!important;opacity:1!important}
+  .scard-lbl{display:none!important}
+  .scard-num{font-size:13px!important;line-height:1!important}
+}
