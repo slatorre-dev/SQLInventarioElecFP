@@ -537,7 +537,6 @@ function rList(data,mc){
   }).join('')}</div>`;
 }
 
-function sv(v){view=v;document.getElementById('vT').classList.toggle('on',v==='table');document.getElementById('vC').classList.toggle('on',v==='cards');renderInv()}
 window.addEventListener('resize',()=>{
   if(!document.getElementById('pS')?.classList.contains('active')) return;
   const nextMode = getInvRenderMode();
