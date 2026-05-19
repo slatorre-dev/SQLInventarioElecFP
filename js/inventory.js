@@ -526,10 +526,10 @@ function rList(data,mc){
         <div class="list-qty-min">mín.${x.min}</div>
       </div>
       <div class="list-actions">
-        <button class="btn btn-xs" onclick="openModal(${x.id})" title="Editar">✏️</button>
-        <button class="btn btn-xs btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
-        <button class="btn btn-xs btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})">🛒</button>
-        <button class="btn btn-xs btn-d" onclick="openDelModal(${x.id})">🗑️</button>
+        <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar">✏️</button>
+        <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
+        <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
+        <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar">🗑️</button>
       </div>
     </div>`;
   }).join('')}</div>`;
