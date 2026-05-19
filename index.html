@@ -314,9 +314,9 @@
     </div>
     <div class="toolbar">
       <div class="sbox"><span class="si">🔍</span><input type="text" id="presSearch" placeholder="Buscar por ítem o profesor..." oninput="renderPrestamos()"></div>
-      <button class="btn btn-loan" data-perm="loans.write" onclick="openPrestar()">⌛ Nuevo préstamo</button>
-      <button class="btn" data-perm="profesores.manage" onclick="openProfModal()">👥 Gestionar profesores</button>
-      <button class="btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 Gestionar usuarios</button>
+      <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar profesores</span></button>
+      <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>
     </div>
     <div id="presContent"></div>
   </div>
@@ -342,12 +342,12 @@
     <div class="sub-title" id="sTitle"></div>
     <div class="sub-meta" id="sMeta"></div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn btn-p print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openModal()">＋ Añadir ítem</button>
-      <button class="btn print-no" data-perm="loans.write" style="padding:10px 22px;font-size:13px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ Nuevo préstamo</button>
-      <button class="btn btn-d print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openDelModal()">🗑️ Dar de baja</button>
-      <button class="btn print-no" style="padding:10px 22px;font-size:13px;border-color:var(--accent);color:var(--accent)" onclick="openPrintQrModal()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> Imprimir QR</button>
-      <button class="btn print-no" style="padding:10px 22px;font-size:13px" onclick="openPrintModal()">🖨️ Imprimir</button>
-      <button class="btn print-no" style="padding:10px 22px;font-size:13px" onclick="goHome()">🏠 Inicio</button>
+      <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
+      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:10px 22px;font-size:13px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:10px 22px;font-size:13px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
+      <button class="btn icon-btn print-no" style="padding:10px 22px;font-size:13px;border-color:var(--accent);color:var(--accent)" onclick="openPrintQrModal()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> <span class="btn-text">Imprimir QR</span></button>
+      <button class="btn icon-btn print-no" style="padding:10px 22px;font-size:13px" onclick="openPrintModal()">🖨️ <span class="btn-text">Imprimir</span></button>
+      <button class="btn icon-btn print-no" style="padding:10px 22px;font-size:13px" onclick="goHome()">🏠 <span class="btn-text">Inicio</span></button>
     </div>
   </div>
   <div class="sub-body">
