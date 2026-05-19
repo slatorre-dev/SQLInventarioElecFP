@@ -1,47 +1,31 @@
 // Roles y permisos basados en la columna "rol" de la hoja Usuarios.
+// Roles canónicos: 'Jefe/a Departamento', 'Profesor/a', 'Consulta'
+// El resto son alias de compatibilidad (usuarios antiguos en BD).
+
+const _PERMS_JEFE    = ['*'];
+const _PERMS_PROFE   = ['items.write','docs.write','loans.write','orders.write','profile.write'];
+const _PERMS_LECTURA = ['profile.write'];
 
 const ROLE_PERMISSIONS = {
-  'jefe departamento': ['*'],
-  'jefe de departamento': ['*'],
-  'jefa departamento': ['*'],
-  'jefa de departamento': ['*'],
-  'jefe/a departamento': ['*'],
-  'jefe/a de departamento': ['*'],
-  'administrador': ['*'],
-  'administradora': ['*'],
-  'admin': ['*'],
-  'jefe': ['*'],
-  'jefa': ['*'],
-  'profesor': [
-    'items.write',
-    'docs.write',
-    'loans.write',
-    'orders.write',
-    'profile.write'
-  ],
-  'profesora': [
-    'items.write',
-    'docs.write',
-    'loans.write',
-    'orders.write',
-    'profile.write'
-  ],
-  'profesor/a': [
-    'items.write',
-    'docs.write',
-    'loans.write',
-    'orders.write',
-    'profile.write'
-  ],
-  'consulta': [
-    'profile.write'
-  ],
-  'lector': [
-    'profile.write'
-  ],
-  'lectora': [
-    'profile.write'
-  ]
+  // ── Canónico ──
+  'jefe/a departamento': _PERMS_JEFE,
+  'profesor/a':          _PERMS_PROFE,
+  'consulta':            _PERMS_LECTURA,
+  // ── Alias compatibilidad ──
+  'jefe departamento':   _PERMS_JEFE,
+  'jefe de departamento':_PERMS_JEFE,
+  'jefa departamento':   _PERMS_JEFE,
+  'jefa de departamento':_PERMS_JEFE,
+  'jefe/a de departamento':_PERMS_JEFE,
+  'administrador':       _PERMS_JEFE,
+  'administradora':      _PERMS_JEFE,
+  'admin':               _PERMS_JEFE,
+  'jefe':                _PERMS_JEFE,
+  'jefa':                _PERMS_JEFE,
+  'profesor':            _PERMS_PROFE,
+  'profesora':           _PERMS_PROFE,
+  'lector':              _PERMS_LECTURA,
+  'lectora':             _PERMS_LECTURA,
 };
 
 const ACTION_PERMISSIONS = {
@@ -105,16 +89,10 @@ function requirePerm(permission, message){
 }
 
 function roleLabel(){
-  const labels = {
-    'jefe departamento': 'Jefe Departamento',
-    'jefe de departamento': 'Jefe Departamento',
-    administrador: 'Administrador',
-    admin: 'Administrador',
-    profesor: 'Profesor',
-    consulta: 'Consulta',
-    lector: 'Lector'
-  };
-  return labels[userRole()] || (SESSION?.rol || 'Consulta');
+  const r = userRole();
+  if(_PERMS_JEFE === ROLE_PERMISSIONS[r] || ROLE_PERMISSIONS[r] === _PERMS_JEFE) return 'Jefe/a Departamento';
+  if(ROLE_PERMISSIONS[r] === _PERMS_PROFE) return 'Profesor/a';
+  return 'Consulta';
 }
 
 function applyRoleUI(){

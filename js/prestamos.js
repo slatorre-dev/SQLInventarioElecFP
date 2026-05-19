@@ -627,16 +627,15 @@ let _usuariosEditing = [];
 let _usuariosOriginal = [];
 let _todosModulos = []; // módulos de la hoja Modulos con responsable actual
 const ROLES_DISPONIBLES = [
-  'Jefe Departamento',
-  'profesor',
-  'consulta',
-  'lector'
+  'Jefe/a Departamento',
+  'Profesor/a',
+  'Consulta'
 ];
 
 function _rolBadgeClass(rol){
-  const r = (rol||'').toLowerCase().trim();
-  if(r==='jefe departamento'||r==='jefe de departamento'||r==='administrador'||r==='admin') return 'jefe';
-  if(r==='profesor') return 'prof';
+  const r = (rol||'').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  if(r.includes('jefe')||r.includes('jefa')||r==='administrador'||r==='administradora'||r==='admin') return 'jefe';
+  if(r.includes('profesor')) return 'prof';
   return 'lect';
 }
 
@@ -692,7 +691,7 @@ function _renderUsuariosList(){
 }
 
 function addUsuarioRow(){
-  _usuariosEditing.push({ usuario:'', nombre:'', email:'', rol:'profesor', _nuevo:true, _resetPass:'', _modulos:[] });
+  _usuariosEditing.push({ usuario:'', nombre:'', email:'', rol:'Profesor/a', _nuevo:true, _resetPass:'', _modulos:[] });
   _renderUsuariosList();
 }
 
