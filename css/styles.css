@@ -915,9 +915,9 @@ textarea.fi-w{resize:vertical;min-height:60px}
 
   /* ── STATS ── */
   .stats-strip{grid-template-columns:repeat(4,1fr);gap:6px}
-  .scard{padding:8px 4px;flex-direction:column;align-items:center;text-align:center;gap:3px}
-  .scard-icon{font-size:18px}
-  .scard-num{font-size:15px}
+  .scard{padding:8px 6px;justify-content:center;text-align:center;gap:0}
+  .scard-icon{display:none}
+  .scard-num{font-size:16px}
   .scard-lbl{display:none}
 
   /* ── SUBPAGE HEADER ── */
@@ -1483,15 +1483,11 @@ html, body {
   }
 
   .scard {
-    padding: 6px 2px;
-  }
-
-  .scard-icon {
-    font-size: 16px;
+    padding: 6px 4px;
   }
 
   .scard-num {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   /* Menos padding en secciones */
