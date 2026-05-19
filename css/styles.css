@@ -914,9 +914,11 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .maint-fields{grid-template-columns:1fr}
 
   /* ── STATS ── */
-  .stats-strip{grid-template-columns:1fr 1fr}
-  .scard{padding:12px 14px}
-  .scard-num{font-size:18px}
+  .stats-strip{grid-template-columns:repeat(4,1fr);gap:6px}
+  .scard{padding:8px 4px;flex-direction:column;align-items:center;text-align:center;gap:3px}
+  .scard-icon{font-size:18px}
+  .scard-num{font-size:15px}
+  .scard-lbl{display:none}
 
   /* ── SUBPAGE HEADER ── */
   .sub-header{padding:10px 14px 8px}
@@ -1467,17 +1469,21 @@ html, body {
     justify-content: center;
   }
 
-  /* Stats: 2 columnas compactas */
+  /* Stats: 4 columnas ultra compactas */
   .stats-strip {
-    gap: 8px;
+    gap: 4px;
   }
 
   .scard {
-    padding: 12px 10px;
+    padding: 6px 2px;
+  }
+
+  .scard-icon {
+    font-size: 16px;
   }
 
   .scard-num {
-    font-size: 20px;
+    font-size: 13px;
   }
 
   /* Menos padding en secciones */
