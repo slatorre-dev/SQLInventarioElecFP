@@ -6,13 +6,6 @@ const ROLE_PERMISSIONS = {
   'administrador': ['*'],
   'admin': ['*'],
   'jefe': ['*'],
-  'professor': [
-    'items.write',
-    'docs.write',
-    'loans.write',
-    'orders.write',
-    'profile.write'
-  ],
   'profesor': [
     'items.write',
     'docs.write',
