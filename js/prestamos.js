@@ -471,7 +471,7 @@ async function confirmDevolver(){
   const btn = document.getElementById('btnDevolverSave');
   btn.disabled = true; btn.textContent = '⏳ Devolviendo...';
   try {
-    const res = await apiPost({action:'devolver', id:devolverPresId, cantidadDevuelta:cant});
+    const res = await apiPost({action:'devolver', presId:devolverPresId, cantidadDevuelta:cant});
     if(!res.ok) throw new Error(res.error);
     closeDevolver();
     toast('Devolución registrada','ok');
