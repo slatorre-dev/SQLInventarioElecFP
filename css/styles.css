@@ -374,6 +374,8 @@ body{
 .action-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;background:var(--white);padding:16px 18px;border-radius:14px;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.toolbar-add-btn{margin-left:auto;flex-shrink:0;white-space:nowrap}
+@media (hover:none),(pointer:coarse){.toolbar-add-btn{display:none!important}}
 .bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px;background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .bulk-count{font-size:12px;font-weight:800;color:var(--accent);background:var(--accent-l);border-radius:999px;padding:6px 10px;white-space:nowrap}
 .bulkbar select,.bulkbar input{min-height:36px;padding:8px 10px;font-size:12px}
