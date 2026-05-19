@@ -374,8 +374,6 @@ body{
 .action-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;background:var(--white);padding:16px 18px;border-radius:14px;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.toolbar-add-btn{margin-left:auto;flex-shrink:0;white-space:nowrap}
-@media (hover:none),(pointer:coarse){.toolbar-add-btn{display:none!important}}
 .bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px;background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .bulk-count{font-size:12px;font-weight:800;color:var(--accent);background:var(--accent-l);border-radius:999px;padding:6px 10px;white-space:nowrap}
 .bulkbar select,.bulkbar input{min-height:36px;padding:8px 10px;font-size:12px}
@@ -513,10 +511,10 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .table-photo-empty{width:24px;height:18px;font-size:8px;margin:0 auto;border-radius:4px}
 .quick-item-trigger{cursor:pointer}
 @keyframes ci{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-/* FAB — solo dispositivos táctiles */
-.fab-nuevo{display:none;position:fixed;bottom:24px;right:20px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--acc2));color:#fff;font-size:28px;font-weight:300;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,.45);z-index:50;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s;line-height:1;padding-bottom:2px}
+/* FAB — todos los dispositivos, esquina inferior derecha */
+.fab-nuevo{display:none;position:fixed;bottom:28px;right:28px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--acc2));color:#fff;font-size:28px;font-weight:300;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,.45);z-index:50;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s;line-height:1;padding-bottom:2px}
+.fab-nuevo:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(37,99,235,.55)}
 .fab-nuevo:active{transform:scale(.92);box-shadow:0 2px 10px rgba(37,99,235,.3)}
-@media (hover:none),(pointer:coarse){.fab-nuevo{display:flex}}
 
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:12px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh);flex-wrap:wrap}
 .pager-info,.pager-page{font-size:12px;color:var(--muted);font-weight:600}
@@ -970,7 +968,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .list-actions{flex:1 1 auto;display:flex;justify-content:flex-end;gap:4px;margin-left:0;padding:0}
   .list-action-btn{width:28px;height:28px;font-size:12px}
 
-  /* no usado — FAB se controla por JS y media query de touch */
+  /* FAB se controla íntegramente por JS (openSub/show) */
 
   /* ── PRÉSTAMOS ── */
   .pres-card{grid-template-columns:1fr;gap:10px}
