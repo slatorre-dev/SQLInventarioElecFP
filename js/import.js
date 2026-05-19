@@ -201,7 +201,18 @@ function impHandleFile(file){
   clearBackupPreview();
   const reader = new FileReader();
   reader.onload = (e)=>{
-    impData.rawText = e.target.result;
+    // Detectar encoding: intentar UTF-8 estricto; si falla o hay caracteres de reemplazo, usar windows-1252
+    let text;
+    try {
+      text = new TextDecoder('utf-8', {fatal:true}).decode(e.target.result);
+    } catch {
+      text = new TextDecoder('windows-1252').decode(e.target.result);
+    }
+    // Si UTF-8 fue válido pero tiene caracteres de reemplazo (U+FFFD), asumir windows-1252
+    if(text.includes('�')){
+      text = new TextDecoder('windows-1252').decode(e.target.result);
+    }
+    impData.rawText = text;
     const parsed = parseCSV(impData.rawText);
     if(parsed.length < 2){
       toast('El CSV no tiene datos suficientes (necesita cabecera + al menos 1 fila)','err');
@@ -223,7 +234,7 @@ function impHandleFile(file){
     impGoToStep(2);
   };
   reader.onerror = ()=>toast('Error al leer el archivo','err');
-  reader.readAsText(file, 'UTF-8');
+  reader.readAsArrayBuffer(file);
 }
 
 function impRenderMapping(){
