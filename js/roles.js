@@ -11,7 +11,6 @@ const ROLE_PERMISSIONS = {
     'docs.write',
     'loans.write',
     'orders.write',
-    'categories.manage',
     'profile.write'
   ],
   'profesor': [
@@ -19,7 +18,6 @@ const ROLE_PERMISSIONS = {
     'docs.write',
     'loans.write',
     'orders.write',
-    'categories.manage',
     'profile.write'
   ],
   'consulta': [
