@@ -3,10 +3,30 @@
 const ROLE_PERMISSIONS = {
   'jefe departamento': ['*'],
   'jefe de departamento': ['*'],
+  'jefa departamento': ['*'],
+  'jefa de departamento': ['*'],
+  'jefe/a departamento': ['*'],
+  'jefe/a de departamento': ['*'],
   'administrador': ['*'],
+  'administradora': ['*'],
   'admin': ['*'],
   'jefe': ['*'],
+  'jefa': ['*'],
   'profesor': [
+    'items.write',
+    'docs.write',
+    'loans.write',
+    'orders.write',
+    'profile.write'
+  ],
+  'profesora': [
+    'items.write',
+    'docs.write',
+    'loans.write',
+    'orders.write',
+    'profile.write'
+  ],
+  'profesor/a': [
     'items.write',
     'docs.write',
     'loans.write',
@@ -17,6 +37,9 @@ const ROLE_PERMISSIONS = {
     'profile.write'
   ],
   'lector': [
+    'profile.write'
+  ],
+  'lectora': [
     'profile.write'
   ]
 };
