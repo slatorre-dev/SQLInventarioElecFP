@@ -162,7 +162,7 @@ async function loadData(){
     profesores = res.profesores || [];
     prestamos = res.prestamos || [];
     itemsLoaded = true;
-    setConn('ok',`${items.length} ítems · sincronizado`);
+    setConn('ok','sincronizado');
     if(typeof renderHome === 'function' && document.getElementById('pH').classList.contains('active')) renderHome();
     else if(cf) openSub();
   }catch(err){
