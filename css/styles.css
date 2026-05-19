@@ -418,8 +418,7 @@ select:focus,.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2563eb1a
 /* CONTENEDOR SCROLL */
 .tw-scroll{
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 60vh;
+  overflow-y: visible;
   width: 100%;
   display: block;
   scrollbar-width: auto;
@@ -451,7 +450,7 @@ select:focus,.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2563eb1a
 }
 thead{background:var(--surface2)}
 th{padding:11px 13px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);text-align:left;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);transition:color .15s}
-.tw-scroll thead th{position:sticky;top:0;z-index:2;background:var(--surface2);box-shadow:0 1px 0 var(--border)}
+.tw-scroll thead th{position:sticky;top:57px;z-index:2;background:var(--surface2);box-shadow:0 1px 0 var(--border)}
 th:hover{color:var(--text)}
 th.srt{color:var(--accent)}
 tbody tr{border-top:1px solid var(--border);transition:background .1s}
