@@ -1498,9 +1498,8 @@ html, body {
 }
 
 .list-row {
-  display: grid;
-  grid-template-columns: 36px 48px 1fr 65px auto;
-  gap: 10px;
+  display: flex;
+  gap: 12px;
   align-items: center;
   background: var(--white);
   border: 1px solid var(--border);
@@ -1556,7 +1555,7 @@ html, body {
 
 .list-info {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .list-name {
@@ -1602,7 +1601,8 @@ html, body {
 
 .list-qty {
   text-align: center;
-  min-width: 70px;
+  min-width: 60px;
+  flex-shrink: 0;
 }
 
 .list-qty-num {
@@ -1624,9 +1624,9 @@ html, body {
 .list-actions {
   display: flex;
   gap: 6px;
-  justify-content: flex-end;
   align-items: center;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .list-action-btn {
@@ -1669,9 +1669,13 @@ html, body {
 
 @media (max-width: 480px) {
   .list-row {
-    grid-template-columns: 32px 40px 1fr auto;
     gap: 8px;
     padding: 10px;
+  }
+
+  .list-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
   }
 
   .list-photo,
@@ -1679,6 +1683,7 @@ html, body {
     width: 40px;
     height: 40px;
     font-size: 18px;
+    flex-shrink: 0;
   }
 
   .list-actions {
@@ -1692,7 +1697,7 @@ html, body {
   }
 
   .list-qty {
-    min-width: 50px;
+    min-width: 48px;
   }
 
   .list-qty-num {
