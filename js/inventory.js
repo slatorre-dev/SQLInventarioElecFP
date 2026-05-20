@@ -44,10 +44,14 @@ function getFiltered(){
 function setTwHeight(){
   const scroll = document.querySelector('#iContent .tw-scroll');
   if (!scroll) return;
-  const pager = document.querySelector('#iContent .pager');
-  const pagerH = pager ? pager.offsetHeight + 16 : 60;
-  const top = scroll.getBoundingClientRect().top;
-  scroll.style.maxHeight = Math.max(200, window.innerHeight - top - pagerH - 8) + 'px';
+  const topbarH = document.querySelector('.topbar')?.offsetHeight || 58;
+  const srowH   = document.querySelector('#pS .srow')?.offsetHeight || 48;
+  const pager   = document.querySelector('#iContent .pager');
+  const pagerH  = pager ? pager.offsetHeight + 16 : 68;
+  const theadH  = scroll.querySelector('thead')?.offsetHeight || 38;
+  // Espacio disponible = viewport − topbar − srow − pager − thead − margen
+  const h = Math.max(300, window.innerHeight - topbarH - srowH - pagerH - theadH - 24);
+  scroll.style.maxHeight = h + 'px';
 }
 
 function renderInv(){
