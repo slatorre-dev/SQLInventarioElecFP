@@ -45,12 +45,9 @@ function setTwHeight(){
   const scroll = document.querySelector('#iContent .tw-scroll');
   if (!scroll) return;
   const topbarH = document.querySelector('.topbar')?.offsetHeight || 58;
-  const srowH   = document.querySelector('#pS .srow')?.offsetHeight || 48;
   const pager   = document.querySelector('#iContent .pager');
-  const pagerH  = pager ? pager.offsetHeight + 16 : 68;
-  const theadH  = scroll.querySelector('thead')?.offsetHeight || 38;
-  // Espacio disponible = viewport − topbar − srow − pager − thead − margen
-  const h = Math.max(300, window.innerHeight - topbarH - srowH - pagerH - theadH - 24);
+  const pagerH  = pager ? pager.offsetHeight + 8 : 60;
+  const h = Math.max(400, window.innerHeight - topbarH - pagerH - 16);
   scroll.style.maxHeight = h + 'px';
 }
 
