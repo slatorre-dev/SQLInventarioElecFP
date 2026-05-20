@@ -16,20 +16,14 @@
   var AI_ENDPOINT = '/proxy/ai';  // Pages Function — el token vive en el servidor
   var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
 
-  // Obtener credenciales del estado de la app existente o de variables globales
+  // Obtener credenciales — usa SESSION global de la app (state.js)
   function getCreds() {
-    // Intenta coger las credenciales del estado global de la app
-    if (window._appState && window._appState.usuario) {
-      return { u: window._appState.usuario, p: window._appState.password || window._appState.pass || '' };
+    if (typeof SESSION !== 'undefined' && SESSION && SESSION.usuario) {
+      return { u: SESSION.usuario, p: SESSION.password || '' };
     }
-    // Fallback: variables globales configurables
-    if (window.AGENTE_USER) {
-      return { u: window.AGENTE_USER, p: window.AGENTE_PASS || '' };
-    }
-    // Último recurso: leer del localStorage si la app lo guarda
     try {
-      var saved = localStorage.getItem('inventario_session');
-      if (saved) { var s = JSON.parse(saved); return { u: s.usuario || s.u, p: s.password || s.p }; }
+      var saved = localStorage.getItem('inv_session');
+      if (saved) { var s = JSON.parse(saved); return { u: s.usuario, p: s.password || '' }; }
     } catch(e) {}
     return null;
   }
@@ -295,19 +289,35 @@
   }
 
   // ── Carga de datos ─────────────────────────────────────────────────────────
+  // Usa los arrays globales de la app (items, prestamos) si ya están cargados.
+  // Fallback: llamada directa a la API con credenciales de SESSION.
   function loadData() {
     if (state.dataLoaded || state.loading) return;
+
+    // Datos ya en memoria de la app — camino rápido
+    if (typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) {
+      state.inventario = items;
+      state.prestamos = (typeof prestamos !== 'undefined' && Array.isArray(prestamos)) ? prestamos : [];
+      state.dataLoaded = true;
+      updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
+      renderCurrentTab();
+      return;
+    }
+
+    // Fallback: cargar desde API
     state.loading = true;
     updateStatusBadge('yellow', '⏳ Cargando...');
+    var creds = getCreds();
+    if (!creds) { updateStatusBadge('red', '❌ Sin sesión'); state.loading = false; return; }
+    var u = encodeURIComponent(creds.u), p = encodeURIComponent(creds.p);
 
     Promise.all([
-      apiGet('/api/meta').catch(function(){ return {}; }),
-      apiGet('/api/list', { tipo: 'inventario' }).catch(function(){ return {}; }),
-      apiGet('/api/list', { tipo: 'prestamos' }).catch(function(){ return []; }),
+      fetch('/api/list?u=' + u + '&p=' + p).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+      fetch('/api/prestar?u=' + u + '&p=' + p).then(function(r){ return r.json(); }).catch(function(){ return []; }),
     ]).then(function(results) {
-      state.meta = results[0] || {};
-      state.inventario = decompressItems(results[1]);
-      state.prestamos = Array.isArray(results[2]) ? results[2] : (results[2].prestamos || []);
+      var listData = results[0];
+      state.inventario = Array.isArray(listData) ? listData : decompressItems(listData);
+      state.prestamos = Array.isArray(results[1]) ? results[1] : (results[1].prestamos || []);
       state.dataLoaded = true;
       state.loading = false;
       updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
@@ -553,12 +563,34 @@
 
   function ctxExtra() {
     if (!state.inventario.length) return '';
-    var aulas = [...new Set(state.inventario.map(function(i){ return i.aula; }))].filter(Boolean);
-    var bajoMin = state.inventario.filter(function(i){ return Number(i.stock_min) > 0 && Number(i.cantidad) < Number(i.stock_min); });
-    return '\n\nDatos REALES del inventario (' + state.inventario.length + ' items):\n' +
-      '- Aulas: ' + aulas.join(', ') + '\n' +
-      '- Items bajo minimo: ' + bajoMin.length + '\n' +
-      '- Prestamos activos: ' + state.prestamos.filter(function(p){ return !p.devuelto; }).length;
+    var inv = state.inventario;
+    var aulas = [];
+    inv.forEach(function(i){ if(i.aula && aulas.indexOf(i.aula)<0) aulas.push(i.aula); });
+    var cats = [];
+    inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
+    var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
+    var actPres = state.prestamos.filter(function(p){ return !p.devuelto && p.estado !== 'devuelto'; });
+
+    // Muestra compacta de todos los items para el contexto de la IA
+    var muestra = inv.slice(0, 120).map(function(i){
+      var o = { n: i.nombre||i.name||'' };
+      if(i.aula) o.a = i.aula;
+      if(i.cat) o.c = i.cat;
+      var q = i.qty != null ? i.qty : i.cantidad;
+      if(q != null) o.q = q;
+      var m = i.min != null ? i.min : i.stock_min;
+      if(m != null) o.min = m;
+      if(i.ref) o.r = i.ref;
+      return o;
+    });
+
+    return '\n\nDATOS REALES del inventario (total ' + inv.length + ' ítems):\n' +
+      'Aulas: ' + aulas.join(', ') + '\n' +
+      'Categorías: ' + cats.slice(0,20).join(', ') + '\n' +
+      'Bajo mínimo: ' + bajoMin.length + ' ítems\n' +
+      'Préstamos activos: ' + actPres.length + '\n' +
+      'Ítems (primeros 120 de ' + inv.length + ', campos: n=nombre a=aula c=cat q=qty min=minimo r=ref):\n' +
+      JSON.stringify(muestra);
   }
 
   function sendChat(text) {
@@ -625,8 +657,10 @@
   // ── Stock ──────────────────────────────────────────────────────────────────
   function renderStock() {
     var inv = state.inventario;
-    var bajoMin = inv.filter(function(i){ return Number(i.stock_min) > 0 && Number(i.cantidad) < Number(i.stock_min); });
-    var sinStock = inv.filter(function(i){ return Number(i.cantidad) === 0; });
+    function qty(i){ return i.qty != null ? Number(i.qty) : Number(i.cantidad); }
+    function minimo(i){ return i.min != null ? Number(i.min) : Number(i.stock_min); }
+    var bajoMin = inv.filter(function(i){ return minimo(i) > 0 && qty(i) < minimo(i); });
+    var sinStock = inv.filter(function(i){ return qty(i) === 0; });
 
     // Badges
     var bd = el.panel.querySelector('#ag-stock-badges');
@@ -638,32 +672,33 @@
     ].forEach(function(b){ bd.appendChild(renderBadgeEl(b[0], b[1])); });
 
     // Tabla — ordenar por ratio stock/minimo
-    var sorted = inv.filter(function(i){ return Number(i.stock_min) > 0; })
-      .sort(function(a,b){ return (Number(a.cantidad)/Number(a.stock_min)) - (Number(b.cantidad)/Number(b.stock_min)); })
+    var sorted = inv.filter(function(i){ return minimo(i) > 0; })
+      .sort(function(a,b){ return (qty(a)/minimo(a)) - (qty(b)/minimo(b)); })
       .slice(0, 40);
 
     var html = '<table class="ag-table"><thead><tr><th>Material</th><th>Aula</th><th>Stock</th><th>Mín</th><th>Estado</th></tr></thead><tbody>';
     sorted.forEach(function(item) {
-      var ratio = Number(item.cantidad) / Number(item.stock_min);
-      var est = Number(item.cantidad) === 0 ? '🔴' : ratio < 0.5 ? '🟡' : '🟢';
-      var col = Number(item.cantidad) === 0 ? '#ef4444' : ratio < 0.5 ? '#f59e0b' : '#34d399';
+      var q = qty(item), m = minimo(item);
+      var ratio = q / m;
+      var est = q === 0 ? '🔴' : ratio < 0.5 ? '🟡' : '🟢';
+      var col = q === 0 ? '#ef4444' : ratio < 0.5 ? '#f59e0b' : '#34d399';
       html += '<tr><td>' + esc(item.nombre || '') + '</td><td>' + esc(item.aula || '—') + '</td>' +
-        '<td style="color:' + col + ';font-weight:700">' + esc(String(item.cantidad)) + '</td>' +
-        '<td style="color:#64748b">' + esc(String(item.stock_min)) + '</td><td>' + est + '</td></tr>';
+        '<td style="color:' + col + ';font-weight:700">' + q + '</td>' +
+        '<td style="color:#64748b">' + m + '</td><td>' + est + '</td></tr>';
     });
     html += '</tbody></table>';
     el.panel.querySelector('#ag-stock-table').innerHTML = bajoMin.length ? html : '<p style="color:#34d399;font-size:11px">✅ Sin ítems bajo mínimo</p>';
-
-    var btn = el.panel.querySelector('#ag-stock-btn');
-    btn.disabled = bajoMin.length === 0;
+    el.panel.querySelector('#ag-stock-btn').disabled = bajoMin.length === 0;
   }
 
   function generateOrder() {
-    var bajoMin = state.inventario.filter(function(i){ return Number(i.stock_min) > 0 && Number(i.cantidad) < Number(i.stock_min); });
+    function qty(i){ return i.qty != null ? Number(i.qty) : Number(i.cantidad); }
+    function minimo(i){ return i.min != null ? Number(i.min) : Number(i.stock_min); }
+    var bajoMin = state.inventario.filter(function(i){ return minimo(i) > 0 && qty(i) < minimo(i); });
     var result = el.panel.querySelector('#ag-stock-result');
     result.style.display = 'block';
     result.innerHTML = '⏳ Generando lista de pedido...';
-    var datos = bajoMin.map(function(i){ return { nombre: i.nombre, aula: i.aula, stock: i.cantidad, minimo: i.stock_min, proveedor: i.proveedor || '—' }; });
+    var datos = bajoMin.map(function(i){ return { nombre: i.nombre, aula: i.aula, stock: qty(i), minimo: minimo(i), proveedor: i.proveedor || '—' }; });
     var prompt = 'Genera una lista de pedido priorizada. Items bajo minimo:\n' + JSON.stringify(datos) + '\nOrganiza por urgencia (sin stock primero), agrupa por proveedor, calcula cantidad a pedir para llegar al doble del minimo. Tabla: Material | Proveedor | Stock | Minimo | A pedir | Urgencia';
     var full = '';
     streamAI([{ role: 'user', content: prompt }], '', function(d){ full += d; result.innerHTML = md2html(full); })
@@ -731,7 +766,7 @@
   }
 
   // ── Auditoría ──────────────────────────────────────────────────────────────
-  var CAMPOS_AUDIT = { cat: 'Categoría', aula: 'Aula', ref: 'Referencia', proveedor: 'Proveedor' };
+  var CAMPOS_AUDIT = { cat: 'Categoría', aula: 'Aula', ref: 'Referencia' };
 
   function getMissing(item) {
     return Object.keys(CAMPOS_AUDIT).filter(function(k){ return !item[k] && item[k] !== 0; }).map(function(k){ return CAMPOS_AUDIT[k]; });
