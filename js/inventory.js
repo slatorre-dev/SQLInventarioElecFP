@@ -47,7 +47,7 @@ function setTwHeight(){
   const topbarH = document.querySelector('.topbar')?.offsetHeight || 58;
   const pager   = document.querySelector('#iContent .pager');
   const pagerH  = pager ? pager.offsetHeight + 8 : 60;
-  const h = Math.max(400, window.innerHeight - topbarH - pagerH - 16);
+  const h = Math.max(500, window.innerHeight - pagerH - 20);
   scroll.style.maxHeight = h + 'px';
 }
 
