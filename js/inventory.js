@@ -543,7 +543,7 @@ window.addEventListener('resize',()=>{
   if(nextMode !== _lastInvRenderMode) renderInv();
 });
 function sort(k){if(sk===k)sa=!sa;else{sk=k;sa=true}renderInv()}
-function goInvPage(page){_invPage=page;renderInv();document.getElementById('pS')?.scrollIntoView({block:'start'})}
+function goInvPage(page){_invPage=page;renderInv();document.querySelector('#pS .srow')?.scrollIntoView({block:'start'})}
 function setPageSize(v){_pageSize=Number(v)||25;_pageSizeUserSet=true;_invPage=1;renderInv()}
 
 let _delItemId = null;

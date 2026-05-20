@@ -16,7 +16,7 @@
   --shh:0 4px 12px rgba(0,0,0,.10),0 12px 32px rgba(0,0,0,.10);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:auto}
+html{scroll-behavior:auto;scroll-padding-top:58px}
 body{ 
   background:var(--bg);
   color:var(--text);
@@ -585,6 +585,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   }
   .topbar{position:static!important}
   .tw-scroll thead th{top:0!important}
+  html{scroll-padding-top:0}
   .page{min-height:0!important}
   .sub-header{padding:16px 14px!important}
   .sub-body,.home-body,.ciclo-body{max-width:none!important;padding:14px!important}
