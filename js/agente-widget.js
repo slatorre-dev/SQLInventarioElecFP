@@ -13,8 +13,8 @@
 
   // ── Config ────────────────────────────────────────────────────────────────
   var API_BASE = '';          // vacío = mismo dominio (relativo)
-  var ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
-  var MODEL = 'claude-sonnet-4-20250514';
+  var ANTHROPIC_ENDPOINT = '/proxy/ai';  // Pages Function — la key vive en el servidor
+  var MODEL = 'claude-sonnet-4-5';
 
   // Obtener credenciales del estado de la app existente o de variables globales
   function getCreds() {
