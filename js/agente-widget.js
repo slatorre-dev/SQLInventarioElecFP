@@ -13,8 +13,8 @@
 
   // ── Config ────────────────────────────────────────────────────────────────
   var API_BASE = '';          // vacío = mismo dominio (relativo)
-  var ANTHROPIC_ENDPOINT = '/proxy/ai';  // Pages Function — la key vive en el servidor
-  var MODEL = 'claude-sonnet-4-5';
+  var AI_ENDPOINT = '/proxy/ai';  // Pages Function — el token vive en el servidor
+  var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
 
   // Obtener credenciales del estado de la app existente o de variables globales
   function getCreds() {
@@ -63,19 +63,26 @@
     });
   }
 
-  // ── Anthropic streaming ────────────────────────────────────────────────────
+  // ── GitHub Models streaming (formato OpenAI) ──────────────────────────────
   function streamAI(messages, systemExtra, onChunk) {
-    var system = 'Eres un agente experto en gestion de inventario de talleres FP de Electricidad y Electronica del IES Juan Bosco. ' +
+    var systemMsg = 'Eres un agente experto en gestion de inventario de talleres FP de Electricidad y Electronica del IES Juan Bosco. ' +
       'Tienes acceso a datos REALES del inventario. Analiza los datos que se te proporcionan y responde con precision. ' +
       'Usa tablas markdown cuando sea util. Se conciso y orientado a la accion. Responde siempre en español.' +
       (systemExtra || '');
 
-    return fetch(ANTHROPIC_ENDPOINT, {
+    var payload = {
+      model: MODEL,
+      max_tokens: 1000,
+      stream: true,
+      messages: [{ role: 'system', content: systemMsg }].concat(messages)
+    };
+
+    return fetch(AI_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, max_tokens: 1000, system: system, messages: messages, stream: true })
+      body: JSON.stringify(payload)
     }).then(function(res) {
-      if (!res.ok) throw new Error('API ' + res.status);
+      if (!res.ok) return res.text().then(function(t){ throw new Error('API ' + res.status + ': ' + t); });
       var reader = res.body.getReader();
       var dec = new TextDecoder();
       var full = '';
@@ -83,10 +90,10 @@
         return reader.read().then(function(ref) {
           if (ref.done) return full;
           dec.decode(ref.value).split('\n').forEach(function(line) {
-            if (!line.startsWith('data: ')) return;
+            if (!line.startsWith('data: ') || line === 'data: [DONE]') return;
             try {
               var d = JSON.parse(line.slice(6));
-              var delta = d.delta && d.delta.text ? d.delta.text : '';
+              var delta = d.choices && d.choices[0].delta && d.choices[0].delta.content;
               if (delta) { full += delta; onChunk(delta); }
             } catch(e) {}
           });

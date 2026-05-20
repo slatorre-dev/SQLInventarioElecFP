@@ -1,10 +1,11 @@
 /**
- * Pages Function — Proxy para Anthropic API
+ * Pages Function — Proxy para GitHub Models (OpenAI-compatible)
  * Ruta: /proxy/ai
- * La API key vive en env.ANTHROPIC_KEY (secret de Cloudflare, nunca en el cliente)
+ * GITHUB_TOKEN: Personal Access Token de GitHub (secret de Cloudflare)
+ * Modelos disponibles: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct, phi-4, mistral-large...
  */
 
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const GITHUB_MODELS_URL = 'https://models.inference.ai.azure.com/chat/completions';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -17,8 +18,8 @@ export async function onRequestOptions() {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!env.ANTHROPIC_KEY) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_KEY no configurada' }), {
+  if (!env.GITHUB_TOKEN) {
+    return new Response(JSON.stringify({ error: 'GITHUB_TOKEN no configurado en Cloudflare' }), {
       status: 500,
       headers: { ...CORS, 'Content-Type': 'application/json' },
     });
@@ -34,17 +35,15 @@ export async function onRequestPost({ request, env }) {
     });
   }
 
-  const resp = await fetch(ANTHROPIC_URL, {
+  const resp = await fetch(GITHUB_MODELS_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': env.ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
+      'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
     },
     body: JSON.stringify(body),
   });
 
-  // Pasar la respuesta tal cual (incluyendo streaming SSE)
   return new Response(resp.body, {
     status: resp.status,
     headers: {
