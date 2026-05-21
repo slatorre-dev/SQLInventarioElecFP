@@ -10,11 +10,15 @@ function canReadFullHistory(user, url) {
   const usuario = normalizeText(user?.usuario);
   const loginUsuario = normalizeText(url.searchParams.get('u'));
   const rol = normalizeText(user?.rol);
+  console.log('[historial] canRead check — usuario:', usuario, 'loginUsuario:', loginUsuario, 'rol:', rol);
   return usuario === 'seba' ||
     loginUsuario === 'seba' ||
+    rol === 'admin' ||
+    rol === 'administrador' ||
     rol.includes('admin') ||
     rol.includes('jefe') ||
-    rol.includes('departamento');
+    rol.includes('departamento') ||
+    rol.includes('director');
 }
 
 function json(data, init = {}) {
