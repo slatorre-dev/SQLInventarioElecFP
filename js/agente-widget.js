@@ -61,13 +61,19 @@
   // ── GitHub Models streaming (formato OpenAI) ──────────────────────────────
   function streamAI(messages, systemExtra, onChunk) {
     var systemMsg = 'Eres VOLT, un agente experto en gestión de inventario de talleres FP de Electricidad y Electrónica del IES Juan Bosco. ' +
-      'Tienes acceso a datos REALES del inventario. Tu especialidad es: ' +
-      '1) Localizar materiales: cuando pregunten dónde está algo, di en qué aula está y su stock. ' +
-      '2) Sugerir préstamos automáticos: cuando pidan un material, facilita al máximo el préstamo. ' +
-      '3) Auditoría: detectar problemas en los datos. ' +
-      '4) Control de stock: alertar sobre mínimos. ' +
-      'Analiza con precisión, usa tablas markdown cuando sea útil, sé conciso y orientado a la acción. ' +
-      'IMPORTANTE: Responde SIEMPRE en español. En cada respuesta, cita nombres exactos de materiales para que sean clickeables.' +
+      'Tienes acceso a datos REALES del inventario en forma de tabla CSV. ' +
+      '\n\n🔴 REGLAS CRÍTICAS:\n' +
+      '1. SIEMPRE busca la información en la tabla de inventario proporcionada ANTES de responder.\n' +
+      '2. Si el usuario pregunta por un material, BUSCA EN LA TABLA primero. No hagas suposiciones.\n' +
+      '3. Reporta el stock EXACTO que ves en la tabla. Si dice "cantidad=0", entonces NO hay stock.\n' +
+      '4. Si no encuentras el material en la tabla, di explícitamente: "No aparece en el inventario actual".\n' +
+      '5. Localiza materiales: cuando pregunten dónde está algo, di aula + stock. ' +
+      '6. Sugerir préstamos: cuando pidan material, facilita si hay stock disponible.\n' +
+      '7. Auditoría: detecta campos vacíos (aula, ref, categoría).\n' +
+      '8. Stock: alerta sobre items bajo mínimo.\n' +
+      '9. Analiza con precisión, usa tablas markdown, sé conciso.\n' +
+      '10. IMPORTANTE: Responde SIEMPRE en español. Cita nombres exactos de materiales.\n\n' +
+      'Si hay varias versiones del mismo material (ej: "Osciloscopio" vs "Osciloscopio digital"), lista TODAS.' +
       (systemExtra || '');
 
     var payload = {
@@ -612,25 +618,26 @@
     inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
     var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
 
-    // Muestra compacta de todos los items para el contexto de la IA
-    var muestra = inv.slice(0, 120).map(function(i){
-      var o = { n: i.nombre||i.name||'' };
-      if(i.aula) o.a = i.aula;
-      if(i.cat) o.c = i.cat;
-      var q = i.qty != null ? i.qty : i.cantidad;
-      if(q != null) o.q = q;
-      var m = i.min != null ? i.min : i.stock_min;
-      if(m != null) o.min = m;
-      if(i.ref) o.r = i.ref;
-      return o;
+    // FORMATO COMPLETO: tabla CSV con TODOS los items para que la IA vea TODO el inventario
+    // Se incluyen: nombre | aula | cantidad | mínimo | referencia
+    var csvRows = ['nombre|aula|cantidad|minimo|ref|categoria'];
+    inv.forEach(function(i) {
+      var nombre = (i.nombre || i.name || '').replace(/\|/g, '');
+      var aula = (i.aula || '').replace(/\|/g, '');
+      var qty = i.qty != null ? i.qty : (i.cantidad || 0);
+      var minimo = i.min != null ? i.min : (i.stock_min || 0);
+      var ref = (i.ref || '').replace(/\|/g, '');
+      var cat = (i.cat || '').replace(/\|/g, '');
+      csvRows.push(nombre + '|' + aula + '|' + qty + '|' + minimo + '|' + ref + '|' + cat);
     });
 
-    return '\n\nDATOS REALES del inventario (total ' + inv.length + ' ítems):\n' +
-      'Aulas: ' + aulas.join(', ') + '\n' +
+    return '\n\n🔴 CONTEXTO INVENTARIO COMPLETO (total ' + inv.length + ' ítems):\n' +
+      'Aulas disponibles: ' + aulas.join(', ') + '\n' +
       'Categorías: ' + cats.slice(0,20).join(', ') + '\n' +
-      'Bajo mínimo: ' + bajoMin.length + ' ítems\n' +
-      'Ítems (primeros 120 de ' + inv.length + ', campos: n=nombre a=aula c=cat q=qty min=minimo r=ref):\n' +
-      JSON.stringify(muestra);
+      'Items bajo stock mínimo: ' + bajoMin.length + '\n\n' +
+      'TABLA COMPLETA (formato: nombre|aula|cantidad|minimo|ref|categoria):\n' +
+      csvRows.join('\n') + '\n' +
+      '\n⚠️ IMPORTANTE: Lee TODOS los items en la tabla anterior. NO hagas suposiciones sobre stock si no lo ves en esta tabla. Si el usuario pregunta por algo, busca en la tabla.';
   }
 
   // ── Sugerencias inteligentes mientras escribe ────────────────────────────────
