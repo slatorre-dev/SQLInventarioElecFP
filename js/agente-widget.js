@@ -845,13 +845,25 @@
       resultEl.innerHTML = '⏳ Registrando préstamo...';
       resultEl.style.color = '#94a3b8';
 
+      var hoy = new Date().toISOString().replace('T',' ').slice(0,19);
       apiPost('/api/prestar', {
         action: 'prestar',
-        item_id: item.id,
-        profesor: profesor,
-        aula_destino: aula,
-        cantidad: cantidad,
-        devolucion_prevista: fecha
+        prestamo: {
+          itemId: item.id,
+          itemNombre: item.nombre || item.name || item.item || '',
+          cantidad: cantidad,
+          aulaOrigen: item.aula || '',
+          aulaDestino: aula,
+          profesorId: '',
+          profesorNombre: profesor,
+          gestionadoPor: profesor,
+          fechaPrestamo: hoy,
+          fechaPrevista: fecha,
+          fechaDevolucion: '',
+          cantidadDevuelta: 0,
+          estado: 'Activo',
+          obs: ''
+        }
       }).then(function(res) {
         resultEl.innerHTML = '✅ Préstamo registrado correctamente';
         resultEl.style.color = '#34d399';

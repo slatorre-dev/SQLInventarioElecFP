@@ -51,10 +51,10 @@ async function auditLog(db, user, accion, itemId, resumen) {
   }
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
-  const user = request.user;
+  const user = data?.user || request.user;
 
   if (action === 'prestarCaja') {
     // Presta todos los hijos de una caja de una vez
