@@ -1,4 +1,4 @@
-export async function onRequest({ request, env, next }) {
+export async function onRequest({ request, env, next, data }) {
   const url = new URL(request.url);
 
   // Rutas públicas
@@ -17,6 +17,8 @@ export async function onRequest({ request, env, next }) {
 
   if (!user) return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
 
-  request.user = user;
+  // Pasar user via data (Request es inmutable, no acepta propiedades nuevas)
+  data.user = user;
+  request.user = user; // compatibilidad con handlers existentes
   return next();
 }

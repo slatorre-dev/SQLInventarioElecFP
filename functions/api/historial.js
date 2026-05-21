@@ -60,9 +60,9 @@ function mapLogRow(row) {
 }
 
 export async function onRequest(context) {
-  const { request, env } = context;
+  const { request, env, data } = context;
   const url = new URL(request.url);
-  const user = request.user;
+  const user = data?.user || request.user;
 
   if (request.method === 'GET') {
     try {
