@@ -812,6 +812,45 @@ async function saveModulosUsuario(){
   finally { btn.disabled=false; btn.textContent='💾 Guardar módulos'; }
 }
 
+function importUsuariosCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.trim().split('\n').filter(l => l.trim());
+    if (!lines.length) { toast('CSV vacío', 'err'); return; }
+
+    // Detectar cabecera
+    const primera = lines[0].toLowerCase().replace(/\s/g,'');
+    const tieneCabecera = primera.includes('usuario') || primera.includes('nombre') || primera.includes('email');
+    const filas = tieneCabecera ? lines.slice(1) : lines;
+
+    let importados = 0, omitidos = 0;
+    filas.forEach(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const usuario = cols[0];
+      const nombre  = cols[1] || cols[0];
+      const email   = cols[2] || '';
+      const rol     = cols[3] || 'Profesor/a';
+      const password = cols[4] || '';
+
+      if (!usuario) return;
+      // Evitar duplicados
+      if (_usuariosEditing.some(u => u.usuario.toLowerCase() === usuario.toLowerCase())) { omitidos++; return; }
+      // El rol debe ser uno de los disponibles, si no forzar Profesor/a
+      const rolFinal = ROLES_DISPONIBLES.includes(rol) ? rol : 'Profesor/a';
+      _usuariosEditing.push({ usuario, nombre, email, rol: rolFinal, _nuevo: true, _resetPass: password, _modulos: [] });
+      importados++;
+    });
+
+    _renderUsuariosList();
+    input.value = '';
+    const msg = `${importados} usuario(s) importado(s)${omitidos ? `, ${omitidos} omitido(s) por duplicado` : ''}. Revisa y pulsa Guardar.`;
+    toast(msg, importados > 0 ? 'ok' : 'warn');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
 async function saveUsuarios(){
   // Validar antes de enviar
   for(const u of _usuariosEditing){

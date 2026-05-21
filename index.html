@@ -893,7 +893,14 @@
     <div class="mh"><div class="mt">🔐 Usuarios de la aplicación</div><button class="mx" onclick="closeUsuariosModal()">✕</button></div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Cuentas de acceso a la aplicación. Solo el Jefe de Departamento puede gestionar usuarios.</p>
     <div class="prof-list" id="usuariosList"></div>
-    <button class="add-aula-btn" onclick="addUsuarioRow()">＋ Añadir usuario</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <button class="add-aula-btn" onclick="addUsuarioRow()">＋ Añadir usuario</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: usuario,nombre,email,rol,password">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importUsuariosCSV(this)">
+      </label>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>usuario,nombre,email,rol,password</code></span>
+    </div>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">
@@ -926,7 +933,14 @@
     <div class="mh"><div class="mt">Gestionar aulas</div><button class="mx" onclick="closeAulasModal()">✕</button></div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Modifica el nombre, descripción o icono de las aulas. También puedes añadir o eliminar.</p>
     <div class="aulas-list" id="aulasList"></div>
-    <button class="add-aula-btn" onclick="addAulaRow()">＋ Añadir aula</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <button class="add-aula-btn" onclick="addAulaRow()">＋ Añadir aula</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: nombre,descripcion,icono">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importAulasCSV(this)">
+      </label>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,descripcion,icono</code></span>
+    </div>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">

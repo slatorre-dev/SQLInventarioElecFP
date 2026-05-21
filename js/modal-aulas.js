@@ -68,3 +68,36 @@ async function saveAulas(){
     toast('Error al sincronizar: '+err.message,'err');
   }
 }
+
+function importAulasCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.trim().split('\n').filter(l => l.trim());
+    if (!lines.length) { toast('CSV vacío', 'err'); return; }
+
+    // Detectar si la primera línea es cabecera
+    const primera = lines[0].toLowerCase().replace(/\s/g,'');
+    const tieneCabecera = primera.includes('nombre') || primera.includes('aula');
+    const filas = tieneCabecera ? lines.slice(1) : lines;
+
+    let importadas = 0;
+    filas.forEach(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+      const nombre = cols[0];
+      if (!nombre) return;
+      const desc = cols[1] || '';
+      const icono = cols[2] || '🏫';
+      // Evitar duplicados por nombre
+      if (aulasEditing.some(a => a.name.toLowerCase() === nombre.toLowerCase())) return;
+      aulasEditing.push({ id: 'aula_' + Date.now() + '_' + importadas, name: nombre, desc, icon: icono, th: TH_OPTIONS[aulasEditing.length % TH_OPTIONS.length] });
+      importadas++;
+    });
+
+    renderAulasList();
+    input.value = '';
+    toast(`${importadas} aulas importadas. Pulsa Guardar para aplicar.`, 'ok');
+  };
+  reader.readAsText(file, 'utf-8');
+}
