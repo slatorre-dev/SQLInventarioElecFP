@@ -597,6 +597,30 @@
     }
   }
 
+  // ── Búsqueda inteligente en inventario ─────────────────────────────────────
+  function searchInventory(query) {
+    if (!state.inventario.length) return null;
+    var q = (query || '').toLowerCase().trim();
+    if (!q) return null;
+
+    // Buscar items que coincidan con la query
+    var matches = state.inventario.filter(function(i) {
+      var nombre = (i.nombre || i.name || '').toLowerCase();
+      return nombre.includes(q);
+    });
+
+    if (matches.length === 0) return null;
+
+    // Formatear resultados para la IA
+    var resultados = matches.map(function(i) {
+      var qty = i.qty != null ? i.qty : (i.cantidad || 0);
+      var min = i.min != null ? i.min : (i.stock_min || 0);
+      return (i.nombre || i.name) + ' (Aula: ' + (i.aula || '—') + ', Stock: ' + qty + '/' + min + ', Ref: ' + (i.ref || '—') + ')';
+    });
+
+    return resultados;
+  }
+
   function ctxExtra() {
     if (!state.inventario.length) return '';
     var inv = state.inventario;
@@ -606,25 +630,10 @@
     inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
     var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
 
-    // FORMATO OPTIMIZADO: tabla CSV COMPRIMIDA sin espacios
-    // Solo envía: nombre|aula|qty|min
-    // Total de items pero en formato ultra-compacto para no exceder tokens
-    var csvRows = ['n|a|q|m'];
-    inv.forEach(function(i) {
-      var n = (i.nombre || i.name || '').substr(0, 30).replace(/\|/g, '');
-      var a = (i.aula || '').replace(/\|/g, '');
-      var q = i.qty != null ? i.qty : (i.cantidad || 0);
-      var m = i.min != null ? i.min : (i.stock_min || 0);
-      if(n) csvRows.push(n + '|' + a + '|' + q + '|' + m);
-    });
-
-    return '\n\n📦 INVENTARIO (' + inv.length + ' items):\n' +
-      'Aulas: ' + aulas.join(', ') + '\n' +
-      'Categorías: ' + cats.slice(0,15).join(', ') + '\n' +
-      'Bajo mínimo: ' + bajoMin.length + '\n\n' +
-      'TABLA (n=nombre, a=aula, q=cantidad, m=minimo):\n' +
-      csvRows.slice(0, 300).join('\n') + (csvRows.length > 300 ? '\n... y ' + (csvRows.length - 300) + ' más' : '') +
-      '\n\n⚠️ Busca en la tabla. Si no aparece el nombre exacto, dilo.';
+    // Contexto MINIMALISTA: solo metadatos, NO la tabla completa
+    return '\n\n📦 INVENTARIO DISPONIBLE:\n' +
+      'Total: ' + inv.length + ' items | Aulas: ' + aulas.join(', ') + ' | Bajo stock: ' + bajoMin.length + '\n' +
+      'IMPORTANTE: NO tienes la tabla completa. Cuando el usuario pregunte por un material, se ejecutará una búsqueda automática en el inventario real.';
   }
 
   // ── Sugerencias inteligentes mientras escribe ────────────────────────────────
@@ -709,10 +718,19 @@
     state.loading = true;
     el.panel.querySelector('#ag-send').disabled = true;
 
+    // Búsqueda inteligente: si el usuario pregunta por un material, buscar ANTES de enviar a IA
+    var searchResults = searchInventory(q);
+    var contextExtra = ctxExtra();
+    if (searchResults && searchResults.length > 0) {
+      contextExtra += '\n\n🔍 BÚSQUEDA ENCONTRADA para "' + q + '":' +
+        '\n' + searchResults.join('\n') +
+        '\nUsa estos resultados para responder. Reporta el stock EXACTO que ves aquí.';
+    }
+
     var full = '';
     var aiDiv = null;
 
-    streamAI(state.messages, ctxExtra(), function(delta) {
+    streamAI(state.messages, contextExtra, function(delta) {
       if (!aiDiv) {
         dots.remove();
         aiDiv = document.createElement('div');
