@@ -17,6 +17,7 @@ const ROLE_PERMISSIONS = {
   'jefa departamento':   _PERMS_JEFE,
   'jefa de departamento':_PERMS_JEFE,
   'jefe/a de departamento':_PERMS_JEFE,
+  'jefe/a departamento':   _PERMS_JEFE,
   'administrador':       _PERMS_JEFE,
   'administradora':      _PERMS_JEFE,
   'admin':               _PERMS_JEFE,
