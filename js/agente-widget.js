@@ -60,25 +60,14 @@
 
   // ── GitHub Models streaming (formato OpenAI) ──────────────────────────────
   function streamAI(messages, systemExtra, onChunk) {
-    var systemMsg = 'Eres VOLT, un agente experto en gestión de inventario de talleres FP de Electricidad y Electrónica del IES Juan Bosco. ' +
-      'Tienes acceso a datos REALES del inventario en forma de tabla CSV. ' +
-      '\n\n🔴 REGLAS CRÍTICAS:\n' +
-      '1. SIEMPRE busca la información en la tabla de inventario proporcionada ANTES de responder.\n' +
-      '2. Si el usuario pregunta por un material, BUSCA EN LA TABLA primero. No hagas suposiciones.\n' +
-      '3. Reporta el stock EXACTO que ves en la tabla. Si dice "cantidad=0", entonces NO hay stock.\n' +
-      '4. Si no encuentras el material en la tabla, di explícitamente: "No aparece en el inventario actual".\n' +
-      '5. Localiza materiales: cuando pregunten dónde está algo, di aula + stock. ' +
-      '6. Sugerir préstamos: cuando pidan material, facilita si hay stock disponible.\n' +
-      '7. Auditoría: detecta campos vacíos (aula, ref, categoría).\n' +
-      '8. Stock: alerta sobre items bajo mínimo.\n' +
-      '9. Analiza con precisión, usa tablas markdown, sé conciso.\n' +
-      '10. IMPORTANTE: Responde SIEMPRE en español. Cita nombres exactos de materiales.\n\n' +
-      'Si hay varias versiones del mismo material (ej: "Osciloscopio" vs "Osciloscopio digital"), lista TODAS.' +
+    var systemMsg = 'Eres VOLT, agente de inventario FP. Busca SIEMPRE en la tabla CSV antes de responder. ' +
+      'Reporta stock EXACTO. Si no aparece, di "No en inventario". ' +
+      'Sé conciso. Responde en español. Usa tablas markdown si es útil.' +
       (systemExtra || '');
 
     var payload = {
       model: MODEL,
-      max_tokens: 1000,
+      max_tokens: 500,
       stream: true,
       messages: [{ role: 'system', content: systemMsg }].concat(messages)
     };
@@ -617,26 +606,25 @@
     inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
     var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
 
-    // FORMATO COMPLETO: tabla CSV con TODOS los items para que la IA vea TODO el inventario
-    // Se incluyen: nombre | aula | cantidad | mínimo | referencia
-    var csvRows = ['nombre|aula|cantidad|minimo|ref|categoria'];
+    // FORMATO OPTIMIZADO: tabla CSV COMPRIMIDA sin espacios
+    // Solo envía: nombre|aula|qty|min
+    // Total de items pero en formato ultra-compacto para no exceder tokens
+    var csvRows = ['n|a|q|m'];
     inv.forEach(function(i) {
-      var nombre = (i.nombre || i.name || '').replace(/\|/g, '');
-      var aula = (i.aula || '').replace(/\|/g, '');
-      var qty = i.qty != null ? i.qty : (i.cantidad || 0);
-      var minimo = i.min != null ? i.min : (i.stock_min || 0);
-      var ref = (i.ref || '').replace(/\|/g, '');
-      var cat = (i.cat || '').replace(/\|/g, '');
-      csvRows.push(nombre + '|' + aula + '|' + qty + '|' + minimo + '|' + ref + '|' + cat);
+      var n = (i.nombre || i.name || '').substr(0, 30).replace(/\|/g, '');
+      var a = (i.aula || '').replace(/\|/g, '');
+      var q = i.qty != null ? i.qty : (i.cantidad || 0);
+      var m = i.min != null ? i.min : (i.stock_min || 0);
+      if(n) csvRows.push(n + '|' + a + '|' + q + '|' + m);
     });
 
-    return '\n\n🔴 CONTEXTO INVENTARIO COMPLETO (total ' + inv.length + ' ítems):\n' +
-      'Aulas disponibles: ' + aulas.join(', ') + '\n' +
-      'Categorías: ' + cats.slice(0,20).join(', ') + '\n' +
-      'Items bajo stock mínimo: ' + bajoMin.length + '\n\n' +
-      'TABLA COMPLETA (formato: nombre|aula|cantidad|minimo|ref|categoria):\n' +
-      csvRows.join('\n') + '\n' +
-      '\n⚠️ IMPORTANTE: Lee TODOS los items en la tabla anterior. NO hagas suposiciones sobre stock si no lo ves en esta tabla. Si el usuario pregunta por algo, busca en la tabla.';
+    return '\n\n📦 INVENTARIO (' + inv.length + ' items):\n' +
+      'Aulas: ' + aulas.join(', ') + '\n' +
+      'Categorías: ' + cats.slice(0,15).join(', ') + '\n' +
+      'Bajo mínimo: ' + bajoMin.length + '\n\n' +
+      'TABLA (n=nombre, a=aula, q=cantidad, m=minimo):\n' +
+      csvRows.slice(0, 300).join('\n') + (csvRows.length > 300 ? '\n... y ' + (csvRows.length - 300) + ' más' : '') +
+      '\n\n⚠️ Busca en la tabla. Si no aparece el nombre exacto, dilo.';
   }
 
   // ── Sugerencias inteligentes mientras escribe ────────────────────────────────
