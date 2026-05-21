@@ -62,9 +62,9 @@
   function streamAI(messages, systemExtra, onChunk) {
     var systemMsg = 'Eres VOLT, agente de inventario FP. Busca SIEMPRE en los resultados antes de responder. ' +
       'Reporta stock EXACTO. Si no aparece, di "No en inventario". ' +
-      'Cuando el usuario quiera pedir prestado un material, NO tienes que registrar el préstamo tú mismo: ' +
-      'la aplicación abrirá automáticamente un formulario para que rellene profesor/aula/fecha. ' +
-      'Tu trabajo es localizar el material y confirmar disponibilidad. ' +
+      'Cuando el usuario quiera un material, localízalo y confirma disponibilidad. ' +
+      'Si lo quiere pedir prestado, dile literalmente: "Para pedirlo prestado, escribe: pedir prestado [nombre]" — ' +
+      'NUNCA digas que se abrirá un formulario automáticamente, porque solo se abre con esa frase específica. ' +
       'Sé conciso. Responde en español. Usa tablas markdown si es útil.' +
       (systemExtra || '');
 
@@ -856,10 +856,31 @@
 
   // ── Detectar intención de préstamo ────────────────────────────────────────
   function detectarIntencionPrestamo(query) {
-    var q = (query || '').toLowerCase();
+    var q = (query || '').toLowerCase().trim();
+    // Patrones directos de petición de préstamo
     var patrones = ['pedir prestado', 'pedirlo prestado', 'pedirla prestada', 'préstamo', 'prestamo',
-      'puedo pedir', 'me llevo', 'cojo', 'tomo prestado', 'facilitar préstamo', 'facilitar prestamo'];
-    return patrones.some(function(p) { return q.includes(p); });
+      'puedo pedir', 'me llevo', 'me lo llevo', 'me la llevo', 'cojo', 'tomo prestado',
+      'facilitar préstamo', 'facilitar prestamo', 'lo quiero', 'la quiero',
+      'lo necesito', 'la necesito', 'quiero pedir', 'quiero coger', 'reservar',
+      'abre el formulario', 'abrir formulario', 'abrir el formulario', 'rellenar formulario',
+      'quiero el', 'quiero la', 'pedirla', 'pedirlo', 'pídela', 'pidela', 'pídelo', 'pidelo',
+      'tramitar', 'tramítalo', 'tramitalo', 'gestionar préstamo', 'gestionar prestamo',
+      'solicitar', 'sí, por favor', 'si por favor', 'dale', 'venga', 'adelante'];
+    if (patrones.some(function(p) { return q.includes(p); })) return true;
+
+    // Si la última respuesta del agente mencionó abrir un formulario de préstamo,
+    // tratar respuestas afirmativas cortas como confirmación
+    var lastAI = null;
+    for (var i = state.messages.length - 1; i >= 0; i--) {
+      if (state.messages[i].role === 'assistant') { lastAI = state.messages[i].content.toLowerCase(); break; }
+    }
+    var afirmaciones = ['si', 'sí', 'ok', 'vale', 'yes', 'claro', 'por supuesto', 'efectivamente', 'correcto'];
+    if (lastAI && (lastAI.includes('préstamo') || lastAI.includes('prestamo') || lastAI.includes('formulario'))) {
+      if (afirmaciones.indexOf(q) !== -1 || q.length < 12 && afirmaciones.some(function(a){ return q.startsWith(a); })) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function mostrarFormularioPrestamo(item) {
