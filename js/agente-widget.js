@@ -373,6 +373,7 @@
     // Chat input
     el.chatInput = panel.querySelector('#ag-chat-input');
     el.chatInput.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+    el.chatInput.addEventListener('input', updateSuggestions);
     panel.querySelector('#ag-send').addEventListener('click', sendChat);
 
     // Quick actions
@@ -438,13 +439,21 @@
             '</div>',
           '</div>',
           '<div id="ag-quick" class="ag-quick" style="display:none">',
-            '<button class="ag-quick-btn" data-q="¿Cuántos ítems hay y cuáles son las aulas?">¿Cuántos ítems hay y cuáles son las aulas?</button>',
-            '<button class="ag-quick-btn" data-q="¿Qué materiales están bajo stock mínimo?">¿Qué materiales están bajo stock mínimo?</button>',
-            '<button class="ag-quick-btn" data-q="¿Qué ítems tienen campos incompletos?">¿Qué ítems tienen campos incompletos?</button>',
-            '<button class="ag-quick-btn" data-q="Genera un resumen del estado del inventario">Genera un resumen del estado del inventario</button>',
+            '<div style="padding:10px 14px;color:#64748b;font-size:10px;line-height:1.6">',
+              '<strong style="color:#7dd3fc">📌 EJEMPLOS DE BÚSQUEDAS:</strong><br>',
+              '🔍 "¿Dónde está la Fusionadora?" → Te digo aula y stock<br>',
+              '🔍 "¿Quién tiene el Osciloscopio?" → Busco en histórico<br>',
+              '🔍 "Necesito pedir prestado un Multímetro" → Te ayudo a buscar<br><br>',
+              '<strong style="color:#7dd3fc">📊 COMANDOS RÁPIDOS:</strong>',
+            '</div>',
+            '<button class="ag-quick-btn" data-q="¿Dónde está la Fusionadora de fibra óptica y quién la tiene?">🔍 Buscar Fusionadora</button>',
+            '<button class="ag-quick-btn" data-q="¿Qué materiales están bajo stock mínimo?">📦 Bajo stock</button>',
+            '<button class="ag-quick-btn" data-q="¿Qué ítems tienen campos incompletos?">⚠️ Auditoría rápida</button>',
+            '<button class="ag-quick-btn" data-q="Genera un resumen del estado del inventario">📊 Estado general</button>',
           '</div>',
+          '<div id="ag-suggestions" class="ag-quick" style="display:none;padding:8px 14px;border-top:1px solid #1e293b;gap:4px"></div>',
           '<div class="ag-input-row">',
-            '<input id="ag-chat-input" class="ag-input" placeholder="Pregunta sobre el inventario...">',
+            '<input id="ag-chat-input" class="ag-input" placeholder="Ej: ¿Dónde está...? | ¿Quién tiene...? | Necesito pedir...">',
             '<button id="ag-send" class="ag-send" disabled>➤</button>',
           '</div>',
         '</div>',
@@ -590,6 +599,7 @@
     sendBtn.disabled = false;
     if (state.messages.length === 0) {
       el.panel.querySelector('#ag-quick').style.display = 'flex';
+      el.chatInput.focus();
     }
   }
 
@@ -621,6 +631,62 @@
       'Bajo mínimo: ' + bajoMin.length + ' ítems\n' +
       'Ítems (primeros 120 de ' + inv.length + ', campos: n=nombre a=aula c=cat q=qty min=minimo r=ref):\n' +
       JSON.stringify(muestra);
+  }
+
+  // ── Sugerencias inteligentes mientras escribe ────────────────────────────────
+  function updateSuggestions() {
+    var input = el.chatInput.value.trim().toLowerCase();
+    var sugDiv = el.panel.querySelector('#ag-suggestions');
+    if (!input || input.length < 2) { sugDiv.style.display = 'none'; return; }
+
+    var suggestions = [];
+
+    // Detectar patrón de búsqueda
+    if (input.includes('dónde') || input.includes('donde')) {
+      suggestions.push({ text: '🔍 Buscar por aula', q: '¿' + input + '?' });
+    }
+    if (input.includes('quién') || input.includes('quien') || input.includes('tiene')) {
+      suggestions.push({ text: '📍 Ver histórico de préstamos', q: input });
+    }
+    if (input.includes('pedir') || input.includes('prestado')) {
+      suggestions.push({ text: '✅ Facilitar préstamo', q: input });
+    }
+    if (input.includes('stock') || input.includes('minimo') || input.includes('mínimo')) {
+      suggestions.push({ text: '📦 Ver tabla de stock', q: input });
+    }
+    if (input.includes('auditar') || input.includes('completo') || input.includes('incompleto')) {
+      suggestions.push({ text: '⚠️ Ejecutar auditoría', q: input });
+    }
+
+    // Si no hay sugerencias específicas, mostrar materiales que coincidan
+    if (!suggestions.length && state.inventario.length) {
+      var matching = state.inventario.filter(function(i) {
+        var nombre = (i.nombre || '').toLowerCase();
+        return nombre.includes(input) && nombre.length > 0;
+      }).slice(0, 3);
+
+      matching.forEach(function(item) {
+        suggestions.push({
+          text: '🔗 ' + item.nombre + ' (' + (item.aula || '—') + ')',
+          q: '¿Dónde está ' + item.nombre + '?'
+        });
+      });
+    }
+
+    if (suggestions.length) {
+      sugDiv.innerHTML = '';
+      suggestions.forEach(function(s) {
+        var btn = document.createElement('button');
+        btn.className = 'ag-quick-btn';
+        btn.style.fontSize = '10px';
+        btn.textContent = s.text;
+        btn.addEventListener('click', function() { el.chatInput.value = s.q; el.chatInput.focus(); updateSuggestions(); });
+        sugDiv.appendChild(btn);
+      });
+      sugDiv.style.display = 'flex';
+    } else {
+      sugDiv.style.display = 'none';
+    }
   }
 
   function sendChat(text) {
