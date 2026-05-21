@@ -295,7 +295,7 @@
   function loadData() {
     if (state.dataLoaded || state.loading) return;
 
-    // Datos ya en memoria de la app — camino rápido
+    // Intento 1: Datos ya en memoria de la app
     if (typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) {
       state.inventario = items;
       state.dataLoaded = true;
@@ -304,9 +304,30 @@
       return;
     }
 
-    // Fallback: cargar desde API
+    // Intento 2: Esperar a que items esté disponible (si la app se está cargando aún)
+    var attempts = 0;
+    var waitForItems = setInterval(function() {
+      attempts++;
+      if (typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) {
+        clearInterval(waitForItems);
+        state.inventario = items;
+        state.dataLoaded = true;
+        updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
+        renderCurrentTab();
+        return;
+      }
+      if (attempts > 10) {
+        clearInterval(waitForItems);
+        // Si sigue sin cargar, ir a fallback API
+        loadFromAPI();
+      }
+    }, 200);
+  }
+
+  function loadFromAPI() {
+    if (state.loading) return;
     state.loading = true;
-    updateStatusBadge('yellow', '⏳ Cargando...');
+    updateStatusBadge('yellow', '⏳ Cargando desde API...');
     var creds = getCreds();
     if (!creds) { updateStatusBadge('red', '❌ Sin sesión'); state.loading = false; return; }
     var u = encodeURIComponent(creds.u), p = encodeURIComponent(creds.p);
@@ -320,7 +341,7 @@
         renderCurrentTab();
       }).catch(function(e) {
         state.loading = false;
-        updateStatusBadge('red', '❌ Error');
+        updateStatusBadge('red', '❌ Error: ' + e.message);
         console.error('[Agente]', e);
       });
   }
