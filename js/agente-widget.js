@@ -210,6 +210,10 @@
     .ag-section-title { color: #7dd3fc; font-size: 12px; font-weight: 700; margin: 0 0 4px; }
     .ag-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 
+    /* Item links en respuestas IA */
+    .ag-item-link { color: #38bdf8; cursor: pointer; border-bottom: 1px dashed #38bdf8; transition: color .15s; }
+    .ag-item-link:hover { color: #7dd3fc; border-bottom-color: #7dd3fc; }
+
     /* Login overlay */
     .ag-login { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; padding: 24px; }
     .ag-login input { width: 100%; max-width: 260px; }
@@ -552,6 +556,67 @@
     if (state.tab === 'audit') renderAudit();
   }
 
+  // ── Navegación a items desde el chat ──────────────────────────────────────
+  function navigateToItem(id) {
+    closePanel();
+    if (typeof openItemRoute === 'function') openItemRoute(id);
+    else if (typeof openModal === 'function') openModal(id);
+  }
+
+  function linkifyItems(container) {
+    if (!state.inventario.length) return;
+    var nameMap = [];
+    state.inventario.forEach(function(item) {
+      var n = item.nombre || item.item || item.name || '';
+      if (n && n.length > 2) nameMap.push({ name: n, id: item.id });
+    });
+    nameMap.sort(function(a, b) { return b.name.length - a.name.length; });
+
+    var walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [];
+    var node;
+    while ((node = walker.nextNode())) nodes.push(node);
+
+    nodes.forEach(function(textNode) {
+      var parent = textNode.parentNode;
+      if (!parent || parent.classList && parent.classList.contains('ag-item-link')) return;
+      var text = textNode.textContent;
+      var fragments = [{ text: text, isLink: false }];
+      var matched = false;
+
+      nameMap.forEach(function(entry) {
+        var newFrags = [];
+        fragments.forEach(function(frag) {
+          if (frag.isLink) { newFrags.push(frag); return; }
+          var lower = frag.text.toLowerCase();
+          var idx = lower.indexOf(entry.name.toLowerCase());
+          if (idx === -1) { newFrags.push(frag); return; }
+          matched = true;
+          if (idx > 0) newFrags.push({ text: frag.text.slice(0, idx), isLink: false });
+          newFrags.push({ text: frag.text.slice(idx, idx + entry.name.length), isLink: true, id: entry.id });
+          if (idx + entry.name.length < frag.text.length) newFrags.push({ text: frag.text.slice(idx + entry.name.length), isLink: false });
+        });
+        fragments = newFrags;
+      });
+
+      if (!matched) return;
+      var span = document.createElement('span');
+      fragments.forEach(function(frag) {
+        if (frag.isLink) {
+          var a = document.createElement('span');
+          a.className = 'ag-item-link';
+          a.title = 'Ver item en inventario';
+          a.textContent = frag.text;
+          a.addEventListener('click', (function(id) { return function() { navigateToItem(id); }; })(frag.id));
+          span.appendChild(a);
+        } else {
+          span.appendChild(document.createTextNode(frag.text));
+        }
+      });
+      parent.replaceChild(span, textNode);
+    });
+  }
+
   // ── Chat ───────────────────────────────────────────────────────────────────
   function renderChatReady() {
     var sendBtn = el.panel.querySelector('#ag-send');
@@ -633,7 +698,7 @@
       aiDiv.innerHTML = md2html(full) + '<span class="ag-cursor"></span>';
       el.messages.scrollTop = el.messages.scrollHeight;
     }).then(function() {
-      if (aiDiv) { aiDiv.innerHTML = md2html(full); }
+      if (aiDiv) { aiDiv.innerHTML = md2html(full); linkifyItems(aiDiv); }
       state.messages.push({ role: 'assistant', content: full });
       state.loading = false;
       el.panel.querySelector('#ag-send').disabled = false;
