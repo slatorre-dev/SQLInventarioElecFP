@@ -718,6 +718,65 @@
     return resultados;
   }
 
+  // ── Detección de consultas de stock ───────────────────────────────────────
+  function checkStockQuery(query) {
+    var q = (query || '').toLowerCase();
+    var menciona_stock_bajo = /stock\s+(bajo|minimo|mínimo|critic)|bajo\s+(de\s+)?stock|bajo\s+mín|escasea|agot|sin\s+stock|stock\s+cero|critico/.test(q);
+    var menciona_listado_aula = /(items?|materiales?|que\s+hay|qué\s+hay)\s+.*(aula|en\s+el)/.test(q);
+
+    if (!menciona_stock_bajo && !menciona_listado_aula) return null;
+
+    // Extraer número de aula si se menciona
+    var aulaMatch = q.match(/aula\s*(\d+|[a-z]+)/i);
+    var aulaQ = aulaMatch ? aulaMatch[1].toLowerCase() : null;
+
+    var inv = state.inventario;
+    function qty(i){ return Number(i.qty != null ? i.qty : (i.cantidad || 0)); }
+    function minimo(i){ return Number(i.min != null ? i.min : (i.stock_min || 0)); }
+
+    // Filtrar por aula si se especificó
+    var filtrados = inv;
+    if (aulaQ) {
+      filtrados = inv.filter(function(i) {
+        var a = (i.aula || '').toLowerCase();
+        return a.includes(aulaQ);
+      });
+    }
+
+    if (menciona_stock_bajo) {
+      // Items con stock REALMENTE bajo: qty < minimo Y minimo > 0
+      var bajoMin = filtrados.filter(function(i) { return minimo(i) > 0 && qty(i) < minimo(i); });
+      // Items sin stock
+      var sinStock = filtrados.filter(function(i) { return qty(i) === 0; });
+
+      if (bajoMin.length === 0 && sinStock.length === 0) {
+        return '\n\n✅ NO HAY ITEMS BAJO STOCK MÍNIMO' + (aulaQ ? ' en aulas que contengan "' + aulaQ + '"' : '') +
+          '. Todos los ' + filtrados.length + ' items revisados están OK. Responde explícitamente que no hay items con stock bajo.';
+      }
+
+      var lista = bajoMin.slice(0, 30).map(function(i) {
+        var nombre = i.item || i.nombre || i.name || '';
+        return nombre + ' | Aula: ' + (i.aula || '—') + ' | Stock: ' + qty(i) + ' | Mínimo: ' + minimo(i);
+      });
+
+      return '\n\n⚠️ ITEMS BAJO STOCK MÍNIMO' + (aulaQ ? ' (filtrado aula "' + aulaQ + '")' : '') + ' (' + bajoMin.length + ' total, sin stock: ' + sinStock.length + '):\n' +
+        lista.join('\n') +
+        '\n\nIMPORTANTE: Solo lista estos items. NO inventes otros. Si está vacío, di que no hay.';
+    }
+
+    if (menciona_listado_aula && aulaQ) {
+      // Lista de items del aula (limitado para no exceder tokens)
+      var lista2 = filtrados.slice(0, 30).map(function(i) {
+        var nombre = i.item || i.nombre || i.name || '';
+        return nombre + ' | Stock: ' + qty(i) + (minimo(i) > 0 ? ' (mín: ' + minimo(i) + ')' : '');
+      });
+      return '\n\n📦 ITEMS EN AULA "' + aulaQ + '" (' + filtrados.length + ' total' + (filtrados.length > 30 ? ', mostrando 30' : '') + '):\n' +
+        lista2.join('\n') + '\n\nUSA ESTA LISTA. No inventes datos.';
+    }
+
+    return null;
+  }
+
   function ctxExtra() {
     if (!state.inventario.length) return '';
     var inv = state.inventario;
@@ -959,16 +1018,20 @@
     state.loading = true;
     el.panel.querySelector('#ag-send').disabled = true;
 
-    // Búsqueda inteligente: si el usuario pregunta por un material, buscar ANTES de enviar a IA
-    var searchResults = searchInventory(q);
+    // Búsqueda inteligente: detectar consultas de stock y filtrar localmente
     var contextExtra = ctxExtra();
-    if (searchResults && searchResults.length > 0) {
-      contextExtra += '\n\n✅ RESULTADOS DE BÚSQUEDA para "' + q + '" (' + searchResults.length + ' encontrados):\n' +
-        searchResults.join('\n') +
-        '\n\nUSA ESTOS DATOS: Son resultados directos del inventario real.';
+    var stockResults = checkStockQuery(q);
+    if (stockResults) {
+      contextExtra += stockResults;
     } else {
-      // Si no encuentra nada, aún así informa de que se buscó
-      contextExtra += '\n\n❌ BÚSQUEDA para "' + q + '": No se encontraron coincidencias en el inventario.';
+      var searchResults = searchInventory(q);
+      if (searchResults && searchResults.length > 0) {
+        contextExtra += '\n\n✅ RESULTADOS DE BÚSQUEDA para "' + q + '" (' + searchResults.length + ' encontrados):\n' +
+          searchResults.join('\n') +
+          '\n\nUSA ESTOS DATOS: Son resultados directos del inventario real.';
+      } else {
+        contextExtra += '\n\n❌ BÚSQUEDA para "' + q + '": No se encontraron coincidencias en el inventario.';
+      }
     }
 
     var full = '';
