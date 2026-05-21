@@ -355,6 +355,81 @@
     el.statusBadge.textContent = text;
   }
 
+  // ── Drag del FAB ───────────────────────────────────────────────────────────
+  function makeFabDraggable(fab) {
+    var POS_KEY = 'volt_fab_pos';
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); } catch(e) {}
+    if (saved && typeof saved.top === 'number' && typeof saved.left === 'number') {
+      applyPos(saved.top, saved.left);
+    }
+
+    function applyPos(top, left) {
+      // Asegurar que está dentro del viewport
+      var maxLeft = window.innerWidth - fab.offsetWidth - 4;
+      var maxTop = window.innerHeight - fab.offsetHeight - 4;
+      top = Math.max(4, Math.min(top, maxTop));
+      left = Math.max(4, Math.min(left, maxLeft));
+      fab.style.top = top + 'px';
+      fab.style.left = left + 'px';
+      fab.style.right = 'auto';
+    }
+
+    var dragging = false;
+    var moved = false;
+    var startX = 0, startY = 0;
+    var startLeft = 0, startTop = 0;
+
+    function onDown(e) {
+      var pt = e.touches ? e.touches[0] : e;
+      dragging = true;
+      moved = false;
+      startX = pt.clientX;
+      startY = pt.clientY;
+      var rect = fab.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+      fab.style.transition = 'none';
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var dx = pt.clientX - startX;
+      var dy = pt.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      applyPos(startTop + dy, startLeft + dx);
+    }
+
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      fab.style.transition = '';
+      if (moved) {
+        // Guardar posición
+        var rect = fab.getBoundingClientRect();
+        try { localStorage.setItem(POS_KEY, JSON.stringify({ top: rect.top, left: rect.left })); } catch(e) {}
+      } else {
+        // No se movió → click normal
+        togglePanel();
+      }
+    }
+
+    fab.addEventListener('mousedown', onDown);
+    fab.addEventListener('touchstart', onDown, { passive: false });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+
+    // Reajustar si cambia el tamaño de ventana
+    window.addEventListener('resize', function() {
+      var rect = fab.getBoundingClientRect();
+      applyPos(rect.top, rect.left);
+    });
+  }
+
   // ── Build UI ───────────────────────────────────────────────────────────────
   function buildWidget() {
     // Styles
@@ -365,11 +440,11 @@
     // FAB
     var fab = document.createElement('button');
     fab.id = 'agente-fab';
-    fab.title = 'Pregunta a ' + AGENTE_NOMBRE;
+    fab.title = 'Pregunta a ' + AGENTE_NOMBRE + ' (arrastra para mover)';
     fab.innerHTML = '⚡ Pregunta a ' + AGENTE_NOMBRE;
-    fab.addEventListener('click', togglePanel);
     document.body.appendChild(fab);
     el.fab = fab;
+    makeFabDraggable(fab);
 
     // Panel
     var panel = document.createElement('div');
