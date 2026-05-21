@@ -400,8 +400,6 @@
     // Messages container
     el.messages = panel.querySelector('#ag-messages');
 
-    // Stock btn
-    panel.querySelector('#ag-stock-btn').addEventListener('click', generateOrder);
 
 
     // Audit btn
@@ -440,7 +438,6 @@
 
       '<div class="ag-tabs">',
         '<button class="ag-tab active" data-tab="chat">💬 Chat</button>',
-        '<button class="ag-tab" data-tab="stock">📦 Stock</button>',
         '<button class="ag-tab" data-tab="audit">🔍 Auditoría</button>',
         '<button class="ag-tab" data-tab="csv">📥 CSV</button>',
       '</div>',
@@ -473,14 +470,6 @@
           '</div>',
         '</div>',
 
-        // ── Stock ──
-        '<div id="ag-tab-stock" class="ag-panel">',
-          '<p class="ag-section-title">📦 Control de Stock Mínimo</p>',
-          '<div id="ag-stock-badges" class="ag-badges"></div>',
-          '<div id="ag-stock-table" class="ag-table-wrap"><p style="color:#475569;font-size:11px">Cargando...</p></div>',
-          '<button id="ag-stock-btn" class="ag-btn ag-btn-blue" disabled>🤖 Generar lista de pedido con IA</button>',
-          '<div id="ag-stock-result" class="ag-ai-result" style="display:none"></div>',
-        '</div>',
 
 
         // ── Auditoría ──
@@ -543,7 +532,6 @@
   function renderCurrentTab() {
     if (!state.dataLoaded) return;
     if (state.tab === 'chat') renderChatReady();
-    if (state.tab === 'stock') renderStock();
     if (state.tab === 'audit') renderAudit();
   }
 
@@ -881,57 +869,6 @@
     }).catch(function(e) {
       result.innerHTML = md2html('⚠️ Error: ' + e.message + '\n\nIntenta desde la terminal:\n```\ngit add -A && git commit -m "feat: cambios desde Volt" && git push\nwrangler tail\n```');
     });
-  }
-
-  // ── Stock ──────────────────────────────────────────────────────────────────
-  function renderStock() {
-    var inv = state.inventario;
-    function qty(i){ return i.qty != null ? Number(i.qty) : Number(i.cantidad); }
-    function minimo(i){ return i.min != null ? Number(i.min) : Number(i.stock_min); }
-    var bajoMin = inv.filter(function(i){ return minimo(i) > 0 && qty(i) < minimo(i); });
-    var sinStock = inv.filter(function(i){ return qty(i) === 0; });
-
-    // Badges
-    var bd = el.panel.querySelector('#ag-stock-badges');
-    bd.innerHTML = '';
-    [
-      ['red', sinStock.length + ' sin stock'],
-      ['yellow', bajoMin.length + ' bajo mínimo'],
-      ['green', (inv.length - bajoMin.length) + ' OK'],
-    ].forEach(function(b){ bd.appendChild(renderBadgeEl(b[0], b[1])); });
-
-    // Tabla — ordenar por ratio stock/minimo
-    var sorted = inv.filter(function(i){ return minimo(i) > 0; })
-      .sort(function(a,b){ return (qty(a)/minimo(a)) - (qty(b)/minimo(b)); })
-      .slice(0, 40);
-
-    var html = '<table class="ag-table"><thead><tr><th>Material</th><th>Aula</th><th>Stock</th><th>Mín</th><th>Estado</th></tr></thead><tbody>';
-    sorted.forEach(function(item) {
-      var q = qty(item), m = minimo(item);
-      var ratio = q / m;
-      var est = q === 0 ? '🔴' : ratio < 0.5 ? '🟡' : '🟢';
-      var col = q === 0 ? '#ef4444' : ratio < 0.5 ? '#f59e0b' : '#34d399';
-      html += '<tr><td>' + esc(item.nombre || '') + '</td><td>' + esc(item.aula || '—') + '</td>' +
-        '<td style="color:' + col + ';font-weight:700">' + q + '</td>' +
-        '<td style="color:#64748b">' + m + '</td><td>' + est + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    el.panel.querySelector('#ag-stock-table').innerHTML = bajoMin.length ? html : '<p style="color:#34d399;font-size:11px">✅ Sin ítems bajo mínimo</p>';
-    el.panel.querySelector('#ag-stock-btn').disabled = bajoMin.length === 0;
-  }
-
-  function generateOrder() {
-    function qty(i){ return i.qty != null ? Number(i.qty) : Number(i.cantidad); }
-    function minimo(i){ return i.min != null ? Number(i.min) : Number(i.stock_min); }
-    var bajoMin = state.inventario.filter(function(i){ return minimo(i) > 0 && qty(i) < minimo(i); });
-    var result = el.panel.querySelector('#ag-stock-result');
-    result.style.display = 'block';
-    result.innerHTML = '⏳ Generando lista de pedido...';
-    var datos = bajoMin.map(function(i){ return { nombre: i.nombre, aula: i.aula, stock: qty(i), minimo: minimo(i), proveedor: i.proveedor || '—' }; });
-    var prompt = 'Genera una lista de pedido priorizada. Items bajo minimo:\n' + JSON.stringify(datos) + '\nOrganiza por urgencia (sin stock primero), agrupa por proveedor, calcula cantidad a pedir para llegar al doble del minimo. Tabla: Material | Proveedor | Stock | Minimo | A pedir | Urgencia';
-    var full = '';
-    streamAI([{ role: 'user', content: prompt }], '', function(d){ full += d; result.innerHTML = md2html(full); })
-      .catch(function(e){ result.innerHTML = '❌ ' + e.message; });
   }
 
 
