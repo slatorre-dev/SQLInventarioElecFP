@@ -60,8 +60,11 @@
 
   // ── GitHub Models streaming (formato OpenAI) ──────────────────────────────
   function streamAI(messages, systemExtra, onChunk) {
-    var systemMsg = 'Eres VOLT, agente de inventario FP. Busca SIEMPRE en la tabla CSV antes de responder. ' +
+    var systemMsg = 'Eres VOLT, agente de inventario FP. Busca SIEMPRE en los resultados antes de responder. ' +
       'Reporta stock EXACTO. Si no aparece, di "No en inventario". ' +
+      'Cuando el usuario quiera pedir prestado un material, NO tienes que registrar el préstamo tú mismo: ' +
+      'la aplicación abrirá automáticamente un formulario para que rellene profesor/aula/fecha. ' +
+      'Tu trabajo es localizar el material y confirmar disponibilidad. ' +
       'Sé conciso. Responde en español. Usa tablas markdown si es útil.' +
       (systemExtra || '');
 
@@ -628,6 +631,36 @@
     return words;
   }
 
+  // Devuelve los objetos completos de items que coinciden (no strings)
+  function searchInventoryItems(query) {
+    if (!state.inventario.length) return null;
+    var keywords = extractKeywords(query);
+    if (keywords.length === 0) return null;
+
+    var matches = state.inventario.filter(function(i) {
+      var texto = [
+        (i.nombre || i.name || i.item || ''),
+        (i.aula || i.classroom || ''),
+        (i.cat || i.categoria || i.category || ''),
+        (i.ref || i.referencia || '')
+      ].join(' ').toLowerCase();
+      return keywords.some(function(kw) { return texto.includes(kw); });
+    });
+
+    if (matches.length === 0) return null;
+
+    // Ordenar por relevancia
+    matches.sort(function(a, b) {
+      var textoA = (a.nombre || a.name || '').toLowerCase();
+      var textoB = (b.nombre || b.name || '').toLowerCase();
+      var scoreA = keywords.filter(function(kw){ return textoA.includes(kw); }).length;
+      var scoreB = keywords.filter(function(kw){ return textoB.includes(kw); }).length;
+      return scoreB - scoreA;
+    });
+
+    return matches;
+  }
+
   function searchInventory(query) {
     if (!state.inventario.length) return null;
 
@@ -754,6 +787,82 @@
     }
   }
 
+  // ── Detectar intención de préstamo ────────────────────────────────────────
+  function detectarIntencionPrestamo(query) {
+    var q = (query || '').toLowerCase();
+    var patrones = ['pedir prestado', 'pedirlo prestado', 'pedirla prestada', 'préstamo', 'prestamo',
+      'puedo pedir', 'me llevo', 'cojo', 'tomo prestado', 'facilitar préstamo', 'facilitar prestamo'];
+    return patrones.some(function(p) { return q.includes(p); });
+  }
+
+  function mostrarFormularioPrestamo(item) {
+    var formDiv = document.createElement('div');
+    formDiv.className = 'ag-msg ag-msg-ai';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
+
+    var qty = item.qty != null ? item.qty : (item.cantidad || 0);
+
+    formDiv.innerHTML =
+      '<div style="margin-bottom:10px"><strong style="color:#7dd3fc">📋 Solicitar préstamo:</strong><br>' +
+      '<span style="color:#e2e8f0">' + esc(item.nombre || item.name) + '</span><br>' +
+      '<small style="color:#64748b">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + '</small></div>' +
+      '<label class="ag-label">Profesor que lo solicita *</label>' +
+      '<input class="ag-input-field ag-loan-prof" placeholder="Ej: Juan García">' +
+      '<div style="display:flex;gap:6px;margin-top:6px">' +
+        '<div style="flex:1"><label class="ag-label">Aula destino</label>' +
+        '<input class="ag-input-field ag-loan-aula" placeholder="Aula 14"></div>' +
+        '<div style="width:80px"><label class="ag-label">Cantidad</label>' +
+        '<input class="ag-input-field ag-loan-qty" type="number" min="1" max="' + qty + '" value="1"></div>' +
+      '</div>' +
+      '<label class="ag-label" style="margin-top:6px">Devolución prevista</label>' +
+      '<input class="ag-input-field ag-loan-date" type="date" min="' + new Date().toISOString().split('T')[0] + '">' +
+      '<div style="display:flex;gap:6px;margin-top:10px">' +
+        '<button class="ag-btn ag-btn-blue ag-loan-submit" style="flex:1">✅ Registrar préstamo</button>' +
+        '<button class="ag-btn ag-loan-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-loan-result" style="margin-top:8px;font-size:11px"></div>';
+
+    el.messages.appendChild(formDiv);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    var profInput = formDiv.querySelector('.ag-loan-prof');
+    profInput.focus();
+
+    formDiv.querySelector('.ag-loan-cancel').addEventListener('click', function() {
+      formDiv.remove();
+    });
+
+    formDiv.querySelector('.ag-loan-submit').addEventListener('click', function() {
+      var profesor = profInput.value.trim();
+      if (!profesor) { profInput.focus(); profInput.style.borderColor = '#ef4444'; return; }
+
+      var aula = formDiv.querySelector('.ag-loan-aula').value.trim();
+      var cantidad = Number(formDiv.querySelector('.ag-loan-qty').value) || 1;
+      var fecha = formDiv.querySelector('.ag-loan-date').value;
+      var resultEl = formDiv.querySelector('.ag-loan-result');
+
+      resultEl.innerHTML = '⏳ Registrando préstamo...';
+      resultEl.style.color = '#94a3b8';
+
+      apiPost('/api/prestar', {
+        action: 'prestar',
+        item_id: item.id,
+        profesor: profesor,
+        aula_destino: aula,
+        cantidad: cantidad,
+        devolucion_prevista: fecha
+      }).then(function(res) {
+        resultEl.innerHTML = '✅ Préstamo registrado correctamente';
+        resultEl.style.color = '#34d399';
+        formDiv.querySelector('.ag-loan-submit').disabled = true;
+        formDiv.querySelector('.ag-loan-submit').textContent = '✅ Guardado';
+      }).catch(function(e) {
+        resultEl.innerHTML = '❌ Error: ' + e.message;
+        resultEl.style.color = '#ef4444';
+      });
+    });
+  }
+
   function sendChat(text) {
     var input = el.chatInput;
     // Si text es un evento (cuando viene de click), ignorarlo
@@ -766,6 +875,37 @@
     // Añadir mensaje usuario
     state.messages.push({ role: 'user', content: q });
     appendMsg('user', q);
+
+    // ── INTERCEPTAR ACCIÓN DE PRÉSTAMO ─────────────────────────
+    if (detectarIntencionPrestamo(q)) {
+      var encontrados = searchInventoryItems(q);
+      if (encontrados && encontrados.length > 0) {
+        // Si solo hay 1, mostrar formulario directamente
+        if (encontrados.length === 1) {
+          mostrarFormularioPrestamo(encontrados[0]);
+          return;
+        }
+        // Si hay varios, pedir que elija
+        var listaMsg = document.createElement('div');
+        listaMsg.className = 'ag-msg ag-msg-ai';
+        listaMsg.innerHTML = '<strong>Encontré varios materiales. ¿Cuál quieres pedir?</strong><br><br>';
+        encontrados.slice(0, 5).forEach(function(item) {
+          var btn = document.createElement('button');
+          btn.className = 'ag-quick-btn';
+          btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
+          var qty = item.qty != null ? item.qty : (item.cantidad || 0);
+          btn.innerHTML = '📦 ' + esc(item.nombre || item.name) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ')</small>';
+          btn.addEventListener('click', function() {
+            listaMsg.remove();
+            mostrarFormularioPrestamo(item);
+          });
+          listaMsg.appendChild(btn);
+        });
+        el.messages.appendChild(listaMsg);
+        el.messages.scrollTop = el.messages.scrollHeight;
+        return;
+      }
+    }
 
     // Dots
     var dots = document.createElement('div');
