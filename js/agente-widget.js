@@ -15,6 +15,7 @@
   var API_BASE = '';          // vacío = mismo dominio (relativo)
   var AI_ENDPOINT = '/proxy/ai';  // Pages Function — el token vive en el servidor
   var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
+  var AGENTE_NOMBRE = 'Volt';    // Nombre del agente IA
 
   // Obtener credenciales — usa SESSION global de la app (state.js)
   function getCreds() {
@@ -59,9 +60,14 @@
 
   // ── GitHub Models streaming (formato OpenAI) ──────────────────────────────
   function streamAI(messages, systemExtra, onChunk) {
-    var systemMsg = 'Eres un agente experto en gestion de inventario de talleres FP de Electricidad y Electronica del IES Juan Bosco. ' +
-      'Tienes acceso a datos REALES del inventario. Analiza los datos que se te proporcionan y responde con precision. ' +
-      'Usa tablas markdown cuando sea util. Se conciso y orientado a la accion. Responde siempre en español.' +
+    var systemMsg = 'Eres VOLT, un agente experto en gestión de inventario de talleres FP de Electricidad y Electrónica del IES Juan Bosco. ' +
+      'Tienes acceso a datos REALES del inventario. Tu especialidad es: ' +
+      '1) Localizar materiales: cuando pregunten dónde está algo, di en qué aula está y su stock. ' +
+      '2) Sugerir préstamos automáticos: cuando pidan un material, facilita al máximo el préstamo. ' +
+      '3) Auditoría: detectar problemas en los datos. ' +
+      '4) Control de stock: alertar sobre mínimos. ' +
+      'Analiza con precisión, usa tablas markdown cuando sea útil, sé conciso y orientado a la acción. ' +
+      'IMPORTANTE: Responde SIEMPRE en español. En cada respuesta, cita nombres exactos de materiales para que sean clickeables.' +
       (systemExtra || '');
 
     var payload = {
@@ -266,11 +272,7 @@
     loading: false,
     dataLoaded: false,
     inventario: [],
-    prestamos: [],
-    meta: {},
     messages: [],
-    // préstamos form
-    loanForm: { itemId: '', profesor: '', aula: '', cantidad: 1, devolucion: '' },
     // csv
     csvParsed: [],
     // audit filter
@@ -301,7 +303,6 @@
     // Datos ya en memoria de la app — camino rápido
     if (typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) {
       state.inventario = items;
-      state.prestamos = (typeof prestamos !== 'undefined' && Array.isArray(prestamos)) ? prestamos : [];
       state.dataLoaded = true;
       updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
       renderCurrentTab();
@@ -315,22 +316,18 @@
     if (!creds) { updateStatusBadge('red', '❌ Sin sesión'); state.loading = false; return; }
     var u = encodeURIComponent(creds.u), p = encodeURIComponent(creds.p);
 
-    Promise.all([
-      fetch('/api/list?u=' + u + '&p=' + p).then(function(r){ return r.json(); }).catch(function(){ return {}; }),
-      fetch('/api/prestar?u=' + u + '&p=' + p).then(function(r){ return r.json(); }).catch(function(){ return []; }),
-    ]).then(function(results) {
-      var listData = results[0];
-      state.inventario = Array.isArray(listData) ? listData : decompressItems(listData);
-      state.prestamos = Array.isArray(results[1]) ? results[1] : (results[1].prestamos || []);
-      state.dataLoaded = true;
-      state.loading = false;
-      updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
-      renderCurrentTab();
-    }).catch(function(e) {
-      state.loading = false;
-      updateStatusBadge('red', '❌ Error');
-      console.error('[Agente]', e);
-    });
+    fetch('/api/list?u=' + u + '&p=' + p).then(function(r){ return r.json(); })
+      .then(function(listData) {
+        state.inventario = Array.isArray(listData) ? listData : decompressItems(listData);
+        state.dataLoaded = true;
+        state.loading = false;
+        updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
+        renderCurrentTab();
+      }).catch(function(e) {
+        state.loading = false;
+        updateStatusBadge('red', '❌ Error');
+        console.error('[Agente]', e);
+      });
   }
 
   function updateStatusBadge(color, text) {
@@ -349,8 +346,8 @@
     // FAB
     var fab = document.createElement('button');
     fab.id = 'agente-fab';
-    fab.title = 'Agente IA Inventario';
-    fab.innerHTML = '🤖 Agente IA';
+    fab.title = 'Pregunta a ' + AGENTE_NOMBRE;
+    fab.innerHTML = '⚡ Pregunta a ' + AGENTE_NOMBRE;
     fab.addEventListener('click', togglePanel);
     document.body.appendChild(fab);
     el.fab = fab;
@@ -389,13 +386,6 @@
     // Stock btn
     panel.querySelector('#ag-stock-btn').addEventListener('click', generateOrder);
 
-    // Loans form
-    el.loanItem = panel.querySelector('#ag-loan-item');
-    el.loanProf = panel.querySelector('#ag-loan-prof');
-    el.loanAula = panel.querySelector('#ag-loan-aula');
-    el.loanQty  = panel.querySelector('#ag-loan-qty');
-    el.loanDate = panel.querySelector('#ag-loan-date');
-    panel.querySelector('#ag-loan-btn').addEventListener('click', registerLoan);
 
     // Audit btn
     panel.querySelectorAll('.ag-audit-filter').forEach(function(b){
@@ -432,9 +422,8 @@
       '</div>',
 
       '<div class="ag-tabs">',
-        '<button class="ag-tab active" data-tab="chat">🤖 Chat</button>',
+        '<button class="ag-tab active" data-tab="chat">💬 Chat</button>',
         '<button class="ag-tab" data-tab="stock">📦 Stock</button>',
-        '<button class="ag-tab" data-tab="loans">⌛ Préstamos</button>',
         '<button class="ag-tab" data-tab="audit">🔍 Auditoría</button>',
         '<button class="ag-tab" data-tab="csv">📥 CSV</button>',
       '</div>',
@@ -469,27 +458,6 @@
           '<div id="ag-stock-result" class="ag-ai-result" style="display:none"></div>',
         '</div>',
 
-        // ── Préstamos ──
-        '<div id="ag-tab-loans" class="ag-panel">',
-          '<p class="ag-section-title">⌛ Registrar Préstamo</p>',
-          '<div>',
-            '<label class="ag-label">Material *</label>',
-            '<select id="ag-loan-item" class="ag-input-field"><option value="">— Selecciona ítem —</option></select>',
-          '</div>',
-          '<div>',
-            '<label class="ag-label">Profesor *</label>',
-            '<select id="ag-loan-prof" class="ag-input-field"><option value="">— Selecciona profesor —</option></select>',
-          '</div>',
-          '<div class="ag-row">',
-            '<div class="ag-col"><label class="ag-label">Aula destino</label><input id="ag-loan-aula" class="ag-input-field" placeholder="Ej: Aula 14"></div>',
-            '<div class="ag-col"><label class="ag-label">Cantidad</label><input id="ag-loan-qty" class="ag-input-field" type="number" min="1" value="1"></div>',
-          '</div>',
-          '<div><label class="ag-label">Devolución prevista</label><input id="ag-loan-date" class="ag-input-field" type="date" min="' + today + '"></div>',
-          '<button id="ag-loan-btn" class="ag-btn ag-btn-blue">📤 Registrar préstamo</button>',
-          '<div id="ag-loan-result" class="ag-ai-result" style="display:none"></div>',
-          '<p class="ag-section-title" style="margin-top:12px">Activos</p>',
-          '<div id="ag-loans-table" class="ag-table-wrap"><p style="color:#475569;font-size:11px">Cargando...</p></div>',
-        '</div>',
 
         // ── Auditoría ──
         '<div id="ag-tab-audit" class="ag-panel">',
@@ -537,7 +505,7 @@
   function closePanel() {
     state.open = false;
     el.panel.classList.remove('open');
-    el.fab.innerHTML = '🤖 Agente IA';
+    el.fab.innerHTML = '⚡ Pregunta a ' + AGENTE_NOMBRE;
   }
 
   // ── Tabs ───────────────────────────────────────────────────────────────────
@@ -552,7 +520,6 @@
     if (!state.dataLoaded) return;
     if (state.tab === 'chat') renderChatReady();
     if (state.tab === 'stock') renderStock();
-    if (state.tab === 'loans') renderLoans();
     if (state.tab === 'audit') renderAudit();
   }
 
@@ -634,7 +601,6 @@
     var cats = [];
     inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
     var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
-    var actPres = state.prestamos.filter(function(p){ return !p.devuelto && p.estado !== 'devuelto'; });
 
     // Muestra compacta de todos los items para el contexto de la IA
     var muestra = inv.slice(0, 120).map(function(i){
@@ -653,7 +619,6 @@
       'Aulas: ' + aulas.join(', ') + '\n' +
       'Categorías: ' + cats.slice(0,20).join(', ') + '\n' +
       'Bajo mínimo: ' + bajoMin.length + ' ítems\n' +
-      'Préstamos activos: ' + actPres.length + '\n' +
       'Ítems (primeros 120 de ' + inv.length + ', campos: n=nombre a=aula c=cat q=qty min=minimo r=ref):\n' +
       JSON.stringify(muestra);
   }
@@ -702,6 +667,8 @@
       state.messages.push({ role: 'assistant', content: full });
       state.loading = false;
       el.panel.querySelector('#ag-send').disabled = false;
+      // Botón de commit/push/bump opcional
+      appendSaveButton();
     }).catch(function(e) {
       dots.remove();
       appendMsg('ai', '❌ Error: ' + e.message);
@@ -717,6 +684,46 @@
     else div.innerHTML = md2html(html);
     el.messages.appendChild(div);
     el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
+  function appendSaveButton() {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;padding:10px 14px;border-top:1px solid #1e293b;';
+
+    var commitBtn = document.createElement('button');
+    commitBtn.className = 'ag-btn ag-btn-blue';
+    commitBtn.textContent = '✅ Guardar (commit + push + bump)';
+    commitBtn.addEventListener('click', autoCommitAndPush);
+    row.appendChild(commitBtn);
+
+    var skipBtn = document.createElement('button');
+    skipBtn.className = 'ag-btn';
+    skipBtn.textContent = '⏭️ Saltar';
+    skipBtn.addEventListener('click', function() { row.remove(); });
+    row.appendChild(skipBtn);
+
+    el.messages.parentNode.appendChild(row);
+  }
+
+  function autoCommitAndPush() {
+    var result = document.createElement('div');
+    result.className = 'ag-msg ag-msg-ai';
+    result.innerHTML = '⏳ Haciendo commit, push y bump de sw.js...';
+    el.messages.appendChild(result);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    apiPost('/api/git-commit', {
+      action: 'autoCommit',
+      message: 'feat: cambios en inventario desde Volt',
+      bumpSw: true
+    }).then(function(res) {
+      result.innerHTML = md2html('✅ Guardado correctamente:\n' +
+        '- Commit: ' + (res.commit || 'OK') + '\n' +
+        '- Push: OK\n' +
+        '- SW version: ' + (res.swVersion || 'bumped'));
+    }).catch(function(e) {
+      result.innerHTML = md2html('⚠️ Error: ' + e.message + '\n\nIntenta desde la terminal:\n```\ngit add -A && git commit -m "feat: cambios desde Volt" && git push\nwrangler tail\n```');
+    });
   }
 
   // ── Stock ──────────────────────────────────────────────────────────────────
@@ -770,65 +777,6 @@
       .catch(function(e){ result.innerHTML = '❌ ' + e.message; });
   }
 
-  // ── Préstamos ──────────────────────────────────────────────────────────────
-  function renderLoans() {
-    // Rellenar selects si están vacíos
-    var itemSel = el.loanItem;
-    if (itemSel.options.length <= 1) {
-      state.inventario.forEach(function(i){
-        var opt = document.createElement('option');
-        opt.value = i.id;
-        opt.textContent = (i.nombre || '') + ' (' + (i.aula || '—') + ') · Stock: ' + i.cantidad;
-        itemSel.appendChild(opt);
-      });
-    }
-    var profSel = el.loanProf;
-    if (profSel.options.length <= 1) {
-      var profs = [];
-      (state.meta.profesores || []).forEach(function(p){ var n = p.nombre || p; if (n && profs.indexOf(n) < 0) profs.push(n); });
-      state.prestamos.forEach(function(p){ if (p.profesor && profs.indexOf(p.profesor) < 0) profs.push(p.profesor); });
-      profs.forEach(function(n){
-        var opt = document.createElement('option'); opt.value = n; opt.textContent = n; profSel.appendChild(opt);
-      });
-    }
-
-    // Tabla de préstamos activos
-    var activos = state.prestamos.filter(function(p){ return !p.devuelto && p.estado !== 'devuelto'; }).slice(0, 15);
-    var html = '<table class="ag-table"><thead><tr><th>Material</th><th>Profesor</th><th>Dev.</th><th>Estado</th></tr></thead><tbody>';
-    activos.forEach(function(l){
-      var vencido = l.devolucion_prevista && new Date(l.devolucion_prevista) < new Date();
-      var est = vencido ? '<span class="ag-badge ag-badge-red">Vencido</span>' : '<span class="ag-badge ag-badge-green">Activo</span>';
-      html += '<tr><td>' + esc(l.item_nombre || l.nombre || '—') + '</td><td>' + esc(l.profesor || '') + '</td><td>' + esc(l.devolucion_prevista || '—') + '</td><td>' + est + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    el.panel.querySelector('#ag-loans-table').innerHTML = activos.length ? html : '<p style="color:#64748b;font-size:11px">Sin préstamos activos</p>';
-  }
-
-  function registerLoan() {
-    var itemId = el.loanItem.value;
-    var profesor = el.loanProf.value;
-    if (!itemId || !profesor) { alert('Selecciona ítem y profesor'); return; }
-    var result = el.panel.querySelector('#ag-loan-result');
-    result.style.display = 'block';
-    result.innerHTML = '⏳ Registrando...';
-    apiPost('/api/prestar', {
-      action: 'prestar',
-      item_id: itemId,
-      profesor: profesor,
-      aula_destino: el.loanAula.value,
-      cantidad: Number(el.loanQty.value) || 1,
-      devolucion_prevista: el.loanDate.value,
-    }).then(function(res){
-      result.innerHTML = '✅ Préstamo registrado correctamente.<br><small>' + JSON.stringify(res) + '</small>';
-      // Recarga préstamos
-      apiGet('/api/list', { tipo: 'prestamos' }).then(function(d){
-        state.prestamos = Array.isArray(d) ? d : (d.prestamos || []);
-        renderLoans();
-      }).catch(function(){});
-    }).catch(function(e){
-      result.innerHTML = '⚠️ Error en API: ' + e.message + '<br><small>El préstamo puede haberse registrado igualmente.</small>';
-    });
-  }
 
   // ── Auditoría ──────────────────────────────────────────────────────────────
   var CAMPOS_AUDIT = { cat: 'Categoría', aula: 'Aula', ref: 'Referencia' };
