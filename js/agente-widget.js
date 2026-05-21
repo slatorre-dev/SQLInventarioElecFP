@@ -624,19 +624,26 @@
     var q = (query || '').toLowerCase().trim();
     if (!q) return null;
 
-    // Buscar items que coincidan con la query
+    // Buscar en TODOS los campos por si acaso
     var matches = state.inventario.filter(function(i) {
-      var nombre = (i.nombre || i.name || '').toLowerCase();
-      return nombre.includes(q);
+      var nombre = (i.nombre || i.name || i.item || '').toLowerCase();
+      var aula = (i.aula || i.classroom || '').toLowerCase();
+      var cat = (i.cat || i.categoria || i.category || '').toLowerCase();
+      var ref = (i.ref || i.referencia || '').toLowerCase();
+
+      return nombre.includes(q) || aula.includes(q) || cat.includes(q) || ref.includes(q);
     });
 
     if (matches.length === 0) return null;
 
-    // Formatear resultados para la IA
+    // Formatear resultados para la IA - MÁS INFORMACIÓN
     var resultados = matches.map(function(i) {
       var qty = i.qty != null ? i.qty : (i.cantidad || 0);
       var min = i.min != null ? i.min : (i.stock_min || 0);
-      return (i.nombre || i.name) + ' (Aula: ' + (i.aula || '—') + ', Stock: ' + qty + '/' + min + ', Ref: ' + (i.ref || '—') + ')';
+      var nombre = i.nombre || i.name || i.item || '(sin nombre)';
+      var aula = i.aula || i.classroom || '—';
+      var ref = i.ref || i.referencia || '—';
+      return nombre + ' | Aula: ' + aula + ' | Stock: ' + qty + ' (mín: ' + min + ') | Ref: ' + ref;
     });
 
     return resultados;
@@ -651,10 +658,16 @@
     inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
     var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
 
+    // Debug: mostrar estructura de items para verificar
+    console.log('[Volt DEBUG] Inventario cargado:', inv.length, 'items');
+    if (inv.length > 0) {
+      console.log('[Volt DEBUG] Estructura item 0:', inv[0]);
+    }
+
     // Contexto MINIMALISTA: solo metadatos, NO la tabla completa
     return '\n\n📦 INVENTARIO DISPONIBLE:\n' +
-      'Total: ' + inv.length + ' items | Aulas: ' + aulas.join(', ') + ' | Bajo stock: ' + bajoMin.length + '\n' +
-      'IMPORTANTE: NO tienes la tabla completa. Cuando el usuario pregunte por un material, se ejecutará una búsqueda automática en el inventario real.';
+      'Total: ' + inv.length + ' items | Aulas: ' + (aulas.length > 0 ? aulas.join(', ') : 'no cargadas') + ' | Bajo stock: ' + bajoMin.length + '\n' +
+      'El usuario preguntará por materiales. Usa SIEMPRE los resultados de búsqueda que se proporcionan.';
   }
 
   // ── Sugerencias inteligentes mientras escribe ────────────────────────────────
@@ -743,9 +756,12 @@
     var searchResults = searchInventory(q);
     var contextExtra = ctxExtra();
     if (searchResults && searchResults.length > 0) {
-      contextExtra += '\n\n🔍 BÚSQUEDA ENCONTRADA para "' + q + '":' +
-        '\n' + searchResults.join('\n') +
-        '\nUsa estos resultados para responder. Reporta el stock EXACTO que ves aquí.';
+      contextExtra += '\n\n✅ RESULTADOS DE BÚSQUEDA para "' + q + '" (' + searchResults.length + ' encontrados):\n' +
+        searchResults.join('\n') +
+        '\n\nUSA ESTOS DATOS: Son resultados directos del inventario real.';
+    } else {
+      // Si no encuentra nada, aún así informa de que se buscó
+      contextExtra += '\n\n❌ BÚSQUEDA para "' + q + '": No se encontraron coincidencias en el inventario.';
     }
 
     var full = '';
