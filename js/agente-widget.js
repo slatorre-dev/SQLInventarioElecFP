@@ -394,6 +394,7 @@
     el.chatInput.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
     el.chatInput.addEventListener('input', updateSuggestions);
     panel.querySelector('#ag-send').addEventListener('click', sendChat);
+    panel.querySelector('#ag-scan').addEventListener('click', startScan);
 
     // Quick actions
     panel.querySelectorAll('.ag-quick-btn').forEach(function(b) {
@@ -468,6 +469,7 @@
           '</div>',
           '<div id="ag-suggestions" class="ag-quick" style="display:none;padding:8px 14px;border-top:1px solid #1e293b;gap:4px"></div>',
           '<div class="ag-input-row">',
+            '<button id="ag-scan" class="ag-send" title="Escanear código QR / código de barras" style="background:#1e293b">📷</button>',
             '<input id="ag-chat-input" class="ag-input" placeholder="Ej: ¿Dónde está...? | ¿Quién tiene...? | Necesito pedir...">',
             '<button id="ag-send" class="ag-send" disabled>➤</button>',
           '</div>',
@@ -1073,8 +1075,6 @@
       state.messages.push({ role: 'assistant', content: full });
       state.loading = false;
       el.panel.querySelector('#ag-send').disabled = false;
-      // Botón de commit/push/bump opcional
-      appendSaveButton();
     }).catch(function(e) {
       dots.remove();
       appendMsg('ai', '❌ Error: ' + e.message);
@@ -1092,44 +1092,86 @@
     el.messages.scrollTop = el.messages.scrollHeight;
   }
 
-  function appendSaveButton() {
-    var row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:8px;padding:10px 14px;border-top:1px solid #1e293b;';
+  // ── Escáner de QR / código de barras ──────────────────────────────────────
+  function startScan() {
+    if (!('BarcodeDetector' in window)) {
+      // Fallback: input manual
+      var codigo = prompt('Tu navegador no soporta escáner de cámara.\nEscribe el código manualmente (referencia o ID del item):');
+      if (codigo) buscarPorCodigo(codigo.trim());
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast && toast('No se puede acceder a la cámara', 'err');
+      return;
+    }
 
-    var commitBtn = document.createElement('button');
-    commitBtn.className = 'ag-btn ag-btn-blue';
-    commitBtn.textContent = '✅ Guardar (commit + push + bump)';
-    commitBtn.addEventListener('click', autoCommitAndPush);
-    row.appendChild(commitBtn);
+    // Crear overlay con video
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center';
+    overlay.innerHTML = '<div style="position:absolute;top:14px;left:14px;right:14px;color:#fff;font-family:monospace;font-size:13px;text-align:center">📷 Apunta a un código QR o código de barras</div>' +
+      '<video autoplay playsinline style="max-width:90vw;max-height:70vh;border-radius:12px"></video>' +
+      '<button style="position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer">✕</button>';
+    document.body.appendChild(overlay);
 
-    var skipBtn = document.createElement('button');
-    skipBtn.className = 'ag-btn';
-    skipBtn.textContent = '⏭️ Saltar';
-    skipBtn.addEventListener('click', function() { row.remove(); });
-    row.appendChild(skipBtn);
+    var video = overlay.querySelector('video');
+    var closeBtn = overlay.querySelector('button');
+    var stream = null;
+    var detector = new window.BarcodeDetector({ formats: ['qr_code', 'ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e'] });
+    var scanning = true;
 
-    el.messages.parentNode.appendChild(row);
+    function stop() {
+      scanning = false;
+      if (stream) stream.getTracks().forEach(function(t){ t.stop(); });
+      overlay.remove();
+    }
+    closeBtn.addEventListener('click', stop);
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function(s) {
+      stream = s;
+      video.srcObject = s;
+      function loop() {
+        if (!scanning) return;
+        detector.detect(video).then(function(codes) {
+          if (codes && codes.length > 0) {
+            var code = codes[0].rawValue;
+            stop();
+            buscarPorCodigo(code);
+          } else {
+            requestAnimationFrame(loop);
+          }
+        }).catch(function() { requestAnimationFrame(loop); });
+      }
+      video.addEventListener('loadedmetadata', loop);
+    }).catch(function(e) {
+      stop();
+      alert('Error al acceder a la cámara: ' + e.message);
+    });
   }
 
-  function autoCommitAndPush() {
-    var result = document.createElement('div');
-    result.className = 'ag-msg ag-msg-ai';
-    result.innerHTML = '⏳ Haciendo commit, push y bump de sw.js...';
-    el.messages.appendChild(result);
-    el.messages.scrollTop = el.messages.scrollHeight;
-
-    apiPost('/api/git-commit', {
-      action: 'autoCommit',
-      message: 'feat: cambios en inventario desde Volt',
-      bumpSw: true
-    }).then(function(res) {
-      result.innerHTML = md2html('✅ Guardado correctamente:\n' +
-        '- Commit: ' + (res.commit || 'OK') + '\n' +
-        '- Push: OK\n' +
-        '- SW version: ' + (res.swVersion || 'bumped'));
-    }).catch(function(e) {
-      result.innerHTML = md2html('⚠️ Error: ' + e.message + '\n\nIntenta desde la terminal:\n```\ngit add -A && git commit -m "feat: cambios desde Volt" && git push\nwrangler tail\n```');
+  function buscarPorCodigo(codigo) {
+    if (!codigo) return;
+    // Buscar en inventario por ref, id, o nombre
+    var match = state.inventario.find(function(i) {
+      return String(i.id) === codigo ||
+        (i.ref || '').toLowerCase() === codigo.toLowerCase() ||
+        (i.referencia || '').toLowerCase() === codigo.toLowerCase();
     });
+
+    if (match) {
+      // Insertar resultado directo en el chat
+      var nombre = match.item || match.nombre || match.name || '(sin nombre)';
+      var qty = match.qty != null ? match.qty : (match.cantidad || 0);
+      appendMsg('user', '📷 Código escaneado: ' + codigo);
+      var resultDiv = document.createElement('div');
+      resultDiv.className = 'ag-msg ag-msg-ai';
+      resultDiv.innerHTML = '✅ <strong>' + esc(nombre) + '</strong><br>' +
+        '<small>Aula: ' + esc(match.aula || '—') + ' · Stock: ' + qty + ' · Ref: ' + esc(match.ref || '—') + '</small>';
+      el.messages.appendChild(resultDiv);
+      el.messages.scrollTop = el.messages.scrollHeight;
+    } else {
+      appendMsg('user', '📷 Código escaneado: ' + codigo);
+      appendMsg('ai', '❌ No encuentro ningún ítem con código/referencia "' + codigo + '".');
+    }
   }
 
 

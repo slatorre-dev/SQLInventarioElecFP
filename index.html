@@ -876,7 +876,14 @@
     <div class="mh"><div class="mt">👥 Profesores</div><button class="mx" onclick="closeProfModal()">✕</button></div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Lista de profesores que pueden pedir material prestado</p>
     <div class="prof-list" id="profList"></div>
-    <button class="add-aula-btn" onclick="addProfRow()">＋ Añadir profesor</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <button class="add-aula-btn" onclick="addProfRow()">＋ Añadir profesor</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: nombre,departamento,email">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importProfesoresCSV(this)">
+      </label>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,departamento,email</code></span>
+    </div>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">

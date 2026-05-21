@@ -512,6 +512,40 @@ function addProfRow(){
   renderProfList();
 }
 
+function importProfesoresCSV(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const lines = e.target.result.trim().split('\n').filter(l => l.trim());
+    if(!lines.length){ toast('CSV vacío','err'); return; }
+
+    // Detectar cabecera
+    const primera = lines[0].toLowerCase().replace(/\s/g,'');
+    const tieneCabecera = primera.includes('nombre') || primera.includes('departamento') || primera.includes('email');
+    const filas = tieneCabecera ? lines.slice(1) : lines;
+
+    let importados = 0, omitidos = 0;
+    filas.forEach(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      const nombre = cols[0];
+      if(!nombre) return;
+      const departamento = cols[1] || '';
+      const email = cols[2] || '';
+      // Evitar duplicados por nombre (case-insensitive)
+      if(profEditing.some(p => (p.nombre||'').toLowerCase() === nombre.toLowerCase())){ omitidos++; return; }
+      profEditing.push({ id: 0, nombre, departamento, email });
+      importados++;
+    });
+
+    renderProfList();
+    input.value = '';
+    const msg = `${importados} profesor(es) importado(s)${omitidos ? `, ${omitidos} omitido(s) por duplicado` : ''}. Revisa y pulsa Guardar.`;
+    toast(msg, importados > 0 ? 'ok' : 'warn');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
 function removeProfRow(idx){
   const p = profEditing[idx];
   if(p.source === 'usuarios'){
