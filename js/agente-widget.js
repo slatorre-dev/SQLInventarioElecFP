@@ -649,14 +649,22 @@
 
     if (matches.length === 0) return null;
 
-    // Ordenar por relevancia
+    // Ordenar por relevancia — priorizar match exacto en nombre
     matches.sort(function(a, b) {
-      var textoA = (a.nombre || a.name || '').toLowerCase();
-      var textoB = (b.nombre || b.name || '').toLowerCase();
-      var scoreA = keywords.filter(function(kw){ return textoA.includes(kw); }).length;
-      var scoreB = keywords.filter(function(kw){ return textoB.includes(kw); }).length;
+      var textoA = (a.item || a.nombre || a.name || '').toLowerCase();
+      var textoB = (b.item || b.nombre || b.name || '').toLowerCase();
+      // Match exacto de alguna keyword en el nombre vale doble
+      var scoreA = keywords.reduce(function(s, kw) { return s + (textoA.includes(kw) ? (textoA === kw ? 3 : 1) : 0); }, 0);
+      var scoreB = keywords.reduce(function(s, kw) { return s + (textoB.includes(kw) ? (textoB === kw ? 3 : 1) : 0); }, 0);
       return scoreB - scoreA;
     });
+
+    // Si el primer resultado tiene mucho más score que el segundo, devolver solo ese
+    if (matches.length > 1) {
+      var nombrePrimero = (matches[0].item || matches[0].nombre || matches[0].name || '').toLowerCase();
+      var exacto = keywords.some(function(kw) { return nombrePrimero === kw; });
+      if (exacto) return [matches[0]];
+    }
 
     return matches;
   }
@@ -801,7 +809,7 @@
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
 
     var qty = item.qty != null ? item.qty : (item.cantidad || 0);
-    var nombreItem = item.nombre || item.name || item.item || '(sin nombre)';
+    var nombreItem = item.item || item.nombre || item.name || '(sin nombre)';
 
     formDiv.innerHTML =
       '<div style="margin-bottom:10px"><strong style="color:#7dd3fc">📋 Solicitar préstamo:</strong><br>' +
@@ -850,7 +858,7 @@
         action: 'prestar',
         prestamo: {
           itemId: item.id,
-          itemNombre: item.nombre || item.name || item.item || '',
+          itemNombre: item.item || item.nombre || item.name || '',
           cantidad: cantidad,
           aulaOrigen: item.aula || '',
           aulaDestino: aula,
@@ -917,11 +925,12 @@
           btn.className = 'ag-quick-btn';
           btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
           var qty = item.qty != null ? item.qty : (item.cantidad || 0);
-          btn.innerHTML = '📦 ' + esc(item.nombre || item.name) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ')</small>';
-          btn.addEventListener('click', function() {
+          var nombreBtn = item.item || item.nombre || item.name || '(sin nombre)';
+          btn.innerHTML = '📦 ' + esc(nombreBtn) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ')</small>';
+          btn.addEventListener('click', (function(it) { return function() {
             listaMsg.remove();
-            mostrarFormularioPrestamo(item);
-          });
+            mostrarFormularioPrestamo(it);
+          }; })(item));
           listaMsg.appendChild(btn);
         });
         el.messages.appendChild(listaMsg);
