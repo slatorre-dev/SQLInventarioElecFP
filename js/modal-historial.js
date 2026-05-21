@@ -21,8 +21,8 @@ function historialBadgeClass(action) {
 }
 
 function openHistorialModal() {
-  if (!SESSION || (SESSION.usuario || '').toLowerCase() !== 'seba') {
-    toast('Solo el administrador puede acceder al historial', 'err');
+  if (!canAccessHistorial()) {
+    toast('Solo el administrador o jefe de departamento puede acceder al historial', 'err');
     return;
   }
 

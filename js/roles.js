@@ -123,9 +123,17 @@ function applyRoleUI(){
   if(deptWrap) deptWrap.style.display = can('config.manage') ? 'flex' : 'none';
 }
 
+function canAccessHistorial() {
+  if (!SESSION) return false;
+  const usuario = (SESSION.usuario || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const rol = (SESSION.rol || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return usuario === 'seba' ||
+    rol.includes('admin') ||
+    rol.includes('jefe') ||
+    rol.includes('departamento');
+}
+
 function showHistorialButton(){
   const btnHistorial = document.getElementById('btnHistorialDept');
-  const isSeba = SESSION && (SESSION.usuario || '').toLowerCase() === 'seba';
-  console.log('[showHistorialButton] btnHistorial:', btnHistorial, 'SESSION:', SESSION, 'usuario:', SESSION?.usuario, 'isSeba:', isSeba);
-  if(btnHistorial) btnHistorial.style.display = isSeba ? 'flex' : 'none';
+  if(btnHistorial) btnHistorial.style.display = canAccessHistorial() ? 'flex' : 'none';
 }
