@@ -619,24 +619,64 @@
   }
 
   // ── Búsqueda inteligente en inventario ─────────────────────────────────────
+  // Palabras vacías a ignorar (stop words en español)
+  var STOP_WORDS = ['donde', 'dónde', 'esta', 'está', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas',
+    'de', 'del', 'al', 'a', 'en', 'con', 'por', 'para', 'que', 'qué', 'cual', 'cuál',
+    'tiene', 'tienes', 'hay', 'cuanto', 'cuánto', 'cuanta', 'cuánta', 'cuantos', 'cuántos',
+    'quiero', 'quieres', 'necesito', 'necesitas', 'puedo', 'puedes', 'pedir', 'prestado',
+    'busco', 'buscar', 'me', 'te', 'se', 'su', 'sus', 'mi', 'tu', 'es', 'son',
+    'y', 'o', 'pero', 'si', 'no', 'lo', 'le', 'les', 'sobre', 'como', 'cómo'];
+
+  function extractKeywords(query) {
+    var q = (query || '').toLowerCase()
+      .replace(/[¿?¡!.,;:()]/g, ' ')  // quitar puntuación
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    var words = q.split(' ').filter(function(w) {
+      return w.length >= 3 && STOP_WORDS.indexOf(w) === -1;
+    });
+
+    return words;
+  }
+
   function searchInventory(query) {
     if (!state.inventario.length) return null;
-    var q = (query || '').toLowerCase().trim();
-    if (!q) return null;
 
-    // Buscar en TODOS los campos por si acaso
+    var keywords = extractKeywords(query);
+    console.log('[Volt DEBUG] Keywords extraídas:', keywords);
+
+    if (keywords.length === 0) return null;
+
+    // Buscar items que contengan AL MENOS UNA palabra clave
     var matches = state.inventario.filter(function(i) {
-      var nombre = (i.nombre || i.name || i.item || '').toLowerCase();
-      var aula = (i.aula || i.classroom || '').toLowerCase();
-      var cat = (i.cat || i.categoria || i.category || '').toLowerCase();
-      var ref = (i.ref || i.referencia || '').toLowerCase();
+      var texto = [
+        (i.nombre || i.name || i.item || ''),
+        (i.aula || i.classroom || ''),
+        (i.cat || i.categoria || i.category || ''),
+        (i.ref || i.referencia || '')
+      ].join(' ').toLowerCase();
 
-      return nombre.includes(q) || aula.includes(q) || cat.includes(q) || ref.includes(q);
+      return keywords.some(function(kw) { return texto.includes(kw); });
     });
+
+    console.log('[Volt DEBUG] Matches encontrados:', matches.length);
 
     if (matches.length === 0) return null;
 
-    // Formatear resultados para la IA - MÁS INFORMACIÓN
+    // Si hay demasiados resultados, ordenar por relevancia (cuántas keywords coinciden)
+    if (matches.length > 20) {
+      matches.sort(function(a, b) {
+        var textoA = (a.nombre || a.name || '').toLowerCase();
+        var textoB = (b.nombre || b.name || '').toLowerCase();
+        var scoreA = keywords.filter(function(kw){ return textoA.includes(kw); }).length;
+        var scoreB = keywords.filter(function(kw){ return textoB.includes(kw); }).length;
+        return scoreB - scoreA;
+      });
+      matches = matches.slice(0, 20);
+    }
+
+    // Formatear resultados para la IA
     var resultados = matches.map(function(i) {
       var qty = i.qty != null ? i.qty : (i.cantidad || 0);
       var min = i.min != null ? i.min : (i.stock_min || 0);
@@ -728,7 +768,9 @@
 
   function sendChat(text) {
     var input = el.chatInput;
-    var q = text || input.value.trim();
+    // Si text es un evento (cuando viene de click), ignorarlo
+    var queryText = (typeof text === 'string') ? text : '';
+    var q = queryText || input.value.trim();
     if (!q || state.loading) return;
     input.value = '';
     el.panel.querySelector('#ag-quick').style.display = 'none';
