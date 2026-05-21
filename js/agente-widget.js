@@ -801,10 +801,11 @@
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
 
     var qty = item.qty != null ? item.qty : (item.cantidad || 0);
+    var nombreItem = item.nombre || item.name || item.item || '(sin nombre)';
 
     formDiv.innerHTML =
       '<div style="margin-bottom:10px"><strong style="color:#7dd3fc">📋 Solicitar préstamo:</strong><br>' +
-      '<span style="color:#e2e8f0">' + esc(item.nombre || item.name) + '</span><br>' +
+      '<span style="color:#e2e8f0">' + esc(nombreItem) + '</span><br>' +
       '<small style="color:#64748b">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + '</small></div>' +
       '<label class="ag-label">Profesor que lo solicita *</label>' +
       '<input class="ag-input-field ag-loan-prof" placeholder="Ej: Juan García">' +
@@ -878,9 +879,19 @@
 
     // ── INTERCEPTAR ACCIÓN DE PRÉSTAMO ─────────────────────────
     if (detectarIntencionPrestamo(q)) {
+      // Buscar item en la pregunta actual; si no hay, buscar en mensajes anteriores
       var encontrados = searchInventoryItems(q);
+      if (!encontrados || encontrados.length === 0) {
+        // Recorrer historial de mensajes recientes buscando el item mencionado
+        for (var mi = state.messages.length - 2; mi >= 0 && mi >= state.messages.length - 6; mi--) {
+          var prevMsg = state.messages[mi];
+          if (prevMsg && prevMsg.content) {
+            encontrados = searchInventoryItems(prevMsg.content);
+            if (encontrados && encontrados.length > 0) break;
+          }
+        }
+      }
       if (encontrados && encontrados.length > 0) {
-        // Si solo hay 1, mostrar formulario directamente
         if (encontrados.length === 1) {
           mostrarFormularioPrestamo(encontrados[0]);
           return;
@@ -905,6 +916,11 @@
         el.messages.scrollTop = el.messages.scrollHeight;
         return;
       }
+      // No encontró item — pedir al usuario que lo especifique
+      appendMsg('ai', '¿Qué material quieres pedir prestado? Dime el nombre y lo busco en el inventario.');
+      state.loading = false;
+      el.panel.querySelector('#ag-send').disabled = false;
+      return;
     }
 
     // Dots
