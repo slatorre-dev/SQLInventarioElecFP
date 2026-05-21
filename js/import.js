@@ -330,7 +330,7 @@ function impRenderPreview(){
     if(item.qty == null) item.qty = 1;
     if(item.min == null) item.min = 0;
     if(!item.est) item.est = 'Bueno';
-    if(!item.tipo_material) item.tipo_material = 'consumible';
+    if(!item.tipo_material) item.tipo_material = 'inventariable';
     if(!item.cat) item.cat = 'Otros';
     item.mod = item.mod || '';
 

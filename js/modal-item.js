@@ -757,7 +757,7 @@ async function saveItem(){
     foto:document.getElementById('f_foto').value,
     qty:parseInt(document.getElementById('f_qty').value)||0,
     min:parseInt(document.getElementById('f_min').value)||0,
-    tipo_material: document.getElementById('f_tipo_material').value || 'consumible',
+    tipo_material: document.getElementById('f_tipo_material').value || 'inventariable',
     cat:document.getElementById('f_cat').value,
     mod:document.getElementById('f_mod').value,
     loc:document.getElementById('f_loc').value.trim(),

@@ -28,7 +28,7 @@ function materialType(item){
   if(raw === 'inventariable') return 'inventariable';
   if(raw === 'consumible') return 'consumible';
   if(item?.es_contenedor == 1 || item?.es_contenedor === true) return 'inventariable';
-  return 'consumible';
+  return 'inventariable';
 }
 
 function isConsumible(item){
