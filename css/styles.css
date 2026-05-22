@@ -384,15 +384,15 @@ body{
 .sub-bc .bc-mid{color:var(--muted);font-weight:600}
 .sub-bc .bc-current{color:var(--text);font-weight:800;font-size:15px}
 .sub-bc .sep{color:var(--muted);font-weight:400;font-size:16px;margin:0 2px;opacity:.5}
-.sub-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.sub-title-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 .sub-title{font-size:28px;font-weight:800;letter-spacing:-.4px;background:linear-gradient(135deg,#059669,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.sub-title-row .sub-title{margin-bottom:0}
-.sub-stats-compact{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.scard-compact{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:11px;transition:all .25s;cursor:pointer}
+.sub-title-row .sub-title{margin-bottom:0;flex:0 0 auto}
+.sub-stats-compact{display:flex;gap:12px;align-items:center;flex-wrap:wrap;width:100%;order:2}
+.scard-compact{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:8px;font-size:12px;transition:all .25s;cursor:pointer;white-space:nowrap}
 .scard-compact:hover{background:var(--white);border-color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.scard-compact .icon{font-size:16px;opacity:.8}
-.scard-compact .num{font-weight:700;color:var(--text);margin-right:2px}
-.scard-compact .lbl{color:var(--muted);font-weight:500}
+.scard-compact .icon{font-size:18px;opacity:.8}
+.scard-compact .num{font-weight:700;color:var(--text);margin-right:2px;font-size:16px}
+.scard-compact .lbl{color:var(--muted);font-weight:600}
 .scard-compact.alert{background:var(--red-l);border-color:var(--red)}
 .scard-compact.alert .num{color:var(--red)}
 .scard-compact.alert .lbl{color:var(--red);font-weight:600}
@@ -963,9 +963,11 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .scard-icon{display:none}
   .scard-num{font-size:16px}
   .scard-lbl{display:none}
-  .scard-compact{padding:6px 10px;font-size:10px}
-  .scard-compact .icon{font-size:14px}
-  .scard-compact .num{font-size:13px;font-weight:700}
+  .scard-compact{padding:10px 12px;font-size:11px}
+  .scard-compact .icon{font-size:16px}
+  .scard-compact .num{font-size:14px;font-weight:700}
+  .sub-title-row{flex-wrap:wrap}
+  .sub-stats-compact{width:100%}
 
   /* ── SUBPAGE HEADER ── */
   .sub-header{padding:10px 14px 8px}
