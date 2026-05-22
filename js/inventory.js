@@ -198,6 +198,8 @@ function renderBulkActionControl(){
   } else if(action === 'mod'){
     box.innerHTML = `<select id="bulkCiclo" onchange="renderBulkModOptions()">${CICLOS.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('')}</select><select id="bulkMod"></select>`;
     renderBulkModOptions();
+  } else if(action === 'tipo'){
+    box.innerHTML = '<select id="bulkTipo"><option value="consumible">Consumible</option><option value="inventariable">Inventariable</option></select>';
   } else if(action === 'tagsAdd' || action === 'tagsReplace'){
     box.innerHTML = '<input id="bulkTags" list="tagList" placeholder="tag1, tag2">';
   } else if(action === 'mant'){
@@ -256,6 +258,7 @@ async function applyBulkAction(){
   if(action === 'loc') patch = { loc: document.getElementById('bulkLoc').value.trim() };
   else if(action === 'cat') patch = { cat: document.getElementById('bulkCat').value };
   else if(action === 'mod') patch = { mod: document.getElementById('bulkMod').value };
+  else if(action === 'tipo') patch = { tipo_material: document.getElementById('bulkTipo').value };
   else if(action === 'mant') patch = { mant: document.getElementById('bulkMant').value, mantEstado: document.getElementById('bulkMant').value ? 'Pendiente' : '' };
   else if(action === 'foto') {
     const url = document.getElementById('bulkFotoUrl').value.trim();
