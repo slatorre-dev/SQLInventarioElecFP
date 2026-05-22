@@ -72,8 +72,8 @@ function mergeProfesores(profesoresRows, usuariosRows) {
   return profesores.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es', { sensitivity: 'base' }));
 }
 
-export async function onRequestGet({ request, env }) {
-  const user = request.user;
+export async function onRequestGet({ request, env, data }) {
+  const user = data?.user || request.user;
 
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN es_contenedor INTEGER DEFAULT 0").run().catch(() => {});
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN parent_id INTEGER DEFAULT NULL").run().catch(() => {});
