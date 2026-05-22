@@ -127,14 +127,16 @@ function getInvPage(data){
 }
 
 function renderPager(mc,page){
-  const sizes = isTouchLike() ? [10,25,30,50] : [10,25,30,50];
+  const sizes = [10,25,30,50];
+  const navHtml = `
+    <button class="btn btn-sm" onclick="goInvPage(${page.page-1})" ${page.page<=1?'disabled':''}>‹ Anterior</button>
+    <span class="pager-page">Página ${page.page} / ${page.totalPages}</span>
+    <button class="btn btn-sm" onclick="goInvPage(${page.page+1})" ${page.page>=page.totalPages?'disabled':''}>Siguiente ›</button>`;
   mc.insertAdjacentHTML('beforeend',`
     <div class="pager">
       <div class="pager-info">Mostrando ${page.start+1}-${page.end} de ${page.total}</div>
       <div class="pager-controls">
-        <button class="btn btn-sm" onclick="goInvPage(${page.page-1})" ${page.page<=1?'disabled':''}>‹ Anterior</button>
-        <span class="pager-page">Página ${page.page} / ${page.totalPages}</span>
-        <button class="btn btn-sm" onclick="goInvPage(${page.page+1})" ${page.page>=page.totalPages?'disabled':''}>Siguiente ›</button>
+        ${navHtml}
         <label class="pager-size">
           <span>Ítems</span>
           <select onchange="setPageSize(this.value)">
@@ -144,6 +146,16 @@ function renderPager(mc,page){
       </div>
     </div>
   `);
+  const pt = document.getElementById('pagerTop');
+  if(pt){
+    if(page.totalPages > 1){
+      pt.innerHTML = `<div class="pager-top-inner">${navHtml}</div>`;
+      pt.style.display = 'flex';
+    } else {
+      pt.innerHTML = '';
+      pt.style.display = 'none';
+    }
+  }
 }
 
 function th2(k,l){const i=k===sk?(sa?'▲':'▼'):'↕';return`<th onclick="sort('${k}')" class="${k===sk?'srt':''}">${l} <span style="font-size:9px;opacity:.6">${i}</span></th>`}
