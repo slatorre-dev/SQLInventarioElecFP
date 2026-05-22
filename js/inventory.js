@@ -149,7 +149,8 @@ function renderPager(mc,page){
   const pt = document.getElementById('pagerTop');
   if(pt){
     if(page.totalPages > 1){
-      pt.innerHTML = `<div class="pager-top-inner">${navHtml}</div>`;
+      const sizeSelTop = `<label class="pager-size"><span>Ítems</span><select onchange="setPageSize(this.value)">${sizes.map(n=>`<option value="${n}" ${n===_pageSize?'selected':''}>${n}</option>`).join('')}</select></label>`;
+      pt.innerHTML = `<div class="pager-top-inner">${navHtml}${sizeSelTop}</div>`;
       pt.style.display = 'flex';
     } else {
       pt.innerHTML = '';
