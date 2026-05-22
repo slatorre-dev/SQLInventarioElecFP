@@ -168,6 +168,17 @@ function openSub(){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${cf.ciclo.icon} ${cf.ciclo.name}</span><span class="sep">›</span><strong>${cf.label}</strong>`;
   }
 
+  // Breadcrumb del sub-header (ruta de ubicación: Inicio › Tipo › Nombre)
+  const subBc = document.getElementById('subBc');
+  if(subBc){
+    const tipoNombre = {aula:'Aula', cat:'Categoría', lowstock:'Stock bajo', maintenance:'Mantenimiento', ocultos:'Ocultos', caja:'Caja'}[cf.type] || 'Módulo';
+    if(cf.ciclo){
+      subBc.innerHTML = `<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${escHtml(cf.ciclo.name)}</span><span class="sep">›</span><span class="bc-current">${escHtml(cf.label)}</span>`;
+    } else {
+      subBc.innerHTML = `<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-mid">${tipoNombre}</span><span class="sep">›</span><span class="bc-current">${escHtml(cf.label)}</span>`;
+    }
+  }
+
   const noActions = cf.type==='lowstock' || cf.type==='maintenance' || cf.type==='caja';
   document.getElementById('btnN').style.display = noActions ? 'none' : 'flex';
   document.getElementById('btnE').style.display = noActions ? 'none' : 'flex';
