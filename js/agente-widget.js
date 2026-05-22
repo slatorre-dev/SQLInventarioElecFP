@@ -972,7 +972,7 @@
       '<div style="margin-bottom:10px"><strong style="color:#7dd3fc">📋 Solicitar préstamo:</strong><br>' +
       '<span style="color:#e2e8f0">' + esc(nombreItem) + '</span><br>' +
       '<small style="color:#64748b">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + '</small></div>' +
-      '<label class="ag-label">Profesor que lo solicita *</label>' +
+      '<label class="ag-label">Profesor/a que lo solicita *</label>' +
       '<input class="ag-input-field ag-loan-prof" placeholder="Ej: Juan García">' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
         '<div style="flex:1"><label class="ag-label">Aula destino</label>' +

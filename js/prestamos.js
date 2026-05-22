@@ -35,7 +35,7 @@ function goPrestamos(tab){
     <div class="scard"><div class="scard-icon">🟡</div><div><div class="scard-num">${activos}</div><div class="scard-lbl">activos</div></div></div>
     <div class="scard"><div class="scard-icon">🔴</div><div><div class="scard-num" style="color:var(--red)">${vencidos}</div><div class="scard-lbl">vencidos</div></div></div>
     <div class="scard"><div class="scard-icon">✅</div><div><div class="scard-num">${devueltos}</div><div class="scard-lbl">devueltos (histórico)</div></div></div>
-    <div class="scard"><div class="scard-icon">👥</div><div><div class="scard-num">${profesores.length}</div><div class="scard-lbl">profesores</div></div></div>
+    <div class="scard"><div class="scard-icon">👥</div><div><div class="scard-num">${profesores.length}</div><div class="scard-lbl">profesores/as</div></div></div>
   `;
   document.getElementById('presMeta').textContent = `${prestamos.length} préstamo${prestamos.length!==1?'s':''} registrado${prestamos.length!==1?'s':''} en total`;
 
@@ -364,7 +364,7 @@ function closePrestarCaja(){ document.getElementById('mPrestarCaja').classList.r
 
 async function confirmPrestarCaja(){
   const profId = document.getElementById('prestarCajaProf').value;
-  if(!profId){ toast('Selecciona un profesor','err'); return; }
+  if(!profId){ toast('Selecciona un/a profesor/a','err'); return; }
   const prof = profesores.find(p=>String(p.id)===String(profId));
   if(!prof) return;
   const btn = document.getElementById('btnPrestarCajaSave');
@@ -399,13 +399,13 @@ async function confirmPrestar(){
   if(prestarItemId===null||prestarItemId===undefined){ toast('Selecciona un ítem','err'); return; }
   const profId = document.getElementById('pres_prof').value;
   const cant = parseInt(document.getElementById('pres_cant').value)||0;
-  if(!profId){ toast('Selecciona un profesor','err'); return; }
+  if(!profId){ toast('Selecciona un/a profesor/a','err'); return; }
   if(cant<=0){ toast('Cantidad inválida','err'); return; }
 
   const item = items.find(x=>Number(x.id)===Number(prestarItemId));
   const prof = profesores.find(p=>String(p.id)===String(profId));
   if(!item){ toast('Ítem no encontrado','err'); return; }
-  if(!prof){ toast('Profesor no encontrado','err'); return; }
+  if(!prof){ toast('Profesor/a no encontrado/a','err'); return; }
   if(cant > Number(item.qty)){ toast(`Solo hay ${item.qty} disponible(s)`,'err'); return; }
 
   const modInfo = findModulo(item.mod);
@@ -495,7 +495,7 @@ function closeProfModal(){ document.getElementById('mProf').classList.remove('op
 
 function renderProfList(){
   if(!profEditing.length){
-    document.getElementById('profList').innerHTML='<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Aún no hay profesores. Pulsa "+ Añadir profesor" para empezar.</div></div>';
+    document.getElementById('profList').innerHTML='<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Aún no hay profesores/as. Pulsa "+ Añadir profesor/a" para empezar.</div></div>';
     return;
   }
   document.getElementById('profList').innerHTML = profEditing.map((p,i)=>`
@@ -540,7 +540,7 @@ function importProfesoresCSV(input){
 
     renderProfList();
     input.value = '';
-    const msg = `${importados} profesor(es) importado(s)${omitidos ? `, ${omitidos} omitido(s) por duplicado` : ''}. Revisa y pulsa Guardar.`;
+    const msg = `${importados} profesor/a(s) importado/a(s)${omitidos ? `, ${omitidos} omitido(s) por duplicado` : ''}. Revisa y pulsa Guardar.`;
     toast(msg, importados > 0 ? 'ok' : 'warn');
   };
   reader.readAsText(file, 'utf-8');
@@ -549,7 +549,7 @@ function importProfesoresCSV(input){
 function removeProfRow(idx){
   const p = profEditing[idx];
   if(p.source === 'usuarios'){
-    toast('Los usuarios de la app se gestionan desde Usuarios, no desde Profesores','err');
+    toast('Los usuarios de la app se gestionan desde Usuarios, no desde Profesores/as','err');
     return;
   }
   const usados = prestamos.filter(pr=>String(pr.profesorId)===String(p.id) && (pr.estado==='Activo'||pr.estado==='Parcial')).length;
@@ -603,7 +603,7 @@ async function saveProfesores(){
       profesores = profesores.filter(x=>Number(x.id)!==Number(p.id));
     }
     closeProfModal();
-    toast('Profesores actualizados','ok');
+    toast('Profesores/as actualizados/as','ok');
     if(document.getElementById('pPres').classList.contains('active')) goPrestamos();
   } catch(err){
     toast('Error: '+err.message,'err');

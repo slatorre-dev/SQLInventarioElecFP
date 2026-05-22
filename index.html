@@ -308,7 +308,7 @@
       <button class="pres-tab active" id="ptActivos" onclick="setPresTab('activos')">🟡 Activos</button>
       <button class="pres-tab" id="ptVencidos" onclick="setPresTab('vencidos')">🔴 Vencidos</button>
       <button class="pres-tab" id="ptDevueltos" onclick="setPresTab('devueltos')">✅ Historial</button>
-      <button class="pres-tab" id="ptProfesor" onclick="setPresTab('profesor')">👤 Por profesor</button>
+      <button class="pres-tab" id="ptProfesor" onclick="setPresTab('profesor')">👤 Por profesor/a</button>
       <button class="pres-tab" id="ptAula" onclick="setPresTab('aula')">🏫 Por aula</button>
       <button class="pres-tab" id="ptMaterial" onclick="setPresTab('material')">📦 Por material</button>
     </div>
@@ -622,7 +622,7 @@
     </div>
     <div id="prestarItemInfo" style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:10px;padding:12px 14px;margin-bottom:18px"></div>
     <div class="fg">
-      <div class="full"><label class="fl">Profesor que pide *</label>
+      <div class="full"><label class="fl">Profesor/a que pide *</label>
         <select class="fi-w" id="pres_prof"></select>
       </div>
       <div><label class="fl">Cantidad *</label><input class="fi-w" id="pres_cant" type="number" min="1" value="1"></div>
@@ -650,7 +650,7 @@
       <div id="prestarCajaComponentes" style="margin-top:8px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px 12px"></div>
     </div>
     <div class="fg">
-      <div class="full"><label class="fl">Profesor que pide *</label>
+      <div class="full"><label class="fl">Profesor/a que pide *</label>
         <select class="fi-w" id="prestarCajaProf"></select>
       </div>
       <div><label class="fl">Aula destino</label><select class="fi-w" id="prestarCajaAulaDest"></select></div>
@@ -898,8 +898,8 @@
 <!-- MODAL PROFESORES -->
 <div class="mbg" id="mProf" onclick="if(event.target===this)closeProfModal()">
   <div class="modal">
-    <div class="mh"><div class="mt">👥 Profesores</div><button class="mx" onclick="closeProfModal()">✕</button></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Lista de profesores que pueden pedir material prestado</p>
+    <div class="mh"><div class="mt">👥 Profesores/as</div><button class="mx" onclick="closeProfModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Lista de profesores/as que pueden pedir material prestado</p>
     <div class="prof-list" id="profList"></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
       <button class="add-aula-btn" onclick="addProfRow()">＋ Añadir profesor</button>
