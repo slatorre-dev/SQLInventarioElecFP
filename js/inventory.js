@@ -5,11 +5,15 @@ function renderSubStats(data,low){
   const units=data.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const mant=data.filter(needsMaintenance).length;
   document.getElementById('sStats').innerHTML=`
-    <div class="scard-compact" onclick="_subFilter=null;renderInv()" title="Ver todos los ítems"><span class="icon">📋</span><span class="num">${data.length}</span><span class="lbl">tipos</span></div>
-    <div class="scard-compact" title="Unidades en stock"><span class="icon">🔢</span><span class="num">${units}</span><span class="lbl">unidades</span></div>
-    <div class="scard-compact${low>0?' alert':''}" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" title="Stock bajo"':' title="Sin stock bajo"'} ><span class="icon">⚠️</span><span class="num">${low}</span><span class="lbl">bajo</span></div>
-    <div class="scard-compact${mant>0?' warn':''}" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" title="Necesita mantenimiento"':' title="Sin mantenimiento pendiente"'} ><span class="icon">🛠️</span><span class="num">${mant}</span><span class="lbl">mant.</span></div>
+    <div class="scard-compact" onclick="_subFilter=null;renderInv()" title="Ver todos los ítems"><span class="icon">📋</span><span class="num" id="sst-tipos">0</span><span class="lbl">tipos</span></div>
+    <div class="scard-compact" title="Unidades en stock"><span class="icon">🔢</span><span class="num" id="sst-units">0</span><span class="lbl">unidades</span></div>
+    <div class="scard-compact${low>0?' alert':''}" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" title="Stock bajo"':' title="Sin stock bajo"'} ><span class="icon">⚠️</span><span class="num" id="sst-low">0</span><span class="lbl">bajo</span></div>
+    <div class="scard-compact${mant>0?' warn':''}" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" title="Necesita mantenimiento"':' title="Sin mantenimiento pendiente"'} ><span class="icon">🛠️</span><span class="num" id="sst-mant">0</span><span class="lbl">mant.</span></div>
   `;
+  animateCount(document.getElementById('sst-tipos'), data.length);
+  animateCount(document.getElementById('sst-units'), units);
+  animateCount(document.getElementById('sst-low'), low);
+  animateCount(document.getElementById('sst-mant'), mant);
 }
 
 function getBase(){
@@ -67,7 +71,15 @@ function renderInv(){
   document.getElementById('iCount').textContent=`${data.length} ítem${data.length!==1?'s':''}`;
   document.getElementById('iLow').textContent=low>0?`⚠ ${low} con stock bajo`:'';
   renderBulkBar();
-  if(!data.length){mc.innerHTML=`<div class="empty"><div class="ei">🔍</div><div class="et">No hay ítems con estos filtros.</div></div>`;return}
+  if(!data.length){
+    const hasFilter = document.getElementById('srch').value || document.getElementById('fCat').value || document.getElementById('fTipo').value || document.getElementById('fEst')?.value;
+    mc.innerHTML=`<div class="empty">
+      <span class="ei">${hasFilter ? '🔍' : '📭'}</span>
+      <div class="et">${hasFilter ? 'No hay ítems con estos filtros.<br><small>Prueba a cambiar la búsqueda o los filtros.</small>' : 'Esta sección no tiene ítems todavía.'}</div>
+      ${hasFilter ? `<button class="empty-btn" onclick="document.getElementById('srch').value='';document.getElementById('fCat').value='';document.getElementById('fTipo').value='';if(document.getElementById('fEst'))document.getElementById('fEst').value='';renderInv()">✕ Limpiar filtros</button>` : ''}
+    </div>`;
+    return;
+  }
   const mode = getInvRenderMode();
   _lastInvRenderMode = mode;
   const page = getInvPage(data);

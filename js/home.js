@@ -27,7 +27,7 @@ function renderHome(){
   document.getElementById('gAulas').innerHTML=AULAS.map(a=>{
     const n=items.filter(x=>x.aula===a.id).length;
     const w=loading ? 0 : items.filter(x=>x.aula===a.id&&isLowStock(x)).length;
-    return`<div class="ccard ${a.th}" onclick="goAula('${a.id}')">
+    return`<div class="ccard ${a.th}" style="--ch:#2563eb" onclick="goAula('${a.id}')">
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
       <button class="ccard-edit" onclick="event.stopPropagation();openAulasModal()" title="Editar aulas">✏️</button>
       <div class="ccard-icon">${a.icon}</div>

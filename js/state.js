@@ -22,6 +22,23 @@ function setConn(state, txt){
   const el = document.getElementById('connStatus');
   el.className = 'conn-status ' + state;
   document.getElementById('connTxt').textContent = txt;
+  const bar = document.getElementById('connBar');
+  if(bar){
+    bar.className = state;
+    if(state === 'ok') setTimeout(()=>{ bar.className = ''; }, 700);
+  }
+}
+
+function animateCount(el, target, duration=600){
+  const start = performance.now();
+  const from = 0;
+  function step(now){
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (target - from) * ease).toLocaleString('es-ES');
+    if(p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
 function materialType(item){
