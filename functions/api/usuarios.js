@@ -58,9 +58,14 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'userUpdate') {
     const u = body.usuario;
+    // No degradar a un SuperAdmin: el formulario muestra su rol enmascarado como
+    // 'Jefe/a Departamento', así que si en BD ya es superadmin se conserva ese rol.
+    const actual = await env.DB.prepare('SELECT rol FROM usuarios WHERE usuario=?').bind(u.usuario).first();
+    const eraSuperAdmin = String(actual?.rol || '').trim().toLowerCase() === 'superadmin';
+    const rolFinal = eraSuperAdmin ? actual.rol : u.rol.trim();
     await env.DB.prepare('UPDATE usuarios SET nombre=?, rol=?, email=? WHERE usuario=?')
-      .bind(u.nombre.trim(), u.rol.trim(), u.email||'', u.usuario).run();
-    await auditLog(env.DB, user, 'userUpdate', `Usuario actualizado: ${u.usuario} (${u.rol})`);
+      .bind(u.nombre.trim(), rolFinal, u.email||'', u.usuario).run();
+    await auditLog(env.DB, user, 'userUpdate', `Usuario actualizado: ${u.usuario} (${rolFinal})`);
     return Response.json({ ok: true });
   }
 
