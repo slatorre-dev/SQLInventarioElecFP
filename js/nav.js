@@ -123,16 +123,14 @@ function openSub(){
   _subFilter = null;
   const all=getBase();
   const low=all.filter(isLowStock).length;
-  let tagC, typeLabel;
-  if(cf.type==='aula'){tagC='background:#eff6ff;color:#2563eb';typeLabel='Aula';}
-  else if(cf.type==='cat'){tagC=`background:${cf.catBg};color:${cf.catColor}`;typeLabel='Categoría';}
-  else if(cf.type==='lowstock'){tagC='background:#fff7ed;color:#c2410c';typeLabel='Alerta';}
-  else if(cf.type==='maintenance'){tagC='background:#fffbeb;color:#b45309';typeLabel='Mantenimiento';}
-  else if(cf.type==='ocultos'){tagC='background:#fef2f2;color:#dc2626';typeLabel='Ocultos';}
-  else if(cf.type==='caja'){tagC='background:#eff6ff;color:#2563eb';typeLabel='Caja';}
-  else{tagC='background:#f5f3ff;color:#7c3aed';typeLabel='Módulo';}
-  document.getElementById('sTag').textContent=`${cf.icon} ${typeLabel}`;
-  document.getElementById('sTag').style.cssText=tagC;
+  let typeLabel;
+  if(cf.type==='aula'){typeLabel='Aula';}
+  else if(cf.type==='cat'){typeLabel='Categoría';}
+  else if(cf.type==='lowstock'){typeLabel='Alerta';}
+  else if(cf.type==='maintenance'){typeLabel='Mantenimiento';}
+  else if(cf.type==='ocultos'){typeLabel='Ocultos';}
+  else if(cf.type==='caja'){typeLabel='Caja';}
+  else{typeLabel='Módulo';}
   document.getElementById('sTitle').textContent=cf.label;
   if(cf.type==='aula'){
     const a = AULAS.find(x=>x.id===cf.id);
