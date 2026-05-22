@@ -340,14 +340,15 @@
     <div class="sub-bc" id="subBc"></div>
     <div class="sub-title-row">
       <div class="sub-title" id="sTitle"></div>
+      <div class="sub-stats-compact" id="sStats"></div>
     </div>
     <div class="sub-meta" id="sMeta"></div>
     <div class="action-strip">
-      <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:8px 13px;font-size:13px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
-      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:8px 13px;font-size:13px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
-      <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:8px 13px;font-size:13px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
-      <button class="btn icon-btn print-no" style="padding:8px 13px;font-size:13px;border-color:var(--accent);color:var(--accent)" onclick="openPrintQrModal()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> <span class="btn-text">Imprimir QR</span></button>
-      <button class="btn icon-btn print-no" style="padding:8px 13px;font-size:13px" onclick="openPrintModal()">🖨️ <span class="btn-text">Imprimir</span></button>
+      <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
+      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
+      <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px;border-color:var(--accent);color:var(--accent)" onclick="openPrintQrModal()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> <span class="btn-text">Imprimir QR</span></button>
+      <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintModal()">🖨️ <span class="btn-text">Imprimir</span></button>
     </div>
   </div>
   <div class="sub-body">
@@ -355,7 +356,6 @@
       <div class="print-header-title" id="printTitle"></div>
       <div class="print-header-meta" id="printMeta"></div>
     </div>
-    <div class="stats-strip" id="sStats"></div>
     <div class="toolbar">
       <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()"></div>
       <div id="invFilters">
