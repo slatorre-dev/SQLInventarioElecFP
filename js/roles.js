@@ -98,6 +98,13 @@ function roleLabel(){
   return 'Consulta';
 }
 
+function roleLabelWithIcon(){
+  const label = roleLabel();
+  const isSuperAdmin = userRole() === 'superadmin';
+  if(isSuperAdmin) return `🦸 ${label}`;
+  return label;
+}
+
 function applyRoleUI(){
   const isAdmin = can('config.manage');
   const rules = [

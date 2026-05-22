@@ -18,7 +18,7 @@ function goProfile() {
   const initials = nombre.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
   document.getElementById('profAvatar').textContent = initials;
   document.getElementById('profUser').textContent = SESSION.usuario;
-  document.getElementById('profRol').textContent = typeof roleLabel === 'function' ? roleLabel() : (SESSION.rol || 'profesor');
+  document.getElementById('profRol').textContent = typeof roleLabelWithIcon === 'function' ? roleLabelWithIcon() : (SESSION.rol || 'profesor');
   document.getElementById('profNombre').value = SESSION.nombre || '';
   document.getElementById('profEmail').value = SESSION.email || '';
 
