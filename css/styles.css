@@ -409,9 +409,9 @@ body{
 .sub-body{max-width:1600px;margin:0 auto;padding:26px 28px}
 .action-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
 .action-strip .btn{padding:6px 10px!important;font-size:12px!important;gap:4px!important;border-radius:8px!important;white-space:nowrap}
-.pager-top{display:none;align-items:center;gap:4px;margin-right:6px}
-.pager-top-inner{display:flex;align-items:center;gap:4px}
-.pager-top .btn-sm,.pager-top-inner .btn-sm{padding:5px 10px!important;font-size:12px!important}
+.pager-top{display:none;align-items:center;gap:6px;margin-bottom:8px}
+.pager-top-inner{display:flex;align-items:center;gap:6px}
+.pager-top .btn-sm,.pager-top-inner .btn-sm{padding:5px 12px!important;font-size:12px!important}
 .pager-top .pager-page,.pager-top-inner .pager-page{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
 
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;background:var(--white);padding:16px 18px;border-radius:14px;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
