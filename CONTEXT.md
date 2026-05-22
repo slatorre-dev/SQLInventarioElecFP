@@ -67,5 +67,21 @@ La app está en Cloudflare Pages. Cada `git push` a `main` despliega automática
 - Trabajar con BD remota (no local)
 - No usar `wrangler` CLI si hay problemas de proxy/VPN — usar Cloudflare Dashboard
 
+## Doble repositorio (sincronización obligatoria)
+Hay DOS repos en GitHub que deben quedar siempre idénticos:
+- `sebantonio/SQLInventarioElecFP` — repo principal, despliega en Cloudflare Pages
+- `slatorre-dev/SQLInventarioElecFP` — espejo de código (cuenta colaboradora), no despliega
+
+**Norma: cada `git push` debe subir a LOS DOS repos.**
+- Este equipo ya tiene `origin` configurado con doble URL de push, así que un `git push` normal sube a ambos automáticamente. Verificar con `git remote -v` (origin debe listar 2 URLs de push).
+- Si `origin` solo tiene una URL de push, reconfigurar:
+  ```
+  git remote set-url --add --push origin https://github.com/sebantonio/SQLInventarioElecFP.git
+  git remote set-url --add --push origin https://github.com/slatorre-dev/SQLInventarioElecFP.git
+  ```
+- `git pull` trae solo de `sebantonio` (fetch único). Siempre `pull` antes de empezar y `push` al terminar.
+- **Nunca** trabajar en los dos equipos a la vez sin sincronizar entre medias, o las historias divergen.
+- Verificar que ambos coinciden: `git rev-parse origin/main` y `git rev-parse slatorre/main` deben dar el mismo hash.
+
 ## Qué decir al iniciar sesión desde otro PC
 "Estoy trabajando en SQLInventarioElecFP. Lee el fichero CONTEXT.md del repositorio para ponerte al día. La BD es remota en Cloudflare D1."
