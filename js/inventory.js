@@ -7,8 +7,8 @@ function renderSubStats(data,low){
   document.getElementById('sStats').innerHTML=`
     <div class="scard" onclick="_subFilter=null;renderInv()" style="cursor:pointer"><div class="scard-icon">📋</div><div><div class="scard-num">${data.length}</div><div class="scard-lbl">tipos de ítem</div></div></div>
     <div class="scard"><div class="scard-icon">🔢</div><div><div class="scard-num">${units}</div><div class="scard-lbl">unidades</div></div></div>
-    <div class="scard" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" style="cursor:pointer"':''} ><div class="scard-icon">⚠️</div><div><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">stock bajo</div></div></div>
-    <div class="scard" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" style="cursor:pointer"':''} ><div class="scard-icon">🛠️</div><div><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">mantenimiento</div></div></div>
+    <div class="scard${low>0?' scard-alert':''}" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" style="cursor:pointer"':''} ><div class="scard-icon">⚠️</div><div><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">stock bajo</div></div></div>
+    <div class="scard${mant>0?' scard-warn':''}" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" style="cursor:pointer"':''} ><div class="scard-icon">🛠️</div><div><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">mantenimiento</div></div></div>
   `;
 }
 

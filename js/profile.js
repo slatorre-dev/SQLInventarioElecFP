@@ -6,7 +6,6 @@ function goProfile() {
   closeMobMenu();
   _push({ page: 'profile' }, '#profile');
   document.getElementById('bc').innerHTML = `<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>👤 Mi perfil</strong>`;
-  document.getElementById('btnHome').style.display = 'flex';
   document.getElementById('btnN').style.display = 'none';
   document.getElementById('btnE').style.display = 'none';
   document.getElementById('btnImp').style.display = 'none';

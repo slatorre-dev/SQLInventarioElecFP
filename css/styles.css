@@ -305,9 +305,18 @@ body{
 .scard-icon{font-size:28px;flex-shrink:0;opacity:.9}
 .scard-num{font-size:24px;font-weight:800;line-height:1}
 .scard-lbl{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600}
-.scard-alert{border-color:#fca5a5;background:var(--red-l)}
-.scard-alert:hover{border-color:var(--red);box-shadow:0 4px 16px rgba(220,38,38,.15)}
-.scard-alert .scard-lbl{color:var(--red);font-weight:700}
+.scard-alert{border-color:var(--red);border-width:2px;background:var(--red-l);box-shadow:0 2px 12px rgba(220,38,38,.12);position:relative}
+.scard-alert:hover{border-color:var(--red);box-shadow:0 6px 20px rgba(220,38,38,.22)}
+.scard-alert .scard-lbl{color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.scard-alert .scard-num{font-size:30px}
+.scard-alert .scard-icon{opacity:1;animation:scard-pulse 2s ease-in-out infinite}
+.scard-alert::after{content:'';position:absolute;top:10px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(220,38,38,.5);animation:scard-dot 1.8s ease-out infinite}
+@keyframes scard-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes scard-dot{0%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}70%{box-shadow:0 0 0 8px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.scard-warn{border-color:var(--amber);background:var(--amber-l)}
+.scard-warn:hover{box-shadow:0 4px 16px rgba(217,119,6,.15)}
+.scard-warn .scard-lbl{color:var(--amber);font-weight:700}
+.scard-warn .scard-icon{opacity:1}
 .skel{display:inline-block;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--surface2) 50%,var(--border) 75%);background-size:200% 100%;animation:skel-shine 1.2s infinite}
 .scard-num.skel{width:48px;height:20px}
 .skel-count{width:52px;height:14px;vertical-align:middle}
