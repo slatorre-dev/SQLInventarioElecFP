@@ -115,6 +115,7 @@ function goCaja(id){
 }
 
 function openSub(){
+  _subFilter = null;
   const all=getBase();
   const low=all.filter(isLowStock).length;
   let tagC, typeLabel;

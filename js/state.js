@@ -16,6 +16,7 @@ let currentPresTab = 'activos';
 let prestarItemId = null;
 let devolverPresId = null;
 let itemsLoaded = false;
+let _subFilter = null;
 
 function setConn(state, txt){
   const el = document.getElementById('connStatus');

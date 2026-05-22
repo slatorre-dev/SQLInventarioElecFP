@@ -5,10 +5,10 @@ function renderSubStats(data,low){
   const units=data.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const mant=data.filter(needsMaintenance).length;
   document.getElementById('sStats').innerHTML=`
-    <div class="scard"><div class="scard-icon">📋</div><div><div class="scard-num">${data.length}</div><div class="scard-lbl">tipos de ítem</div></div></div>
+    <div class="scard" onclick="_subFilter=null;renderInv()" style="cursor:pointer"><div class="scard-icon">📋</div><div><div class="scard-num">${data.length}</div><div class="scard-lbl">tipos de ítem</div></div></div>
     <div class="scard"><div class="scard-icon">🔢</div><div><div class="scard-num">${units}</div><div class="scard-lbl">unidades</div></div></div>
-    <div class="scard"><div class="scard-icon">⚠️</div><div><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">stock bajo</div></div></div>
-    <div class="scard"><div class="scard-icon">🛠️</div><div><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">mantenimiento</div></div></div>
+    <div class="scard" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" style="cursor:pointer"':''} ><div class="scard-icon">⚠️</div><div><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">stock bajo</div></div></div>
+    <div class="scard" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" style="cursor:pointer"':''} ><div class="scard-icon">🛠️</div><div><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">mantenimiento</div></div></div>
   `;
 }
 
@@ -29,6 +29,8 @@ function getFiltered(){
   const fe=document.getElementById('fEst')?.value??'';
   const ft=document.getElementById('fTipo').value;
   return getBase().filter(x=>{
+    if(_subFilter==='lowstock' && !isLowStock(x)) return false;
+    if(_subFilter==='maintenance' && !needsMaintenance(x)) return false;
     if(fc&&x.cat!==fc)return false;
     if(fe&&x.est!==fe)return false;
     if(ft&&x.tipo_material!==ft)return false;
