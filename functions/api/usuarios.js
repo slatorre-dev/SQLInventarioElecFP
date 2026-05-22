@@ -2,7 +2,8 @@ async function auditLog(db, user, accion, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
     const actor = user || {};
-    const rol = (actor.rol || '').toLowerCase().trim() === 'superadmin' ? 'jefe/a departamento' : (actor.rol || '');
+    const rolNorm = String(actor.rol || '').trim().toLowerCase();
+    const rol = rolNorm === 'superadmin' ? 'Jefe/a Departamento' : (actor.rol || '');
     await db.prepare("CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT '', usuario TEXT DEFAULT '', nombre TEXT DEFAULT '', rol TEXT DEFAULT '', accion TEXT DEFAULT '', itemId TEXT DEFAULT '', resumen TEXT DEFAULT '')").run();
     await db.prepare('INSERT INTO log (fecha,usuario,nombre,rol,accion,itemId,resumen) VALUES (?,?,?,?,?,?,?)')
       .bind(fecha, actor.usuario || '', actor.nombre || '', rol, accion, '', resumen).run();
@@ -36,11 +37,14 @@ export async function onRequestPost({ request, env }) {
       modulosPorNombre[resp].push(moduloId(row));
     }
     const todosModulos = ciclos.map(r => ({ id: moduloId(r), cicloId: r.cicloId, cod: String(r.modCod), nombre: r.modNombre || '', responsable: r.responsable || '' }));
-    const usuarios = usuariosRows.results.map(u => ({
-      ...u,
-      rol: u.rol.toLowerCase().trim() === 'superadmin' ? 'jefe/a departamento' : u.rol,
-      modulos: modulosPorNombre[u.nombre.trim().toLowerCase()] || [],
-    }));
+    const usuarios = usuariosRows.results.map(u => {
+      const rolNorm = String(u.rol || '').trim().toLowerCase();
+      return {
+        ...u,
+        rol: rolNorm === 'superadmin' ? 'Jefe/a Departamento' : u.rol,
+        modulos: modulosPorNombre[u.nombre.trim().toLowerCase()] || [],
+      };
+    });
     return Response.json({ ok: true, usuarios, todosModulos });
   }
 

@@ -36,7 +36,8 @@ function mapLogRow(row) {
   const accion = String(row.accion || '');
   const itemId = String(row.itemId || '').trim();
   const actionKey = normalizeText(accion);
-  const rol = normalizeText(row.rol) === 'superadmin' ? 'jefe/a departamento' : row.rol;
+  const rolNorm = normalizeText(row.rol);
+  const rol = rolNorm === 'superadmin' ? 'Jefe/a Departamento' : row.rol;
   let tipo = 'Sistema';
   if (['add', 'update', 'delete', 'bulkimport', 'itemadd', 'itemupdate', 'itemdelete', 'itembaja'].includes(actionKey)) tipo = 'Items';
   else if (actionKey.startsWith('user') || ['updateprofile', 'changepassword'].includes(actionKey)) tipo = 'Usuarios';
@@ -125,7 +126,8 @@ export async function onRequest(context) {
         return json({ ok: false, error: 'Faltan campos requeridos' }, { status: 400 });
       }
 
-      const rol = (actor.rol || '').toLowerCase().trim() === 'superadmin' ? 'jefe/a departamento' : (actor.rol || '');
+      const rolNorm = String(actor.rol || '').trim().toLowerCase();
+      const rol = rolNorm === 'superadmin' ? 'Jefe/a Departamento' : (actor.rol || '');
       const result = await env.DB.prepare(`
         INSERT INTO log (fecha, usuario, nombre, rol, accion, itemId, resumen)
         VALUES (?, ?, ?, ?, ?, ?, ?)

@@ -1,18 +1,19 @@
 -- Migración para soporte de rol SuperAdmin
 -- SuperAdmin tiene permisos completos pero se muestra como 'Jefe/a Departamento'
--- El rol interno será 'superadmin' en la columna 'rol' de la tabla 'usuarios'
+-- El rol en BD es 'SuperAdmin' (con mayúsculas por compatibilidad con otros roles)
 
 -- No se requieren cambios en el schema de usuarios, solo en la lógica de aplicación
--- El campo rol ya existe y puede almacenar 'superadmin'
--- Las APIs filtran y ocultan 'superadmin' mostrándolo como 'jefe/a departamento'
+-- El campo rol ya existe y puede almacenar 'SuperAdmin'
+-- Las APIs normalizan y transforman 'SuperAdmin' → mostrado como 'Jefe/a Departamento'
+-- La función normalizeRole() convierte todos los roles a minúsculas para comparación interna
 
 CREATE TABLE IF NOT EXISTS usuarios (
   usuario  TEXT PRIMARY KEY,
   password TEXT DEFAULT '',
   nombre   TEXT DEFAULT '',
-  rol      TEXT DEFAULT 'profesor',
+  rol      TEXT DEFAULT 'Profesor/a',
   email    TEXT DEFAULT ''
 );
 
--- Ejemplo de INSERT para crear un SuperAdmin (no ejecutar automáticamente):
--- INSERT INTO usuarios (usuario, password, nombre, rol, email) VALUES ('admin', 'cambiar123', 'Administrador', 'superadmin', 'admin@example.com');
+-- Ejemplo de UPDATE para crear un SuperAdmin (ya ejecutado):
+-- UPDATE usuarios SET rol='SuperAdmin' WHERE usuario='Seba';
