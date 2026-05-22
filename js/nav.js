@@ -134,9 +134,9 @@ function openSub(){
   document.getElementById('sTitle').textContent=cf.label;
   if(cf.type==='aula'){
     const a = AULAS.find(x=>x.id===cf.id);
-    document.getElementById('sMeta').textContent = `${a?.desc||''} · ${all.length} tipos · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
+    document.getElementById('sMeta').textContent = a?.desc || '';
   } else if(cf.type==='cat'){
-    document.getElementById('sMeta').textContent = `${all.length} tipos · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
+    document.getElementById('sMeta').textContent = '';
   } else if(cf.type==='lowstock'){
     document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} por debajo del stock mínimo`;
   } else if(cf.type==='maintenance'){
