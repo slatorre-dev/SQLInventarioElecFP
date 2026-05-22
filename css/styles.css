@@ -403,7 +403,7 @@ body{
 .scard-compact.warn .icon{opacity:1}
 .sub-meta{font-size:13px;color:var(--muted);font-weight:500}
 .sub-body{max-width:1600px;margin:0 auto;padding:26px 28px}
-.action-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;justify-content:center}
+.action-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .action-strip .btn{padding:6px 10px!important;font-size:12px!important;gap:4px!important;border-radius:8px!important;white-space:nowrap}
 
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;background:var(--white);padding:16px 18px;border-radius:14px;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
