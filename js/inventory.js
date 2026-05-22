@@ -18,6 +18,7 @@ function getBase(){
     if(cf.type==='cat') return x.cat===cf.id;
     if(cf.type==='lowstock') return isLowStock(x);
     if(cf.type==='maintenance') return needsMaintenance(x);
+    if(cf.type==='ocultos') return x.oculto==1;
     if(cf.type==='caja') return Number(x.parent_id)===Number(cf.id);
     return x.mod===cf.id;
   });

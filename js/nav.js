@@ -106,6 +106,13 @@ function goMaintenance(){
   openSub();
 }
 
+function goOcultos(){
+  if(!can('visibility.manage')) return;
+  _push({page:'ocultos'}, '#ocultos');
+  cf={type:'ocultos', id:'ocultos', label:'Ítems ocultos', icon:'🙈'};
+  openSub();
+}
+
 function goCaja(id){
   const caja = items.find(x=>Number(x.id)===Number(id));
   if(!caja) return;
@@ -123,6 +130,7 @@ function openSub(){
   else if(cf.type==='cat'){tagC=`background:${cf.catBg};color:${cf.catColor}`;typeLabel='Categoría';}
   else if(cf.type==='lowstock'){tagC='background:#fff7ed;color:#c2410c';typeLabel='Alerta';}
   else if(cf.type==='maintenance'){tagC='background:#fffbeb;color:#b45309';typeLabel='Mantenimiento';}
+  else if(cf.type==='ocultos'){tagC='background:#fef2f2;color:#dc2626';typeLabel='Ocultos';}
   else if(cf.type==='caja'){tagC='background:#eff6ff;color:#2563eb';typeLabel='Caja';}
   else{tagC='background:#f5f3ff;color:#7c3aed';typeLabel='Módulo';}
   document.getElementById('sTag').textContent=`${cf.icon} ${typeLabel}`;
@@ -137,6 +145,8 @@ function openSub(){
     document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} por debajo del stock mínimo`;
   } else if(cf.type==='maintenance'){
     document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} marcado${all.length!==1?'s':''} para mantenimiento o reparación`;
+  } else if(cf.type==='ocultos'){
+    document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} oculto${all.length!==1?'s':''} al resto de usuarios`;
   } else if(cf.type==='caja'){
     document.getElementById('sMeta').textContent = `${all.length} componente${all.length!==1?'s':''} · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
   } else {
@@ -152,6 +162,8 @@ function openSub(){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>⚠️ Stock bajo</strong>`;
   } else if(cf.type==='maintenance'){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>🛠️ Mantenimiento</strong>`;
+  } else if(cf.type==='ocultos'){
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>🙈 Ítems ocultos</strong>`;
   } else if(cf.type==='caja'){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>📦 ${cf.label}</strong>`;
   } else {
@@ -198,6 +210,7 @@ function navigateFromHash(hash){
   if(seg === 'prestamos')  { goPrestamos(); return; }
   if(seg === 'lowstock')   { goLowStock(); return; }
   if(seg === 'maintenance') { goMaintenance(); return; }
+  if(seg === 'ocultos')    { goOcultos(); return; }
   if(seg === 'docs')       { goDocsDpto(); return; }
   if(seg === 'aula' && id) { goAula(id); return; }
   if(seg === 'cat'  && id) { goCat(id); return; }
