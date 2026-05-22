@@ -274,7 +274,51 @@ function printFromModal(type){
   }
 }
 
-function printBulkQrLabels(){
+const QR_SIMPLE_FIELDS = [
+  { key:'item', label:'Nombre',     default:true  },
+  { key:'aula', label:'Aula',       default:false },
+  { key:'loc',  label:'Ubicación',  default:false },
+  { key:'qty',  label:'Stock',      default:false },
+  { key:'ref',  label:'Referencia', default:false },
+  { key:'mod',  label:'Módulo',     default:false },
+];
+const QR_SIMPLE_KEY = 'inv_qr_simple_fields';
+
+function _getQrSimpleFields(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(QR_SIMPLE_KEY));
+    if(saved && typeof saved === 'object') return saved;
+  }catch(e){}
+  return Object.fromEntries(QR_SIMPLE_FIELDS.map(f=>[f.key, f.default]));
+}
+
+function openQrSimpleModal(){
+  closePrintQrModal();
+  const data = typeof getFiltered === 'function' ? getFiltered() : items;
+  if(!data || !data.length){ toast('No hay ítems para imprimir','err'); return; }
+  const sel = _getQrSimpleFields();
+  const grid = document.getElementById('qrSimpleFields');
+  grid.innerHTML = QR_SIMPLE_FIELDS.map(f=>`
+    <label class="print-col-item">
+      <input type="checkbox" id="qrf_${f.key}" ${sel[f.key]?'checked':''}>
+      <span>${f.label}</span>
+    </label>`).join('');
+  document.getElementById('mQrSimple').classList.add('open');
+}
+
+function closeQrSimpleModal(){
+  document.getElementById('mQrSimple').classList.remove('open');
+}
+
+function printQrSimpleFromModal(){
+  const sel = Object.fromEntries(QR_SIMPLE_FIELDS.map(f=>[f.key, document.getElementById('qrf_'+f.key)?.checked ?? f.default]));
+  localStorage.setItem(QR_SIMPLE_KEY, JSON.stringify(sel));
+  closeQrSimpleModal();
+  printBulkQrLabels(sel);
+}
+
+function printBulkQrLabels(fields){
+  const sel = fields || _getQrSimpleFields();
   const data = typeof getFiltered === 'function' ? getFiltered() : items;
   if(!data.length){
     toast('No hay ítems para imprimir','err');
@@ -285,9 +329,18 @@ function printBulkQrLabels(){
   const labels = data.map(it => {
     const url = itemUrl(it.id);
     const code = itemCode(it);
+    const lines = [];
+    if(sel.ref && it.ref) lines.push(escHtml(it.ref));
+    if(sel.item && it.item) lines.push(escHtml(it.item));
+    if(sel.aula){ const a = AULAS.find(a=>a.id===it.aula)?.name || it.aula; if(a) lines.push(escHtml(a)); }
+    if(sel.loc && it.loc) lines.push(escHtml(it.loc));
+    if(sel.qty && it.qty != null && it.qty !== '') lines.push('Stock: ' + escHtml(it.qty));
+    if(sel.mod){ const m = findModulo(it.mod); if(m) lines.push(escHtml(m.cod)); }
+    const extra = lines.length ? `<span class="qr-extra">${lines.join('<br>')}</span>` : '';
     return `<article class="qr-label">
       <img src="${qrSrc(url,140)}" alt="QR">
       <span class="qr-code">${escHtml(code)}</span>
+      ${extra}
     </article>`;
   }).join('');
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
@@ -300,9 +353,10 @@ function printBulkQrLabels(){
     .head h1{font-size:16px;margin:0 0 2px}
     .head p{font-size:10px;margin:0;color:#666}
     .sheet{display:grid;grid-template-columns:repeat(5,1fr);gap:4mm}
-    .qr-label{border:1px solid #ddd;border-radius:3px;padding:4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2mm;break-inside:avoid;page-break-inside:avoid}
+    .qr-label{border:1px solid #ddd;border-radius:3px;padding:3mm;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:1.5mm;break-inside:avoid;page-break-inside:avoid}
     img{width:18mm;height:18mm}
-    .qr-code{font-size:8px;font-weight:600;text-align:center;word-break:break-all;line-height:1.2}
+    .qr-code{font-size:8px;font-weight:700;text-align:center;word-break:break-all;line-height:1.2}
+    .qr-extra{font-size:7px;text-align:center;color:#333;line-height:1.25;word-break:break-word}
   </style></head><body>
     <header class="head">
       <h1>Códigos QR · ${escHtml(titulo)}</h1>
