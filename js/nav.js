@@ -134,7 +134,7 @@ function openSub(){
   document.getElementById('sTitle').textContent=cf.label;
   if(cf.type==='aula'){
     const a = AULAS.find(x=>x.id===cf.id);
-    document.getElementById('sMeta').textContent = a?.desc || '';
+    document.getElementById('sMeta').textContent = '';
   } else if(cf.type==='cat'){
     document.getElementById('sMeta').textContent = '';
   } else if(cf.type==='lowstock'){
