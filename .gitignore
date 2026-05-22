@@ -7,3 +7,6 @@ backup.json
 migrate.js
 client_secret*.json
 credentials*.json
+id_Base Wrangler.txt
+*.token
+*token*.txt
