@@ -57,7 +57,8 @@ const ACTION_PERMISSIONS = {
   userUpdate: 'config.manage',
   userDelete: 'config.manage',
   userResetPassword: 'config.manage',
-  userAssignModulos: 'config.manage'
+  userAssignModulos: 'config.manage',
+  toggleOculto: 'visibility.manage'
 };
 
 function normalizeRole(role){
@@ -72,9 +73,13 @@ function userRole(){
   return normalizeRole(SESSION?.rol);
 }
 
+// Permisos exclusivos del SuperAdmin: NO los concede el comodín '*'.
+const SUPERADMIN_ONLY = ['visibility.manage'];
+
 function can(permission){
   if(!SESSION) return false;
   if(permission === 'docs.read') return true;
+  if(SUPERADMIN_ONLY.includes(permission)) return userRole() === 'superadmin';
   const perms = ROLE_PERMISSIONS[userRole()] || ROLE_PERMISSIONS.consulta;
   return perms.includes('*') || perms.includes(permission);
 }

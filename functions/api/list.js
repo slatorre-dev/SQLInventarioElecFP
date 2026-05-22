@@ -1,4 +1,8 @@
-const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material'];
+const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material','oculto'];
+
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
 
 const CAT_PALETTE = [
   { c:'#2563eb', bg:'#eff6ff', i:'🏷️' },
@@ -76,6 +80,7 @@ export async function onRequestGet({ request, env }) {
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN tipo_material TEXT DEFAULT 'consumible'").run().catch(() => {});
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN proveedor TEXT DEFAULT ''").run().catch(() => {});
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN tags TEXT DEFAULT ''").run().catch(() => {});
+  await env.DB.prepare("ALTER TABLE inventario ADD COLUMN oculto INTEGER DEFAULT 0").run().catch(() => {});
   await env.DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
   await env.DB.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT DEFAULT '')").run().catch(() => {});
@@ -85,8 +90,12 @@ export async function onRequestGet({ request, env }) {
     await env.DB.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('tipo_material_migrated', datetime('now'))").run().catch(() => {});
   }
 
+  const itemsQuery = isSuperAdmin(user)
+    ? 'SELECT * FROM inventario ORDER BY id'
+    : 'SELECT * FROM inventario WHERE oculto IS NULL OR oculto != 1 ORDER BY id';
+
   const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows] = await Promise.all([
-    env.DB.prepare('SELECT * FROM inventario ORDER BY id').all(),
+    env.DB.prepare(itemsQuery).all(),
     env.DB.prepare("SELECT * FROM profesores WHERE nombre != '' AND lower(nombre) != 'departamento' ORDER BY nombre").all(),
     env.DB.prepare("SELECT usuario, nombre, email FROM usuarios WHERE nombre != '' ORDER BY nombre").all(),
     env.DB.prepare('SELECT * FROM prestamos ORDER BY id').all(),

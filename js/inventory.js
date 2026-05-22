@@ -354,6 +354,26 @@ function bulkPrintSelected(){
   w.document.close();
 }
 
+async function toggleOcultoItem(id){
+  if(!can('visibility.manage')) return;
+  const it = items.find(x=>Number(x.id)===Number(id));
+  if(!it) return;
+  const nuevo = it.oculto == 1 ? 0 : 1;
+  try{
+    const res = await apiPost({action:'toggleOculto', id, oculto:nuevo});
+    if(!res.ok) throw new Error(res.error);
+    it.oculto = nuevo;
+    toast(nuevo ? 'Ítem oculto para el resto' : 'Ítem visible para todos','ok');
+    renderInv();
+  }catch(e){ toast('No se pudo cambiar la visibilidad','err'); }
+}
+
+function ocultoBtnHtml(x){
+  if(!can('visibility.manage')) return '';
+  const oc = x.oculto == 1;
+  return `<button class="btn btn-sm" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${oc?'Oculto al resto — clic para mostrar':'Visible — clic para ocultar al resto'}">${oc?'🙈':'👁️'}</button>`;
+}
+
 function itemActiveLoans(id){
   return (prestamos || []).filter(p => String(p.itemId)===String(id) && (p.estado==='Activo' || p.estado==='Parcial'));
 }
@@ -422,7 +442,7 @@ function rTable(data,mc){
       const utilTitle = [mantInfo, x.util, x.proveedor, x.tags].filter(Boolean).join(' · ');
       const utilVisible = mant ? `🛠️ ${shortText(mantInfo || x.util || x.proveedor, 12)}` : (shortText(x.util || x.proveedor, 15) || '—');
       const selected = bulkSelected.has(String(x.id));
-      return`<tr class="${selected?'bulk-row-selected':''}"${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
+      return`<tr class="${selected?'bulk-row-selected':''}${x.oculto==1?' item-oculto':''}"${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
         <td><input class="bulk-check" type="checkbox" ${selected?'checked':''} onclick="event.stopPropagation()" onchange="toggleBulkSelect(${x.id},this.checked)" title="Seleccionar"></td>
         <td>${x.foto?`<img class="table-photo quick-item-trigger" src="${x.foto}" alt="" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:`<span class="table-photo table-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">📷</span>`}</td>
         <td><span class="rbadge">${x.ref||'—'}</span></td>
@@ -451,6 +471,7 @@ function rTable(data,mc){
             : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
           }
           <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="${isPedido(x.id)?'Quitar del pedido':'Añadir al pedido'}">🛒</button>
+          ${ocultoBtnHtml(x)}
           <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
         </div></td>
       </tr>`;
@@ -465,7 +486,7 @@ function rCards(data,mc){
     const parentItem2 = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos2 = esContenedor2 ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
     const selected = bulkSelected.has(String(x.id));
-    return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}${selected?' bulk-card-selected':''}">
+    return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}${selected?' bulk-card-selected':''}${x.oculto==1?' item-oculto':''}">
       <label class="bulk-card-check" onclick="event.stopPropagation()" title="Seleccionar">
         <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
       </label>
@@ -511,6 +532,7 @@ function rCards(data,mc){
           : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
         }
         <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
+        ${ocultoBtnHtml(x)}
         <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
       </div>
     </div>`;
@@ -524,7 +546,7 @@ function rList(data,mc){
     const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
     const selected = bulkSelected.has(String(x.id));
-    return`<div class="list-row${low?' low':''}${selected?' bulk-list-selected':''}">
+    return`<div class="list-row${low?' low':''}${selected?' bulk-list-selected':''}${x.oculto==1?' item-oculto':''}">
       <label class="list-check" onclick="event.stopPropagation()">
         <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
       </label>
@@ -543,6 +565,7 @@ function rList(data,mc){
           <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar">✏️</button>
           <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
           <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
+          ${can('visibility.manage')?`<button class="list-action-btn" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${x.oculto==1?'Oculto al resto':'Ocultar al resto'}">${x.oculto==1?'🙈':'👁️'}</button>`:''}
           <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar">🗑️</button>
         </div>
       </div>

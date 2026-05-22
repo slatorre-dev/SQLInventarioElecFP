@@ -1,5 +1,9 @@
-const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material'];
+const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material','oculto'];
 const FIELDS_UPD  = HEADERS_INV.filter(h => h !== 'id');
+
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
 
 async function ensureContainerCols(db) {
   await db.prepare("ALTER TABLE inventario ADD COLUMN es_contenedor INTEGER DEFAULT 0").run().catch(() => {});
@@ -7,6 +11,7 @@ async function ensureContainerCols(db) {
   await db.prepare("ALTER TABLE inventario ADD COLUMN tipo_material TEXT DEFAULT 'consumible'").run().catch(() => {});
   await db.prepare("ALTER TABLE inventario ADD COLUMN proveedor TEXT DEFAULT ''").run().catch(() => {});
   await db.prepare("ALTER TABLE inventario ADD COLUMN tags TEXT DEFAULT ''").run().catch(() => {});
+  await db.prepare("ALTER TABLE inventario ADD COLUMN oculto INTEGER DEFAULT 0").run().catch(() => {});
   await db.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
   await db.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
   await db.prepare("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT DEFAULT '')").run().catch(() => {});
@@ -107,6 +112,15 @@ export async function onRequestPost({ request, env }) {
     await env.DB.batch(batch);
     await auditLog(env.DB, user, 'bulkImport', '', `Importados ${newItems.length} items`);
     return Response.json({ ok: true, imported: newItems.length, items: newItems });
+  }
+
+  if (action === 'toggleOculto') {
+    if (!isSuperAdmin(user)) return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    const val = body.oculto ? 1 : 0;
+    await env.DB.prepare('UPDATE inventario SET oculto=? WHERE id=?').bind(val, id).run();
+    const row = await env.DB.prepare('SELECT item, ref FROM inventario WHERE id=?').bind(id).first();
+    await auditLog(env.DB, user, 'toggleOculto', id, `${val ? 'Ocultado' : 'Mostrado'}: ${row?.item} (${row?.ref})`);
+    return Response.json({ ok: true, oculto: val });
   }
 
   return Response.json({ ok: false, error: 'Accion desconocida' });

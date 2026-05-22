@@ -381,6 +381,9 @@ body{
 .bulk-control input{min-width:210px}
 .bulk-check{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .bulk-row-selected td{background:#eff6ff!important}
+.icard.item-oculto,.list-row.item-oculto{opacity:.6;position:relative}
+.icard.item-oculto::after,.list-row.item-oculto::after{content:'🙈 oculto';position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;color:#fff;background:#dc2626;padding:1px 6px;border-radius:6px;letter-spacing:.3px;z-index:3}
+tr.item-oculto td{opacity:.55;background:rgba(220,38,38,.04)!important}
 .bulk-card-selected{border-color:var(--accent)!important;box-shadow:0 0 0 2px #2563eb26,0 2px 8px rgba(0,0,0,.05)!important}
 .bulk-card-check{position:absolute;top:10px;right:10px;z-index:2;width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.94);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:pointer}
 .bulk-card-check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
