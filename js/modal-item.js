@@ -270,8 +270,48 @@ function printFromModal(type){
   if(type === 'items'){
     printBulkItemQrs();
   } else if(type === 'qr'){
-    printBulkQrLabels();
+    printCompactQrCodes();
   }
+}
+
+function printCompactQrCodes(){
+  const data = (typeof getFiltered === 'function' ? getFiltered() : items).filter(x=>x?.id);
+  if(!data.length){ toast('No hay ítems para imprimir','err'); return; }
+  const titulo = cf?.label || 'Inventario';
+  const fecha = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const labels = data.map(it => `<article class="qr-label">
+      <img src="${qrSrc(itemUrl(it.id),120)}" alt="QR">
+      <span class="qr-code">${escHtml(itemCode(it))}</span>
+    </article>`).join('');
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>QR ${escHtml(titulo)}</title>
+  <style>
+    @page{size:A4;margin:8mm}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;margin:0;color:#111;padding:0}
+    .head{margin:0 0 6mm;border-bottom:1px solid #ddd;padding-bottom:3mm}
+    .head h1{font-size:16px;margin:0 0 2px}
+    .head p{font-size:10px;margin:0;color:#666}
+    .sheet{display:grid;grid-template-columns:repeat(6,1fr);gap:3mm}
+    .qr-label{border:1px solid #ddd;border-radius:3px;padding:2.5mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1mm;break-inside:avoid;page-break-inside:avoid}
+    img{width:15mm;height:15mm}
+    .qr-code{font-size:7px;font-weight:700;text-align:center;word-break:break-all;line-height:1.2}
+  </style></head><body>
+    <header class="head">
+      <h1>Códigos QR · ${escHtml(titulo)}</h1>
+      <p>${data.length} códigos · ${escHtml(fecha)}</p>
+    </header>
+    <main class="sheet">${labels}</main>
+    <script>
+      const imgs=[...document.images];
+      Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(r=>{img.onload=img.onerror=r;})))
+        .then(()=>setTimeout(()=>print(),150));
+    <\/script>
+  </body></html>`;
+  const w = window.open('','_blank');
+  if(!w){ toast('El navegador ha bloqueado la ventana de impresión','err'); return; }
+  w.document.write(html);
+  w.document.close();
 }
 
 const QR_SIMPLE_FIELDS = [
@@ -283,6 +323,7 @@ const QR_SIMPLE_FIELDS = [
   { key:'mod',  label:'Módulo',     default:false },
 ];
 const QR_SIMPLE_KEY = 'inv_qr_simple_fields';
+const QR_SIMPLE_TIPO_KEY = 'inv_qr_simple_tipo';
 
 function _getQrSimpleFields(){
   try{
@@ -303,6 +344,8 @@ function openQrSimpleModal(){
       <input type="checkbox" id="qrf_${f.key}" ${sel[f.key]?'checked':''}>
       <span>${f.label}</span>
     </label>`).join('');
+  const tipoSel = document.getElementById('qrSimpleTipo');
+  if(tipoSel) tipoSel.value = localStorage.getItem(QR_SIMPLE_TIPO_KEY) || 'all';
   document.getElementById('mQrSimple').classList.add('open');
 }
 
@@ -313,15 +356,21 @@ function closeQrSimpleModal(){
 function printQrSimpleFromModal(){
   const sel = Object.fromEntries(QR_SIMPLE_FIELDS.map(f=>[f.key, document.getElementById('qrf_'+f.key)?.checked ?? f.default]));
   localStorage.setItem(QR_SIMPLE_KEY, JSON.stringify(sel));
+  const tipo = document.getElementById('qrSimpleTipo')?.value || 'all';
+  localStorage.setItem(QR_SIMPLE_TIPO_KEY, tipo);
   closeQrSimpleModal();
-  printBulkQrLabels(sel);
+  printBulkQrLabels(sel, tipo);
 }
 
-function printBulkQrLabels(fields){
+function printBulkQrLabels(fields, tipo){
   const sel = fields || _getQrSimpleFields();
-  const data = typeof getFiltered === 'function' ? getFiltered() : items;
+  const tipoFiltro = tipo || 'all';
+  let data = typeof getFiltered === 'function' ? getFiltered() : items;
+  if(tipoFiltro !== 'all'){
+    data = data.filter(x => materialType(x) === tipoFiltro);
+  }
   if(!data.length){
-    toast('No hay ítems para imprimir','err');
+    toast('No hay ítems de ese tipo para imprimir','err');
     return;
   }
   const titulo = cf?.label || 'Inventario';
