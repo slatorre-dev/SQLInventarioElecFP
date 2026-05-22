@@ -704,9 +704,7 @@ function _renderUsuariosList(){
     const selfClass = esSelf ? ' usr-self' : '';
     const nMods = (u._modulos||[]).length;
     const modBadge = nMods > 0 ? `<span class="usr-mod-badge">${nMods}</span>` : '';
-    const isSuperAdmin = (u.rol || '').toLowerCase().trim() === 'superadmin';
-    const superAdminIcon = isSuperAdmin ? '🦸 ' : '';
-    const rolDisplay = isSuperAdmin ? 'Jefe/a Departamento' : u.rol;
+    const rolDisplay = (u.rol || '').toLowerCase().trim() === 'superadmin' ? 'Jefe/a Departamento' : u.rol;
     return `<div class="usr-row">
       <input class="fi-w usr-nombre${selfClass}" value="${u.nombre||''}" placeholder="Nombre completo *"
         onchange="_usuariosEditing[${i}].nombre=this.value" ${esSelf?'title="Es tu propia cuenta"':''}>
@@ -714,12 +712,9 @@ function _renderUsuariosList(){
         onchange="_usuariosEditing[${i}].usuario=this.value" ${u._nuevo?'':'readonly title="El usuario no se puede cambiar"'}>
       <input class="fi-w usr-email${selfClass}" value="${u.email||''}" placeholder="Email"
         onchange="_usuariosEditing[${i}].email=this.value">
-      <div style="display:flex; align-items:center; gap:4px; min-width:140px">
-        <span style="font-size:16px">${superAdminIcon}</span>
-        <select class="fi-w usr-rol${esSelf?' usr-self':''}" onchange="_usuariosEditing[${i}].rol=this.value" ${esSelf?'disabled title="No puedes cambiar tu propio rol"':''}>
-          ${ROLES_DISPONIBLES.map(r=>`<option value="${r}" ${rolDisplay===r?'selected':''}>${r}</option>`).join('')}
-        </select>
-      </div>
+      <select class="fi-w usr-rol${esSelf?' usr-self':''}" onchange="_usuariosEditing[${i}].rol=this.value" ${esSelf?'disabled title="No puedes cambiar tu propio rol"':''}>
+        ${ROLES_DISPONIBLES.map(r=>`<option value="${r}" ${rolDisplay===r?'selected':''}>${r}</option>`).join('')}
+      </select>
       ${u._nuevo
         ? `<input class="fi-w usr-pass" placeholder="Contraseña inicial *" onchange="_usuariosEditing[${i}]._resetPass=this.value">`
         : `<button class="btn btn-sm" onclick="_promptResetPass(${i})" title="Resetear contraseña">🔑 Reset</button>`

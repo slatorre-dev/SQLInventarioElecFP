@@ -101,7 +101,7 @@ function roleLabel(){
 function roleLabelWithIcon(){
   const label = roleLabel();
   const isSuperAdmin = userRole() === 'superadmin';
-  if(isSuperAdmin) return `🦸 ${label}`;
+  if(isSuperAdmin) return `👑 ${label}`;
   return label;
 }
 
