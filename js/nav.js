@@ -131,6 +131,18 @@ function openSub(){
   else if(cf.type==='ocultos'){typeLabel='Ocultos';}
   else if(cf.type==='caja'){typeLabel='Caja';}
   else{typeLabel='Módulo';}
+
+  // Clase de tipo en sub-header para degradado y animación
+  const sh = document.getElementById('pS')?.querySelector('.sub-header');
+  if(sh){
+    sh.className = sh.className.replace(/\btype-\w+/g,'').trim();
+    const tc = cf.type==='mod' ? 'type-mod' : `type-${cf.type}`;
+    sh.classList.add(tc);
+    // Forzar re-trigger de animación breadcrumb
+    const bc = document.getElementById('subBc');
+    if(bc){ bc.style.animation='none'; bc.offsetWidth; bc.style.animation=''; }
+  }
+
   document.getElementById('sTitle').textContent=cf.label;
   if(cf.type==='aula'){
     const a = AULAS.find(x=>x.id===cf.id);
