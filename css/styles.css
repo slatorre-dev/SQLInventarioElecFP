@@ -322,6 +322,9 @@ body{
 .scard-num.skel{width:48px;height:20px}
 .skel-count{width:52px;height:14px;vertical-align:middle}
 @keyframes skel-shine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.inv-loading-skeleton{padding:12px 0;display:flex;flex-direction:column;gap:10px}
+.skel-row{display:flex;gap:12px;align-items:center;padding:10px 14px;background:var(--white);border-radius:12px;border:1.5px solid var(--border)}
+.skel-cell{height:14px;border-radius:6px}
 
 .sec-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:10px;margin-top:32px}
 .sec-label:first-of-type{margin-top:0}

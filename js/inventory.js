@@ -55,12 +55,18 @@ function setTwHeight(){
 }
 
 function renderInv(){
+  const mc=document.getElementById('iContent');
+  if(!itemsLoaded){
+    document.getElementById('iCount').textContent='';
+    document.getElementById('iLow').textContent='';
+    mc.innerHTML=`<div class="inv-loading-skeleton">${Array(6).fill(`<div class="skel-row"><div class="skel-cell skel" style="width:40%"></div><div class="skel-cell skel" style="width:20%"></div><div class="skel-cell skel" style="width:15%"></div><div class="skel-cell skel" style="width:15%"></div></div>`).join('')}</div>`;
+    return;
+  }
   const data=getFiltered();
   const low=data.filter(isLowStock).length;
   document.getElementById('iCount').textContent=`${data.length} ítem${data.length!==1?'s':''}`;
   document.getElementById('iLow').textContent=low>0?`⚠ ${low} con stock bajo`:'';
   renderBulkBar();
-  const mc=document.getElementById('iContent');
   if(!data.length){mc.innerHTML=`<div class="empty"><div class="ei">🔍</div><div class="et">No hay ítems con estos filtros.</div></div>`;return}
   const mode = getInvRenderMode();
   _lastInvRenderMode = mode;
