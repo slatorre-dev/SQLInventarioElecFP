@@ -36,6 +36,7 @@ function mapLogRow(row) {
   const accion = String(row.accion || '');
   const itemId = String(row.itemId || '').trim();
   const actionKey = normalizeText(accion);
+  const rol = normalizeText(row.rol) === 'superadmin' ? 'jefe/a departamento' : row.rol;
   let tipo = 'Sistema';
   if (['add', 'update', 'delete', 'bulkimport', 'itemadd', 'itemupdate', 'itemdelete', 'itembaja'].includes(actionKey)) tipo = 'Items';
   else if (actionKey.startsWith('user') || ['updateprofile', 'changepassword'].includes(actionKey)) tipo = 'Usuarios';
@@ -55,7 +56,8 @@ function mapLogRow(row) {
     nombre: row.itemNombre || row.nombre,
     detalles: row.resumen,
     fecha: row.fecha,
-    resumen: row.resumen
+    resumen: row.resumen,
+    rol
   };
 }
 
@@ -123,10 +125,11 @@ export async function onRequest(context) {
         return json({ ok: false, error: 'Faltan campos requeridos' }, { status: 400 });
       }
 
+      const rol = (actor.rol || '').toLowerCase().trim() === 'superadmin' ? 'jefe/a departamento' : (actor.rol || '');
       const result = await env.DB.prepare(`
         INSERT INTO log (fecha, usuario, nombre, rol, accion, itemId, resumen)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).bind(fecha, actor.usuario || '', actor.nombre || '', actor.rol || '', accion, itemId, resumen).run();
+      `).bind(fecha, actor.usuario || '', actor.nombre || '', rol, accion, itemId, resumen).run();
 
       return json({ ok: true, id: result.meta?.last_row_id || null }, { status: 201 });
     } catch (err) {

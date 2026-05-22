@@ -11,6 +11,7 @@ const ROLE_PERMISSIONS = {
   'jefe/a departamento': _PERMS_JEFE,
   'profesor/a':          _PERMS_PROFE,
   'consulta':            _PERMS_LECTURA,
+  'superadmin':          _PERMS_JEFE,
   // ── Alias compatibilidad ──
   'jefe departamento':   _PERMS_JEFE,
   'jefe de departamento':_PERMS_JEFE,
@@ -91,8 +92,9 @@ function requirePerm(permission, message){
 
 function roleLabel(){
   const r = userRole();
-  if(_PERMS_JEFE === ROLE_PERMISSIONS[r] || ROLE_PERMISSIONS[r] === _PERMS_JEFE) return 'Jefe/a Departamento';
-  if(ROLE_PERMISSIONS[r] === _PERMS_PROFE) return 'Profesor/a';
+  const perms = ROLE_PERMISSIONS[r];
+  if(perms === _PERMS_JEFE) return 'Jefe/a Departamento';
+  if(perms === _PERMS_PROFE) return 'Profesor/a';
   return 'Consulta';
 }
 
