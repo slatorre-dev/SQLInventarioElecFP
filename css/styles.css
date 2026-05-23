@@ -464,7 +464,7 @@ select:focus,.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2563eb1a
 .tipo-btn.tipo-btn-consumible.active:hover{background:#d97706;border-color:#d97706;box-shadow:0 3px 14px rgba(217,119,6,.35)}
 .tipo-btn.tipo-btn-inventariable.active{border-color:#10b981;background:#10b981;box-shadow:0 3px 12px rgba(16,185,129,.25)}
 .tipo-btn.tipo-btn-inventariable.active:hover{background:#059669;border-color:#059669;box-shadow:0 3px 14px rgba(5,150,105,.35)}
-.view-toggle-btns{display:flex;gap:4px;margin-left:auto}
+.view-toggle-btns{display:flex;gap:4px;flex-shrink:0}
 .view-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);color:var(--muted);font-size:16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
 .view-btn:hover{background:var(--surface2);color:var(--text)}
 .view-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
