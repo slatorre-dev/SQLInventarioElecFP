@@ -78,8 +78,9 @@ function checkModalForChanges(){
 }
 
 function fillModalSelects(){
-  document.getElementById('f_aula').innerHTML=AULAS.map(a=>`<option value="${a.id}">${a.name} — ${a.desc}</option>`).join('');
-  document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  document.getElementById('f_aula').innerHTML=AULAS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}" data-alias="${cicloAlias(c)}" data-full="${escHtml(c.icon+' '+c.name)}">${escHtml(c.icon+' '+c.name)}</option>`).join('');
+  syncCicloLabels();
   document.getElementById('f_cat').innerHTML=sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
   fillLocationSuggestions();
   fillTagSuggestions();
@@ -429,7 +430,27 @@ function updateModSelect(){
   const sel = document.getElementById('f_mod');
   if(!cId){ sel.innerHTML='<option value="">Sin asignar</option>'; return; }
   const c = CICLOS.find(x=>x.id===cId);
-  sel.innerHTML='<option value="">Sin asignar</option>'+c.modulos.map(m=>`<option value="${cId}__${m.cod}">${m.cod} — ${m.name}</option>`).join('');
+  sel.innerHTML='<option value="">Sin asignar</option>'+c.modulos.map(m=>`<option value="${cId}__${m.cod}">${m.name}</option>`).join('');
+}
+
+// Muestra el nombre completo en la lista desplegable, pero la abreviatura en el campo cerrado.
+function syncCicloLabels(){
+  const sel = document.getElementById('f_ciclo');
+  if(!sel) return;
+  const collapse = () => {
+    Array.from(sel.options).forEach(o=>{ if(o.dataset.full) o.textContent = o.dataset.full; });
+    const o = sel.selectedOptions[0];
+    if(o && o.dataset.alias) o.textContent = o.dataset.alias;
+  };
+  const expand = () => Array.from(sel.options).forEach(o=>{ if(o.dataset.full) o.textContent = o.dataset.full; });
+  if(!sel._aliasBound){
+    sel.addEventListener('mousedown', expand);
+    sel.addEventListener('focus', expand);
+    sel.addEventListener('blur', collapse);
+    sel.addEventListener('change', collapse);
+    sel._aliasBound = true;
+  }
+  collapse();
 }
 
 function itemUrl(id){
@@ -687,6 +708,7 @@ function openModal(id=null, src=null){
   catSel.dataset.prev = catSel.value;
   const itemCiclo = m?.mod ? m.mod.split('__')[0] : (cf?.type==='mod' ? cf.ciclo.id : '');
   document.getElementById('f_ciclo').value = itemCiclo;
+  syncCicloLabels();
   updateModSelect();
   document.getElementById('f_mod').value = m?.mod || (cf?.type==='mod'?cf.id:'');
   document.getElementById('f_loc').value=m?.loc||'';
@@ -714,6 +736,7 @@ function openModal(id=null, src=null){
   const btnH = document.getElementById('btnHistorial');
   if (btnH) btnH.style.display = existing ? '' : 'none';
   document.getElementById('mItem').classList.add('open');
+  document.body.style.overflow = 'hidden';
 
   resetModalChanges();
   captureModalOriginalValues();
@@ -742,6 +765,7 @@ function closeM(force=false){
     if(!confirm('Hay cambios sin guardar. ¿Descartar cambios?')) return;
   }
   document.getElementById('mItem').classList.remove('open');
+  document.body.style.overflow = '';
   setItemModalReadonly(false);
   resetModalChanges();
 }

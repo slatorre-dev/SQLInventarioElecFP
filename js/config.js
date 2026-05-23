@@ -22,6 +22,7 @@ let CICLOS = [
   {
     id:'gm_telecom',
     name:'Inst. de Telecomunicaciones',
+    alias:'IT',
     nivel:'CFGM',
     icon:'📡',
     th:'th-blue',
@@ -47,6 +48,7 @@ let CICLOS = [
   {
     id:'gm_electric',
     name:'Inst. Eléctricas y Automáticas',
+    alias:'IEA',
     nivel:'CFGM',
     icon:'🔌',
     th:'th-amber',
@@ -72,6 +74,7 @@ let CICLOS = [
   {
     id:'gs_mantelec',
     name:'Mantenimiento Electrónico',
+    alias:'ME',
     nivel:'CFGS',
     icon:'🔧',
     th:'th-purple',
@@ -97,6 +100,7 @@ let CICLOS = [
   {
     id:'gs_sea',
     name:'Sistemas Electrotécnicos y Automatizados',
+    alias:'SEA',
     nivel:'CFGS',
     icon:'⚙️',
     th:'th-teal',
@@ -130,6 +134,18 @@ let CICLOS = [
     ]
   }
 ];
+
+// Alias cortos de ciclo por id (independiente de la fuente de datos, ej. BD remota)
+const CICLO_ALIAS = {
+  gm_telecom:'IT',
+  gm_electric:'IEA',
+  gs_mantelec:'ME',
+  gs_sea:'SEA',
+};
+function cicloAlias(c){
+  if(!c) return '';
+  return CICLO_ALIAS[c.id] || c.alias || c.name || '';
+}
 
 // Helper para encontrar un módulo por su id (formato: cicloId__codigo)
 function findModulo(modId){

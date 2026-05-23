@@ -36,8 +36,9 @@
   <div class="brand-wrap">
     <a class="brand" onclick="goHome()">
       <div class="brand-logo"><img src="favicon.svg" class="logo-img"></div>
-      <div class="brand-name">Inventario Taller Electricidad/Electrónica FP <span class="app-version" id="appVersion">v77</span></div>
+      <div class="brand-name">Inventario Taller Electricidad/Electrónica FP</div>
     </a>
+    <span class="app-version" id="appVersion">v321j</span>
     <button class="tbtn tbtn-reload" id="btnReload" onclick="loadData()" title="Recargar datos">🔄</button>
   </div>
   <div class="topbar-right">
@@ -416,21 +417,27 @@
       <!-- 📝 IDENTIFICACIÓN -->
       <div class="m-section">
         <div class="m-section-title">📝 IDENTIFICACIÓN</div>
-        <div><label class="fl">Referencia</label><input class="fi-w" id="f_ref" placeholder="ej. R-10K"></div>
-        <div><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
-        <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
-        <div>
-          <label class="fl">Ubicación</label>
-          <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
-          <datalist id="locList"></datalist>
+        <div class="ref-nombre-row full">
+          <div><label class="fl">Ref.</label><input class="fi-w" id="f_ref" placeholder="R-10K"></div>
+          <div><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
         </div>
-        <div><label class="fl">Ciclo</label>
-          <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
-            <option value="">Sin asignar</option>
-          </select>
+        <div class="aula-loc-row full">
+          <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
+          <div>
+            <label class="fl">Ubicación</label>
+            <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
+            <datalist id="locList"></datalist>
+          </div>
         </div>
-        <div><label class="fl">Módulo</label>
-          <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
+        <div class="ciclo-mod-row full">
+          <div><label class="fl">Ciclo</label>
+            <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
+              <option value="">Sin asignar</option>
+            </select>
+          </div>
+          <div><label class="fl">Módulo</label>
+            <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
+          </div>
         </div>
       </div>
 
@@ -466,18 +473,20 @@
           <label class="fl">Foto principal</label>
           <input type="hidden" id="f_foto">
           <div class="photo-picker">
-            <div class="photo-preview" id="f_foto_preview" onclick="viewPhotoModal()" style="cursor:pointer"><span>📷</span></div>
+            <div class="photo-col">
+              <div class="photo-preview" id="f_foto_preview" onclick="viewPhotoModal()" style="cursor:pointer"><span>📷</span></div>
+              <div id="qrButtonContainer" style="display:none">
+                <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:11px;padding:4px 6px;white-space:nowrap;width:100%">🖨️ QR</button>
+              </div>
+            </div>
             <div class="item-stock-strip">
               <div><label class="fl">Cantidad</label><input class="fi-w" id="f_qty" type="number" min="0" value="1"></div>
-              <div><label class="fl">Stock mínimo</label><input class="fi-w" id="f_min" type="number" min="0" value="5"></div>
-              <div><label class="fl">Tipo de material</label>
+              <div><label class="fl">Mínimo</label><input class="fi-w" id="f_min" type="number" min="0" value="5"></div>
+              <div><label class="fl">Tipo</label>
                 <select class="fi-w" id="f_tipo_material">
                   <option value="consumible">Consumible</option>
                   <option value="inventariable">Inventariable</option>
                 </select>
-              </div>
-              <div id="qrButtonContainer" style="display:none;display:flex;flex-direction:column;justify-content:flex-end">
-                <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:12px;padding:6px 8px;white-space:nowrap">🖨️ QR</button>
               </div>
             </div>
           </div>

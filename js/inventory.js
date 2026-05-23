@@ -5,10 +5,10 @@ function renderSubStats(data,low){
   const units=data.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const mant=data.filter(needsMaintenance).length;
   document.getElementById('sStats').innerHTML=`
-    <div class="scard-compact" onclick="_subFilter=null;renderInv()" title="Ver todos los ítems"><span class="icon">📋</span><span class="num" id="sst-tipos">0</span><span class="lbl">tipos</span></div>
-    <div class="scard-compact" title="Unidades en stock"><span class="icon">🔢</span><span class="num" id="sst-units">0</span><span class="lbl">unidades</span></div>
-    <div class="scard-compact${low>0?' alert':''}" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" title="Stock bajo"':' title="Sin stock bajo"'} ><span class="icon">⚠️</span><span class="num" id="sst-low">0</span><span class="lbl">bajo</span></div>
-    <div class="scard-compact${mant>0?' warn':''}" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" title="Necesita mantenimiento"':' title="Sin mantenimiento pendiente"'} ><span class="icon">🛠️</span><span class="num" id="sst-mant">0</span><span class="lbl">mant.</span></div>
+    <div class="scard-compact" onclick="_subFilter=null;renderInv()" title="Ver todos los ítems"><span class="icon">📋</span><span class="num" id="sst-tipos">0</span></div>
+    <div class="scard-compact" title="Unidades en stock"><span class="icon">🔢</span><span class="num" id="sst-units">0</span></div>
+    <div class="scard-compact${low>0?' alert':''}" ${low>0?'onclick="_subFilter=\'lowstock\';renderInv()" title="Stock bajo"':' title="Sin stock bajo"'} ><span class="icon">⚠️</span><span class="num" id="sst-low">0</span></div>
+    <div class="scard-compact${mant>0?' warn':''}" ${mant>0?'onclick="_subFilter=\'maintenance\';renderInv()" title="Necesita mantenimiento"':' title="Sin mantenimiento pendiente"'} ><span class="icon">🛠️</span><span class="num" id="sst-mant">0</span></div>
   `;
   animateCount(document.getElementById('sst-tipos'), data.length);
   animateCount(document.getElementById('sst-units'), units);
