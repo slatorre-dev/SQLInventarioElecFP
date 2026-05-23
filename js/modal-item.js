@@ -464,18 +464,16 @@ function renderItemQr(item){
   const box = document.getElementById('itemQrBox');
   const btnContainer = document.getElementById('qrButtonContainer');
   if(!box) return;
+  
+  // Nunca mostrar el cuadro QR grande en el modal
+  box.style.display = 'none';
+  
+  // Solo mostrar el botón pequeño si es un item existente
   if(!item?.id){
-    box.style.display = 'none';
     if(btnContainer) btnContainer.style.display = 'none';
     return;
   }
-  const url = itemUrl(item.id);
-  const code = itemCode(item);
-  box.style.display = '';
   if(btnContainer) btnContainer.style.display = 'flex';
-  document.getElementById('itemQrImg').src = qrSrc(url);
-  document.getElementById('itemQrTitle').textContent = `${code} · ${item.ref ? item.ref+' · ' : ''}${item.item}`;
-  document.getElementById('itemQrUrl').textContent = url;
 }
 
 let _quickQrItemId = null;
@@ -759,7 +757,8 @@ async function copyItemQrUrl(){
   }
 }
 
-function printItemQr(itemId=eid){
+function printItemQr(itemId){
+  if(itemId === undefined) itemId = eid;
   if(!itemId) return;
   const it = items.find(x=>Number(x.id)===Number(itemId));
   if(!it) return;

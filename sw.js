@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v303';
+const VERSION = 'v305';
 const CACHE_SHELL   = 'inventario-fp-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-fp-runtime-' + VERSION;
 
