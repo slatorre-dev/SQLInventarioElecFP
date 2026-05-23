@@ -9,7 +9,7 @@ let prestamos = [];
 let UBICACIONES = [];
 let cf = null;
 let currentCiclo = null;
-let view = 'table';
+let view = localStorage.getItem('inv_view') || 'table';
 let sk = 'item', sa = true;
 let eid = null;
 let currentPresTab = 'activos';

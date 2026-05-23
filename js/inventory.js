@@ -99,6 +99,7 @@ function setFilterTipo(value){
 }
 
 function renderInv(){
+  updateViewBtns();
   const mc=document.getElementById('iContent');
   if(!itemsLoaded){
     document.getElementById('iCount').textContent='';
@@ -138,10 +139,19 @@ let _pageSig = '';
 function isTouchLike(){
   return matchMedia('(hover: none), (pointer: coarse)').matches;
 }
+function setView(v){
+  view = v;
+  localStorage.setItem('inv_view', v);
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  renderInv();
+}
 function getInvRenderMode(){
-  if(view==='table' && window.innerWidth > 900 && !isTouchLike()) return 'table';
-  if(window.innerWidth < 640) return 'list';
+  if(window.innerWidth < 640) return 'cards';
+  if(view==='table' && window.innerWidth > 600) return 'table';
   return 'cards';
+}
+function updateViewBtns(){
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
 }
 
 function getPageSig(data){
