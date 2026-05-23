@@ -1207,7 +1207,7 @@ function toggleGenerarUnidades(){
   if(!visible){
     // Prefijo por defecto: CONT- + primeras 3 letras del nombre del ítem
     const nombre = document.getElementById('f_item').value.trim();
-    const prefijo = 'SET-' + nombre.slice(0,3).toUpperCase().replace(/\s/g,'');
+    const prefijo = 'SET-' + nombre.slice(0,3).toUpperCase().replace(/[^A-Z]/g,'');
     document.getElementById('genUnidadesPrefijo').value = prefijo;
     renderGenUnidadesTable();
   }
@@ -1220,6 +1220,10 @@ function renderGenUnidadesTable(){
   const ESTADOS = ['Bueno','Deteriorado','Avería','Baja'];
   const container = document.getElementById('genUnidadesTable');
   // Conservar obs/estado ya introducidos si se re-renderiza
+  // Mostrar ref del padre
+  const padreRefEl = document.getElementById('genUnidadesPadreRef');
+  if(padreRefEl) padreRefEl.textContent = `Padre: ${prefijo}-00 · Hijos: ${prefijo}-01 … ${prefijo}-${String(qty).padStart(2,'0')}`;
+
   const prev = {};
   container.querySelectorAll('tr[data-idx]').forEach(tr => {
     const i = tr.dataset.idx;
@@ -1252,58 +1256,91 @@ function renderGenUnidadesTable(){
 }
 
 async function saveGenerarUnidades(){
-  if(!eid){ toast('Guarda primero el ítem padre','err'); return; }
   const qty = Math.min(50, Math.max(1, Number(document.getElementById('genUnidadesQty').value) || 2));
-  const prefijo = document.getElementById('genUnidadesPrefijo').value.trim() || 'UNIT';
-  const nombre = document.getElementById('f_item').value.trim() || 'Unidad';
-  const padre = items.find(x=>Number(x.id)===Number(eid));
-  if(!padre){ toast('No se encontró el ítem padre','err'); return; }
+  const prefijo = document.getElementById('genUnidadesPrefijo').value.trim() || 'SET-UNIT';
+  const nombre = document.getElementById('f_item').value.trim();
+  if(!nombre){ toast('El ítem padre necesita nombre','err'); return; }
 
   const rows = document.getElementById('genUnidadesTable').querySelectorAll('tr[data-idx]');
   const btn = document.querySelector('#genUnidadesPanel .btn-loan');
-  btn.disabled = true; btn.textContent = '⏳ Creando...';
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
 
-  // Asegurar que el padre es contenedor
-  if(!padre.es_contenedor){
-    const padreUpd = {...padre, es_contenedor:1, tipo_material:'inventariable'};
-    const r = await apiPost({action:'update', item:padreUpd});
-    if(!r.ok){ toast('Error actualizando padre: '+r.error,'err'); btn.disabled=false; btn.textContent='✅ Crear unidades'; return; }
-    const idx = items.findIndex(x=>Number(x.id)===Number(eid));
-    items[idx] = padreUpd;
-    document.getElementById('f_es_contenedor').checked = true;
-  }
+  try {
+    let padreId = eid ? Number(eid) : null;
+    let padre = padreId ? items.find(x=>Number(x.id)===padreId) : null;
 
-  let creados = 0;
-  for(const row of rows){
-    const i = row.dataset.idx;
-    const n = String(i).padStart(2,'0');
-    const est = row.querySelector('.gen-est')?.value || 'Bueno';
-    const obs = row.querySelector('.gen-obs')?.value || '';
-    const hijo = {
-      ref: `${prefijo}-${n}`,
-      item: `${nombre} #${n}`,
-      aula: padre.aula,
-      mod: padre.mod || '',
-      cat: padre.cat || '',
-      loc: padre.loc || '',
-      qty: 1, min: 0,
-      est,
-      obs,
-      tipo_material: 'inventariable',
-      es_contenedor: 0,
-      parent_id: Number(eid),
-      tags: padre.tags || '',
-      fecha: new Date().toISOString().split('T')[0]
-    };
-    const r = await apiPost({action:'add', item:hijo});
-    if(r.ok){
-      items.push({...hijo, id: r.id});
-      creados++;
+    if(!padreId){
+      // Padre aún no guardado — construir y guardar ahora
+      const refPadre = `${prefijo}-00`;
+      const v = {
+        ref: refPadre,
+        item: nombre,
+        aula: document.getElementById('f_aula').value,
+        mod: document.getElementById('f_mod').value,
+        cat: document.getElementById('f_cat').value,
+        loc: document.getElementById('f_loc').value.trim(),
+        qty: parseInt(document.getElementById('f_qty').value)||0,
+        min: parseInt(document.getElementById('f_min').value)||0,
+        est: document.getElementById('f_est').value,
+        obs: document.getElementById('f_obs').value.trim(),
+        tags: document.getElementById('f_tags').value.trim(),
+        proveedor: document.getElementById('f_proveedor').value.trim(),
+        fecha: document.getElementById('f_fecha').value,
+        tipo_material: 'inventariable',
+        es_contenedor: 1,
+        parent_id: null,
+      };
+      const r = await apiPost({action:'add', item:v});
+      if(!r.ok) throw new Error(r.error);
+      padre = {...v, id: r.item?.id || r.id};
+      items.push(padre);
+      padreId = padre.id;
+      eid = padreId;
+      document.getElementById('f_es_contenedor').checked = true;
+      modalHasChanges = false;
+      updateModalIndicator();
+    } else if(!padre.es_contenedor){
+      // Padre existe pero no es contenedor todavía
+      const padreUpd = {...padre, es_contenedor:1, tipo_material:'inventariable', ref: padre.ref || `${prefijo}-00`};
+      const r = await apiPost({action:'update', item:padreUpd});
+      if(!r.ok) throw new Error(r.error);
+      const idx = items.findIndex(x=>Number(x.id)===padreId);
+      items[idx] = padreUpd;
+      padre = padreUpd;
+      document.getElementById('f_es_contenedor').checked = true;
     }
-  }
 
-  btn.disabled=false; btn.textContent='✅ Crear unidades';
-  toggleGenerarUnidades();
-  renderHijosList();
-  toast(`${creados} unidades creadas correctamente`,'ok');
+    let creados = 0;
+    for(const row of rows){
+      const i = row.dataset.idx;
+      const n = String(i).padStart(2,'0');
+      const est = row.querySelector('.gen-est')?.value || 'Bueno';
+      const obs = row.querySelector('.gen-obs')?.value || '';
+      const hijo = {
+        ref: `${prefijo}-${n}`,
+        item: `${nombre} #${n}`,
+        aula: padre.aula,
+        mod: padre.mod || '',
+        cat: padre.cat || '',
+        loc: padre.loc || '',
+        qty: 1, min: 0,
+        est, obs,
+        tipo_material: 'inventariable',
+        es_contenedor: 0,
+        parent_id: padreId,
+        tags: padre.tags || '',
+        fecha: new Date().toISOString().split('T')[0]
+      };
+      const r = await apiPost({action:'add', item:hijo});
+      if(r.ok){
+        items.push({...hijo, id: r.item?.id || r.id});
+        creados++;
+      }
+    }
+
+    toggleGenerarUnidades();
+    renderHijosList();
+    toast(`Padre + ${creados} unidades creadas correctamente`,'ok');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { btn.disabled=false; btn.textContent='✅ Crear unidades'; }
 }

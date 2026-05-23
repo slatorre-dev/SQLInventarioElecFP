@@ -583,8 +583,9 @@
                   <label style="font-size:13px;font-weight:600;white-space:nowrap">Unidades a crear:</label>
                   <input type="number" id="genUnidadesQty" min="1" max="50" value="2" style="width:70px" class="fi-w" oninput="renderGenUnidadesTable()">
                   <label style="font-size:13px;font-weight:600;white-space:nowrap">Prefijo ref.:</label>
-                  <input type="text" id="genUnidadesPrefijo" class="fi-w" placeholder="ej. POL" style="width:90px" oninput="renderGenUnidadesTable()">
+                  <input type="text" id="genUnidadesPrefijo" class="fi-w" placeholder="ej. SET-POL" style="width:110px" oninput="renderGenUnidadesTable()">
                 </div>
+                <div id="genUnidadesPadreRef" style="font-size:11px;color:var(--muted);margin-bottom:6px"></div>
                 <div id="genUnidadesTable" style="max-height:240px;overflow-y:auto;margin-bottom:10px"></div>
                 <div style="display:flex;justify-content:flex-end;gap:8px">
                   <button type="button" class="btn btn-sm" onclick="toggleGenerarUnidades()" style="font-size:12px;padding:4px 10px">Cancelar</button>
