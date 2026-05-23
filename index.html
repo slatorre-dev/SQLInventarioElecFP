@@ -412,151 +412,193 @@
 <div class="mbg" id="mItem">
   <div class="modal">
     <div class="mh"><div class="mt" id="mT">Nuevo ítem</div><button class="mx" onclick="closeM()">✕</button></div>
-    <div class="fg">
-      <div><label class="fl">Referencia</label><input class="fi-w" id="f_ref" placeholder="ej. R-10K"></div>
-      <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
-      <div>
-        <label class="fl">Ubicación</label>
-        <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
-        <datalist id="locList"></datalist>
-      </div>
-      <div class="full"><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
-      <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;grid-column:1/-1">
-        <div><label class="fl">Ciclo</label>
-          <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
-            <option value="">Sin asignar</option>
-          </select>
-        </div>
-        <div><label class="fl">Módulo</label>
-          <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
+    <div class="modal-content">
+      <!-- 📝 IDENTIFICACIÓN -->
+      <div class="m-section">
+        <div class="m-section-title">📝 Identificación</div>
+        <div class="fg">
+          <div><label class="fl">Referencia</label><input class="fi-w" id="f_ref" placeholder="ej. R-10K"></div>
+          <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
+          <div>
+            <label class="fl">Ubicación</label>
+            <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
+            <datalist id="locList"></datalist>
+          </div>
+          <div class="full"><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
         </div>
       </div>
-      <div class="full">
-        <label class="fl">Foto principal</label>
-        <input type="hidden" id="f_foto">
-        <div class="photo-picker">
-          <div class="photo-preview" id="f_foto_preview" onclick="viewPhotoModal()" style="cursor:pointer"><span>📷</span></div>
-          <div class="item-stock-strip">
-            <div><label class="fl">Cantidad</label><input class="fi-w" id="f_qty" type="number" min="0" value="1"></div>
-            <div><label class="fl">Stock mínimo</label><input class="fi-w" id="f_min" type="number" min="0" value="5"></div>
-            <div><label class="fl">Tipo de material</label>
-              <select class="fi-w" id="f_tipo_material">
-                <option value="consumible">Consumible</option>
-                <option value="inventariable">Inventariable</option>
+
+      <!-- 🏷️ CLASIFICACIÓN -->
+      <div class="m-section">
+        <div class="m-section-title">🏷️ Clasificación</div>
+        <div class="fg">
+          <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;grid-column:1/-1">
+            <div><label class="fl">Ciclo</label>
+              <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
+                <option value="">Sin asignar</option>
               </select>
             </div>
-            <div id="qrButtonContainer" style="display:none;display:flex;flex-direction:column;justify-content:flex-end">
-              <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:12px;padding:6px 8px;white-space:nowrap">🖨️ QR</button>
+            <div><label class="fl">Módulo</label>
+              <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="full" style="display:grid;grid-template-columns:1.3fr 1.6fr 0.6fr 1fr;gap:12px;align-items:flex-start">
-        <div><label class="fl">Categoría</label>
-          <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
-        </div>
-        <div><label class="fl">Tags</label>
-          <div style="position:relative">
-            <input class="fi-w" id="f_tags" placeholder="Arduino, SMD..." autocomplete="off" style="padding-right:30px">
-            <datalist id="tagList"></datalist>
-            <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+          <div><label class="fl">Categoría</label>
+            <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
           </div>
-        </div>
-        <div><label class="fl">Estado</label>
-          <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
-        </div>
-        <label style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 8px;cursor:pointer;background:#FFD700;border-radius:6px;font-size:11px">
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer;min-width:16px;width:16px;height:16px">
-            <span style="font-weight:bold">Solicitar</span>
+          <div><label class="fl">Tags</label>
+            <div style="position:relative">
+              <input class="fi-w" id="f_tags" placeholder="Arduino, SMD..." autocomplete="off" style="padding-right:30px">
+              <datalist id="tagList"></datalist>
+              <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+            </div>
           </div>
-          <span style="font-weight:bold;font-size:10px;line-height:1.2">mantenimiento</span>
-        </label>
-      </div>
-      <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
-      <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
-      <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
-      <div class="maint-fields full" id="maintFields" style="border-top:1px solid var(--border);padding-top:12px;margin-top:6px">
-        <div>
-          <label class="fl">Fecha de aviso</label>
-          <input class="fi-w" id="f_mantFecha" type="date">
-        </div>
-        <div>
-          <label class="fl">Estado mantenimiento</label>
-          <select class="fi-w" id="f_mantEstado">
-            <option>Pendiente</option>
-            <option>En reparación</option>
-            <option>Reparado</option>
-            <option>Resuelto</option>
-          </select>
-        </div>
-        <div>
-          <label class="fl">Responsable</label>
-          <input class="fi-w" id="f_mantResp" list="mantRespList" placeholder="Profesor/a o responsable">
-          <datalist id="mantRespList"></datalist>
-        </div>
-        <div class="full">
-          <label class="fl">Motivo / nota de reparación</label>
-          <textarea class="fi-w" id="f_mantNota" placeholder="Qué ocurre, qué revisar, piezas necesarias..."></textarea>
-        </div>
-      </div>
-      <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="f_obs" placeholder="Notas, proveedor, nº serie..."></textarea></div>
-      <div class="full">
-        <label class="fl">Contenedor / Caja</label>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
-            <input type="checkbox" id="f_es_contenedor" onchange="toggleContenedorFields()">
-            <span>Este ítem es una caja o contenedor de componentes</span>
+          <div><label class="fl">Estado</label>
+            <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
+          </div>
+          <label style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 8px;cursor:pointer;background:#FFD700;border-radius:6px;font-size:11px">
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer;min-width:16px;width:16px;height:16px">
+              <span style="font-weight:bold">Solicitar</span>
+            </div>
+            <span style="font-weight:bold;font-size:10px;line-height:1.2">mantenimiento</span>
           </label>
-          <div id="f_parent_row">
-            <select class="fi-w" id="f_parent_id" onchange="toggleContenedorFields()">
-              <option value="">— Sin caja padre —</option>
+        </div>
+      </div>
+
+      <!-- 📦 INVENTARIO -->
+      <div class="m-section">
+        <div class="m-section-title">📦 Inventario</div>
+        <div class="fg">
+          <div class="full">
+            <label class="fl">Foto principal</label>
+            <input type="hidden" id="f_foto">
+            <div class="photo-picker">
+              <div class="photo-preview" id="f_foto_preview" onclick="viewPhotoModal()" style="cursor:pointer"><span>📷</span></div>
+              <div class="item-stock-strip">
+                <div><label class="fl">Cantidad</label><input class="fi-w" id="f_qty" type="number" min="0" value="1"></div>
+                <div><label class="fl">Stock mín.</label><input class="fi-w" id="f_min" type="number" min="0" value="5"></div>
+                <div><label class="fl">Tipo</label>
+                  <select class="fi-w" id="f_tipo_material">
+                    <option value="consumible">Consumible</option>
+                    <option value="inventariable">Inventariable</option>
+                  </select>
+                </div>
+                <div id="qrButtonContainer" style="display:none;display:flex;flex-direction:column;justify-content:flex-end">
+                  <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:12px;padding:6px 8px;white-space:nowrap">🖨️ QR</button>
+                </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔧 DETALLES -->
+      <div class="m-section">
+        <div class="m-section-title">🔧 Detalles</div>
+        <div class="fg">
+          <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
+          <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
+          <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
+        </div>
+      </div>
+
+      <!-- 🛠️ MANTENIMIENTO -->
+      <div class="maint-fields full m-section" id="maintFields" style="border:none;padding:0;margin-top:0;background:none">
+        <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+          <div class="m-section-title" style="margin-top:0">🛠️ Mantenimiento</div>
+        </div>
+        <div class="fg">
+          <div>
+            <label class="fl">Fecha de aviso</label>
+            <input class="fi-w" id="f_mantFecha" type="date">
+          </div>
+          <div>
+            <label class="fl">Estado mantenimiento</label>
+            <select class="fi-w" id="f_mantEstado">
+              <option>Pendiente</option>
+              <option>En reparación</option>
+              <option>Reparado</option>
+              <option>Resuelto</option>
             </select>
-            <div style="font-size:11px;color:var(--muted);margin-top:3px">Si este componente pertenece a una caja, selecciónala aquí</div>
           </div>
-          <div id="f_contenedor_hijos" style="display:none">
-            <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <span style="font-size:12px;color:var(--muted)">Marca los ítems que pertenecen a esta caja:</span>
-              <button type="button" class="btn btn-sm btn-loan" onclick="saveHijosCaja()" style="font-size:12px;padding:4px 10px">💾 Guardar selección</button>
-            </div>
-            <input class="fi-w" id="f_hijos_search" type="text" placeholder="🔍 Buscar ítem..." oninput="renderHijosList()" style="margin-bottom:6px">
-            <div id="f_hijos_list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2,#f9fafb)"></div>
+          <div>
+            <label class="fl">Responsable</label>
+            <input class="fi-w" id="f_mantResp" list="mantRespList" placeholder="Profesor/a o responsable">
+            <datalist id="mantRespList"></datalist>
           </div>
-        </div>
-      </div>
-      <div class="full" id="itemQrBox" style="display:none">
-        <hr class="docs-sep">
-        <div class="docs-lbl">▦ Código QR del ítem</div>
-        <div class="qr-panel">
-          <img id="itemQrImg" class="qr-img" alt="Código QR del ítem">
-          <div class="qr-info">
-            <div class="qr-title" id="itemQrTitle"></div>
-            <div class="qr-url" id="itemQrUrl"></div>
-            <div class="qr-actions">
-              <button type="button" class="btn" onclick="copyItemQrUrl()">📋 Copiar enlace</button>
-              <button type="button" class="btn btn-p" onclick="printItemQr()">🖨️ Imprimir QR</button>
-            </div>
+          <div class="full">
+            <label class="fl">Motivo / nota de reparación</label>
+            <textarea class="fi-w" id="f_mantNota" placeholder="Qué ocurre, qué revisar, piezas necesarias..."></textarea>
           </div>
         </div>
       </div>
-      <div class="full">
-        <hr class="docs-sep">
-        <div class="docs-lbl">📎 Documentación adjunta</div>
-        <input type="file" id="f_doc_input" multiple style="display:none" onchange="addDocFiles(this.files);this.value=''">
-        <input type="file" id="f_cam_input" accept="image/*" capture="environment" style="display:none" onchange="addDocFiles(this.files);this.value=''">
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('f_doc_input').click()">
-            <span style="font-size:20px">📁</span><span>Subir archivos</span>
-          </button>
-          <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('f_cam_input').click()">
-            <span style="font-size:20px">📷</span><span>Hacer foto</span>
-          </button>
+
+      <!-- 📎 DOCUMENTACIÓN -->
+      <div class="m-section">
+        <div class="m-section-title">📎 Documentación</div>
+        <div class="fg">
+          <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="f_obs" placeholder="Notas, proveedor, nº serie..."></textarea></div>
+          <div class="full">
+            <label class="fl">Contenedor / Caja</label>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
+                <input type="checkbox" id="f_es_contenedor" onchange="toggleContenedorFields()">
+                <span>Este ítem es una caja o contenedor de componentes</span>
+              </label>
+              <div id="f_parent_row">
+                <select class="fi-w" id="f_parent_id" onchange="toggleContenedorFields()">
+                  <option value="">— Sin caja padre —</option>
+                </select>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px">Si este componente pertenece a una caja, selecciónala aquí</div>
+              </div>
+              <div id="f_contenedor_hijos" style="display:none">
+                <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                  <span style="font-size:12px;color:var(--muted)">Marca los ítems que pertenecen a esta caja:</span>
+                  <button type="button" class="btn btn-sm btn-loan" onclick="saveHijosCaja()" style="font-size:12px;padding:4px 10px">💾 Guardar selección</button>
+                </div>
+                <input class="fi-w" id="f_hijos_search" type="text" placeholder="🔍 Buscar ítem..." oninput="renderHijosList()" style="margin-bottom:6px">
+                <div id="f_hijos_list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2,#f9fafb)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="full" id="itemQrBox" style="display:none">
+            <hr class="docs-sep">
+            <div class="docs-lbl">▦ Código QR del ítem</div>
+            <div class="qr-panel">
+              <img id="itemQrImg" class="qr-img" alt="Código QR del ítem">
+              <div class="qr-info">
+                <div class="qr-title" id="itemQrTitle"></div>
+                <div class="qr-url" id="itemQrUrl"></div>
+                <div class="qr-actions">
+                  <button type="button" class="btn" onclick="copyItemQrUrl()">📋 Copiar enlace</button>
+                  <button type="button" class="btn btn-p" onclick="printItemQr()">🖨️ Imprimir QR</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="full">
+            <hr class="docs-sep">
+            <div class="docs-lbl">📁 Archivos adjuntos</div>
+            <input type="file" id="f_doc_input" multiple style="display:none" onchange="addDocFiles(this.files);this.value=''">
+            <input type="file" id="f_cam_input" accept="image/*" capture="environment" style="display:none" onchange="addDocFiles(this.files);this.value=''">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('f_doc_input').click()">
+                <span style="font-size:20px">📁</span><span>Subir archivos</span>
+              </button>
+              <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('f_cam_input').click()">
+                <span style="font-size:20px">📷</span><span>Hacer foto</span>
+              </button>
+            </div>
+            <div class="doc-list" id="f_doc_list"></div>
+          </div>
         </div>
-        <div class="doc-list" id="f_doc_list"></div>
       </div>
     </div>
-    <div class="mf">
+
+    <!-- STICKY FOOTER -->
+    <div class="modal-footer">
       <div>
         <button class="btn" id="btnHistorial" style="display:none" onclick="openHistorial()">📋 Historial</button>
       </div>
