@@ -22,8 +22,19 @@ function toggleActionMenu(evt, itemId){
   if(!menu) return;
   const isVisible = menu.style.display !== 'none';
   document.querySelectorAll('[id^="am-"]').forEach(m => m.style.display = 'none');
-  if(!isVisible) menu.style.display = 'block';
+  if(!isVisible){
+    const btn = evt.currentTarget;
+    const r = btn.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.top = (r.bottom + 4) + 'px';
+    menu.style.left = Math.max(4, r.right - 180) + 'px';
+    menu.style.right = 'auto';
+    menu.style.display = 'block';
+  }
 }
+document.addEventListener('click', () => {
+  document.querySelectorAll('[id^="am-"]').forEach(m => m.style.display = 'none');
+});
 
 function getBase(){
   return items.filter(x=>{
