@@ -969,56 +969,83 @@
     return patrones.some(function(p) { return q.includes(p); });
   }
 
-  function mostrarFormularioNuevoItem() {
+  function extraerNombreItem(query) {
+    var q = (query || '').trim();
+    var keywords = ['añadir', 'anadir', 'agregar', 'crear', 'poner', 'meter', 'registrar', 'incorporar', 'incluir', 'nuevo', 'nueva', 'alta', 'un ', 'una ', 'el ', 'la '];
+    var qLower = q.toLowerCase();
+    var resto = q;
+    for (var i = 0; i < keywords.length; i++) {
+      var idx = qLower.indexOf(keywords[i]);
+      if (idx !== -1) {
+        resto = q.substring(idx + keywords[i].length).trim();
+      }
+    }
+    resto = resto.replace(/^(un|una|el|la|de|que|si|para)\s+/i, '').trim();
+    return resto.split(/[.,;:?!]/)[0].trim() || '';
+  }
+
+  function mostrarFormularioNuevoItem(nombreInicial) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:600px';
 
     var aulaOptions = [];
+    var cicloOptions = [];
     var modOptions = [];
     var catOptions = [];
-    var locOptions = [];
 
     if (state.inventario && state.inventario.length > 0) {
       state.inventario.forEach(function(i) {
         if (i.aula && aulaOptions.indexOf(i.aula) === -1) aulaOptions.push(i.aula);
         if (i.mod && modOptions.indexOf(i.mod) === -1) modOptions.push(i.mod);
         if (i.cat && catOptions.indexOf(i.cat) === -1) catOptions.push(i.cat);
-        if (i.loc && locOptions.indexOf(i.loc) === -1) locOptions.push(i.loc);
       });
     }
+    aulaOptions.sort();
+    modOptions.sort();
+    catOptions.sort();
+
+    if (CICLOS && CICLOS.length > 0) {
+      CICLOS.forEach(function(c) {
+        cicloOptions.push(c.nombre || c);
+      });
+    }
+
+    var selectAula = '<select class="ag-input-field ag-new-item-aula" style="padding:7px"><option value="">-- Seleccionar aula --</option>' +
+      aulaOptions.map(function(a) { return '<option value="' + esc(a) + '">' + esc(a) + '</option>'; }).join('') + '</select>';
+    
+    var selectCat = '<select class="ag-input-field ag-new-item-cat" style="padding:7px"><option value="">-- Seleccionar categoría --</option>' +
+      catOptions.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('') + '</select>';
+    
+    var selectCiclo = '<select class="ag-input-field ag-new-item-ciclo" style="padding:7px"><option value="">-- Seleccionar ciclo --</option>' +
+      cicloOptions.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('') + '</select>';
+    
+    var selectMod = '<select class="ag-input-field ag-new-item-mod" style="padding:7px"><option value="">-- Seleccionar módulo --</option>' +
+      modOptions.map(function(m) { return '<option value="' + esc(m) + '">' + esc(m) + '</option>'; }).join('') + '</select>';
 
     formDiv.innerHTML =
       '<div style="margin-bottom:10px"><strong style="color:#10b981">📦 Crear nuevo item:</strong></div>' +
       '<label class="ag-label">Nombre del item *</label>' +
-      '<input class="ag-input-field ag-new-item-name" placeholder="Ej: Osciloscopio digital">' +
+      '<input class="ag-input-field ag-new-item-name" placeholder="Ej: Osciloscopio digital" value="' + esc(nombreInicial || '') + '">' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
-        '<div style="flex:1"><label class="ag-label">Referencia</label>' +
-        '<input class="ag-input-field ag-new-item-ref" placeholder="Ej: OSC-001"></div>' +
         '<div style="flex:1"><label class="ag-label">Tipo *</label>' +
         '<select class="ag-input-field ag-new-item-tipo" style="padding:7px"><option value="consumible">Consumible</option><option value="inventariable">Inventariable</option></select></div>' +
-      '</div>' +
-      '<div style="display:flex;gap:6px;margin-top:6px">' +
         '<div style="width:80px"><label class="ag-label">Cantidad</label>' +
         '<input class="ag-input-field ag-new-item-qty" type="number" min="0" value="1"></div>' +
         '<div style="width:80px"><label class="ag-label">Mínimo</label>' +
         '<input class="ag-input-field ag-new-item-min" type="number" min="0" value="0"></div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
-        '<div style="flex:1"><label class="ag-label">Aula</label>' +
-        '<input class="ag-input-field ag-new-item-aula" list="newItemAulas" placeholder="Ej: Aula 14"></div>' +
-        '<datalist id="newItemAulas">' + aulaOptions.map(function(a) { return '<option value="' + esc(a) + '">'; }).join('') + '</datalist>' +
-        '<div style="flex:1"><label class="ag-label">Categoría</label>' +
-        '<input class="ag-input-field ag-new-item-cat" list="newItemCats" placeholder="Ej: Instrumentación"></div>' +
-        '<datalist id="newItemCats">' + catOptions.map(function(c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>' +
+        '<div style="flex:1"><label class="ag-label">Aula *</label>' + selectAula + '</div>' +
+        '<div style="flex:1"><label class="ag-label">Categoría *</label>' + selectCat + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
-        '<div style="flex:1"><label class="ag-label">Ubicación</label>' +
-        '<input class="ag-input-field ag-new-item-loc" list="newItemLocs" placeholder="Ej: Armario A"></div>' +
-        '<datalist id="newItemLocs">' + locOptions.map(function(l) { return '<option value="' + esc(l) + '">'; }).join('') + '</datalist>' +
+        '<div style="flex:1"><label class="ag-label">Ciclo</label>' + selectCiclo + '</div>' +
+        '<div style="flex:1"><label class="ag-label">Módulo</label>' + selectMod + '</div>' +
       '</div>' +
-      '<label class="ag-label" style="margin-top:6px">Proveedor (opcional)</label>' +
-      '<input class="ag-input-field ag-new-item-proveedor" placeholder="Ej: Distribuidor XYZ">' +
+      '<label class="ag-label" style="margin-top:6px">Foto (opcional)</label>' +
+      '<input class="ag-input-field ag-new-item-foto" type="file" accept="image/*" style="padding:4px">' +
+      '<div class="ag-new-item-foto-preview" style="margin-top:4px;max-height:100px;border-radius:4px;overflow:hidden"></div>' +
       '<label class="ag-label" style="margin-top:6px">Observaciones</label>' +
       '<textarea class="ag-input-field ag-new-item-obs" style="height:50px;resize:vertical" placeholder="Notas adicionales..."></textarea>' +
       '<div style="display:flex;gap:6px;margin-top:10px">' +
@@ -1037,41 +1064,62 @@
       formDiv.remove();
     });
 
+    var fotoInput = formDiv.querySelector('.ag-new-item-foto');
+    var fotoPreview = formDiv.querySelector('.ag-new-item-foto-preview');
+    var fotoData = null;
+
+    fotoInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) { fotoData = null; fotoPreview.innerHTML = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        fotoData = event.target.result;
+        var img = document.createElement('img');
+        img.src = fotoData;
+        img.style.cssText = 'max-width:100%;max-height:100px;border-radius:4px';
+        fotoPreview.innerHTML = '';
+        fotoPreview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+
     formDiv.querySelector('.ag-new-item-submit').addEventListener('click', function() {
       var nombre = nameInput.value.trim();
       if (!nombre) { nameInput.focus(); nameInput.style.borderColor = '#ef4444'; return; }
 
-      var ref = formDiv.querySelector('.ag-new-item-ref').value.trim();
       var tipo = formDiv.querySelector('.ag-new-item-tipo').value;
       var qty = Number(formDiv.querySelector('.ag-new-item-qty').value) || 1;
       var min = Number(formDiv.querySelector('.ag-new-item-min').value) || 0;
-      var aula = formDiv.querySelector('.ag-new-item-aula').value.trim();
-      var cat = formDiv.querySelector('.ag-new-item-cat').value.trim();
-      var loc = formDiv.querySelector('.ag-new-item-loc').value.trim();
-      var proveedor = formDiv.querySelector('.ag-new-item-proveedor').value.trim();
+      var aula = formDiv.querySelector('.ag-new-item-aula').value || null;
+      var cat = formDiv.querySelector('.ag-new-item-cat').value || null;
+      var ciclo = formDiv.querySelector('.ag-new-item-ciclo').value || null;
+      var mod = formDiv.querySelector('.ag-new-item-mod').value || null;
       var obs = formDiv.querySelector('.ag-new-item-obs').value.trim();
       var resultEl = formDiv.querySelector('.ag-new-item-result');
+
+      if (!aula) { formDiv.querySelector('.ag-new-item-aula').focus(); formDiv.querySelector('.ag-new-item-aula').style.borderColor = '#ef4444'; return; }
+      if (!cat) { formDiv.querySelector('.ag-new-item-cat').focus(); formDiv.querySelector('.ag-new-item-cat').style.borderColor = '#ef4444'; return; }
 
       resultEl.innerHTML = '⏳ Creando item...';
       resultEl.style.color = '#94a3b8';
 
       var newItem = {
         item: nombre,
-        ref: ref || null,
-        aula: aula || null,
+        ref: null,
+        aula: aula,
         qty: qty,
         min: min,
-        cat: cat || null,
-        loc: loc || null,
+        cat: cat,
+        loc: null,
         tipo_material: tipo,
-        proveedor: proveedor || null,
+        proveedor: null,
         obs: obs || null,
-        mod: null,
+        mod: mod,
         est: null,
         util: null,
         fecha: new Date().toISOString().split('T')[0],
         mant: 0,
-        foto: null,
+        foto: fotoData || null,
         tags: '',
         es_contenedor: 0,
         oculto: 0
@@ -1086,7 +1134,6 @@
           resultEl.style.color = '#34d399';
           formDiv.querySelector('.ag-new-item-submit').disabled = true;
           formDiv.querySelector('.ag-new-item-submit').textContent = '✅ Guardado';
-          // Recargar inventario
           if (typeof loadData === 'function') {
             setTimeout(function() { loadData(); }, 500);
           }
@@ -1197,7 +1244,8 @@
 
     // ── INTERCEPTAR ACCIÓN DE AÑADIR ITEM ─────────────────────
     if (detectarIntencionAnadirItem(q)) {
-      mostrarFormularioNuevoItem();
+      var nombreExtraido = extraerNombreItem(q);
+      mostrarFormularioNuevoItem(nombreExtraido);
       return;
     }
 
