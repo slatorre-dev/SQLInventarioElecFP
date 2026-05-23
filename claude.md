@@ -54,3 +54,16 @@ No usaremos `wrangler pages dev` para la base de datos remota, porque ese modo e
 
 ### Objetivo general
 Minimizar consumo de tokens manteniendo precision tecnica.
+
+## Entorno de ejecucion
+
+- El runtime requiere **PowerShell 7+ (pwsh.exe)** para ejecutar comandos shell.
+- Si no esta instalado, NO se pueden hacer commits, push ni comandos de terminal.
+- Instalar desde: https://aka.ms/powershell y reiniciar VS Code.
+- Las memorias y documentacion deben estar en el repositorio GitHub, no en local.
+
+## Service Worker
+
+- Archivo: `sw.js`
+- Subir VERSION (`vXXX`) en cada commit para forzar actualizacion en clientes.
+- Version actual: v288
