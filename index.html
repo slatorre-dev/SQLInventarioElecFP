@@ -441,15 +441,24 @@
           </div>
         </div>
       </div>
-      <div><label class="fl">Categoría</label>
-        <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
-      </div>
-      <div><label class="fl">Tags</label>
-        <div style="position:relative">
-          <input class="fi-w" id="f_tags" placeholder="Arduino, SMD, 230V, robótica, medida..." autocomplete="off" style="padding-right:30px">
-          <datalist id="tagList"></datalist>
-          <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+      <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr 1fr;gap:12px;align-items:flex-start">
+        <div><label class="fl">Categoría</label>
+          <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
         </div>
+        <div><label class="fl">Tags</label>
+          <div style="position:relative">
+            <input class="fi-w" id="f_tags" placeholder="Arduino, SMD..." autocomplete="off" style="padding-right:30px">
+            <datalist id="tagList"></datalist>
+            <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+          </div>
+        </div>
+        <div><label class="fl">Estado</label>
+          <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
+        </div>
+        <label style="display:flex;align-items:flex-end;gap:6px;padding-bottom:8px;cursor:pointer">
+          <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer;min-width:18px">
+          <span style="font-size:12px;white-space:nowrap"><strong>Solicitar</strong></span>
+        </label>
       </div>
       <div><label class="fl">Ciclo</label>
         <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
@@ -459,13 +468,6 @@
       <div><label class="fl">Módulo</label>
         <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
       </div>
-      <div><label class="fl">Estado</label>
-        <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
-      </div>
-      <label class="check-row" style="flex:0.8;display:flex;align-items:flex-end;gap:8px;padding-bottom:9px">
-        <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer">
-        <span style="font-size:13px"><strong>Solicitar Mantenimiento</strong></span>
-      </label>
       <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
       <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
       <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
