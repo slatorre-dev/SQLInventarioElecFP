@@ -960,6 +960,147 @@
     return false;
   }
 
+  function detectarIntencionAnadirItem(query) {
+    var q = (query || '').toLowerCase().trim();
+    var patrones = ['añadir', 'anadir', 'agregar', 'crear', 'nuevo item', 'nuevo ítem', 'nuevo material',
+      'añadir item', 'anadir item', 'agregar item', 'crear item', 'registro nuevo', 'registrar nuevo',
+      'incluir material', 'meter item', 'poner item', 'nuevo producto', 'alta item', 'alta material',
+      'incorporar', 'incluir nuevo', 'añadir material', 'anadir material', 'agregar material'];
+    return patrones.some(function(p) { return q.includes(p); });
+  }
+
+  function mostrarFormularioNuevoItem() {
+    var formDiv = document.createElement('div');
+    formDiv.className = 'ag-msg ag-msg-ai';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:600px';
+
+    var aulaOptions = [];
+    var modOptions = [];
+    var catOptions = [];
+    var locOptions = [];
+
+    if (state.inventario && state.inventario.length > 0) {
+      state.inventario.forEach(function(i) {
+        if (i.aula && aulaOptions.indexOf(i.aula) === -1) aulaOptions.push(i.aula);
+        if (i.mod && modOptions.indexOf(i.mod) === -1) modOptions.push(i.mod);
+        if (i.cat && catOptions.indexOf(i.cat) === -1) catOptions.push(i.cat);
+        if (i.loc && locOptions.indexOf(i.loc) === -1) locOptions.push(i.loc);
+      });
+    }
+
+    formDiv.innerHTML =
+      '<div style="margin-bottom:10px"><strong style="color:#10b981">📦 Crear nuevo item:</strong></div>' +
+      '<label class="ag-label">Nombre del item *</label>' +
+      '<input class="ag-input-field ag-new-item-name" placeholder="Ej: Osciloscopio digital">' +
+      '<div style="display:flex;gap:6px;margin-top:6px">' +
+        '<div style="flex:1"><label class="ag-label">Referencia</label>' +
+        '<input class="ag-input-field ag-new-item-ref" placeholder="Ej: OSC-001"></div>' +
+        '<div style="flex:1"><label class="ag-label">Tipo *</label>' +
+        '<select class="ag-input-field ag-new-item-tipo" style="padding:7px"><option value="consumible">Consumible</option><option value="inventariable">Inventariable</option></select></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px">' +
+        '<div style="width:80px"><label class="ag-label">Cantidad</label>' +
+        '<input class="ag-input-field ag-new-item-qty" type="number" min="0" value="1"></div>' +
+        '<div style="width:80px"><label class="ag-label">Mínimo</label>' +
+        '<input class="ag-input-field ag-new-item-min" type="number" min="0" value="0"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px">' +
+        '<div style="flex:1"><label class="ag-label">Aula</label>' +
+        '<input class="ag-input-field ag-new-item-aula" list="newItemAulas" placeholder="Ej: Aula 14"></div>' +
+        '<datalist id="newItemAulas">' + aulaOptions.map(function(a) { return '<option value="' + esc(a) + '">'; }).join('') + '</datalist>' +
+        '<div style="flex:1"><label class="ag-label">Categoría</label>' +
+        '<input class="ag-input-field ag-new-item-cat" list="newItemCats" placeholder="Ej: Instrumentación"></div>' +
+        '<datalist id="newItemCats">' + catOptions.map(function(c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:6px">' +
+        '<div style="flex:1"><label class="ag-label">Ubicación</label>' +
+        '<input class="ag-input-field ag-new-item-loc" list="newItemLocs" placeholder="Ej: Armario A"></div>' +
+        '<datalist id="newItemLocs">' + locOptions.map(function(l) { return '<option value="' + esc(l) + '">'; }).join('') + '</datalist>' +
+      '</div>' +
+      '<label class="ag-label" style="margin-top:6px">Proveedor (opcional)</label>' +
+      '<input class="ag-input-field ag-new-item-proveedor" placeholder="Ej: Distribuidor XYZ">' +
+      '<label class="ag-label" style="margin-top:6px">Observaciones</label>' +
+      '<textarea class="ag-input-field ag-new-item-obs" style="height:50px;resize:vertical" placeholder="Notas adicionales..."></textarea>' +
+      '<div style="display:flex;gap:6px;margin-top:10px">' +
+        '<button class="ag-btn ag-btn-blue ag-new-item-submit" style="flex:1">✅ Crear item</button>' +
+        '<button class="ag-btn ag-new-item-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-new-item-result" style="margin-top:8px;font-size:11px"></div>';
+
+    el.messages.appendChild(formDiv);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    var nameInput = formDiv.querySelector('.ag-new-item-name');
+    nameInput.focus();
+
+    formDiv.querySelector('.ag-new-item-cancel').addEventListener('click', function() {
+      formDiv.remove();
+    });
+
+    formDiv.querySelector('.ag-new-item-submit').addEventListener('click', function() {
+      var nombre = nameInput.value.trim();
+      if (!nombre) { nameInput.focus(); nameInput.style.borderColor = '#ef4444'; return; }
+
+      var ref = formDiv.querySelector('.ag-new-item-ref').value.trim();
+      var tipo = formDiv.querySelector('.ag-new-item-tipo').value;
+      var qty = Number(formDiv.querySelector('.ag-new-item-qty').value) || 1;
+      var min = Number(formDiv.querySelector('.ag-new-item-min').value) || 0;
+      var aula = formDiv.querySelector('.ag-new-item-aula').value.trim();
+      var cat = formDiv.querySelector('.ag-new-item-cat').value.trim();
+      var loc = formDiv.querySelector('.ag-new-item-loc').value.trim();
+      var proveedor = formDiv.querySelector('.ag-new-item-proveedor').value.trim();
+      var obs = formDiv.querySelector('.ag-new-item-obs').value.trim();
+      var resultEl = formDiv.querySelector('.ag-new-item-result');
+
+      resultEl.innerHTML = '⏳ Creando item...';
+      resultEl.style.color = '#94a3b8';
+
+      var newItem = {
+        item: nombre,
+        ref: ref || null,
+        aula: aula || null,
+        qty: qty,
+        min: min,
+        cat: cat || null,
+        loc: loc || null,
+        tipo_material: tipo,
+        proveedor: proveedor || null,
+        obs: obs || null,
+        mod: null,
+        est: null,
+        util: null,
+        fecha: new Date().toISOString().split('T')[0],
+        mant: 0,
+        foto: null,
+        tags: '',
+        es_contenedor: 0,
+        oculto: 0
+      };
+
+      apiPost('/api/item', {
+        action: 'add',
+        item: newItem
+      }).then(function(res) {
+        if (res.ok && res.item) {
+          resultEl.innerHTML = '✅ Item creado: ' + esc(nombre) + ' (#' + res.item.id + ')';
+          resultEl.style.color = '#34d399';
+          formDiv.querySelector('.ag-new-item-submit').disabled = true;
+          formDiv.querySelector('.ag-new-item-submit').textContent = '✅ Guardado';
+          // Recargar inventario
+          if (typeof loadData === 'function') {
+            setTimeout(function() { loadData(); }, 500);
+          }
+        } else {
+          resultEl.innerHTML = '❌ Error: ' + (res.error || 'No se pudo crear el item');
+          resultEl.style.color = '#ef4444';
+        }
+      }).catch(function(e) {
+        resultEl.innerHTML = '❌ Error: ' + e.message;
+        resultEl.style.color = '#ef4444';
+      });
+    });
+  }
+
   function mostrarFormularioPrestamo(item) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
@@ -1053,6 +1194,12 @@
     // Añadir mensaje usuario
     state.messages.push({ role: 'user', content: q });
     appendMsg('user', q);
+
+    // ── INTERCEPTAR ACCIÓN DE AÑADIR ITEM ─────────────────────
+    if (detectarIntencionAnadirItem(q)) {
+      mostrarFormularioNuevoItem();
+      return;
+    }
 
     // ── INTERCEPTAR ACCIÓN DE PRÉSTAMO ─────────────────────────
     if (detectarIntencionPrestamo(q)) {
