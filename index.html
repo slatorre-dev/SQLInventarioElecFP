@@ -348,8 +348,7 @@
       <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
       <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
-      <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px;border-color:var(--accent);color:var(--accent)" onclick="openPrintQrModal()"><img class="btn-icon-img" src="icons/qr-code.svg" alt=""> <span class="btn-text">Imprimir QR</span></button>
-      <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintModal()">🖨️ <span class="btn-text">Imprimir</span></button>
+      <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintChoiceModal()">🖨️ <span class="btn-text">Imprimir</span></button>
     </div>
   </div>
   <div class="sub-body">
@@ -709,6 +708,22 @@
         <button class="btn" onclick="closeDevolver()">Cancelar</button>
         <button class="btn btn-return" id="btnDevolverSave" onclick="confirmDevolver()">📥 Confirmar devolución</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELEGIR TIPO DE IMPRESIÓN -->
+<div class="mbg" id="mPrintChoice" onclick="if(event.target===this)closePrintChoiceModal()">
+  <div class="modal" style="max-width:380px">
+    <div class="mh"><div class="mt">🖨️ Imprimir</div><button class="mx" onclick="closePrintChoiceModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 18px;padding:0 20px">¿Qué tipo de impresión deseas?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px 20px">
+      <button class="btn btn-p" onclick="closePrintChoiceModal();openPrintModal()" style="width:100%;padding:12px;font-size:14px;text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">🖨️</span>Listado normal<br><small style="font-size:11px;color:rgba(255,255,255,.85);font-weight:400">Tabla con columnas seleccionables</small>
+      </button>
+      <button class="btn" onclick="closePrintChoiceModal();openPrintQrModal()" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">🔳</span>Etiquetas QR<br><small style="font-size:11px;color:var(--muted);font-weight:400">Etiquetas con código QR por ítem</small>
+      </button>
     </div>
   </div>
 </div>

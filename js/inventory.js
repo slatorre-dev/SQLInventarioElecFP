@@ -839,6 +839,13 @@ function closePrintModal(){
   document.getElementById('mPrint').classList.remove('open');
 }
 
+function openPrintChoiceModal(){
+  document.getElementById('mPrintChoice').classList.add('open');
+}
+function closePrintChoiceModal(){
+  document.getElementById('mPrintChoice').classList.remove('open');
+}
+
 function printColSelectAll(){
   PRINT_COLS.forEach(c=>{ document.getElementById('prcol_'+c.key).checked = true; });
 }
