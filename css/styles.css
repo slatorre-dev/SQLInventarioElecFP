@@ -714,6 +714,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 #mItem .m-section:last-of-type{border-bottom:none}
 #mItem .m-section .m-section-title{grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px 0;padding:0;border:none}
 #mItem .m-section .full{grid-column:1/-1}
+#mItem .m-section:has(#f_cat){grid-template-columns:1fr 2fr 0.5fr 0.5fr}
 #mItem .m-section:has(#f_foto_preview){grid-template-columns:1fr}
 #mItem .maint-fields.m-section:not(.show){display:none}
 #mItem .mf{border-top:1px solid var(--border);padding:16px 26px;background:var(--bg);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:12px}
