@@ -1202,9 +1202,9 @@ function toggleGenerarUnidades(){
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : '';
   if(!visible){
-    // Prefijo por defecto: primeras 3 letras del nombre del ítem
+    // Prefijo por defecto: CONT- + primeras 3 letras del nombre del ítem
     const nombre = document.getElementById('f_item').value.trim();
-    const prefijo = nombre.slice(0,3).toUpperCase().replace(/\s/g,'');
+    const prefijo = 'CONT-' + nombre.slice(0,3).toUpperCase().replace(/\s/g,'');
     document.getElementById('genUnidadesPrefijo').value = prefijo;
     renderGenUnidadesTable();
   }
