@@ -78,6 +78,26 @@ function setTwHeight(){
   scroll.style.maxHeight = h + 'px';
 }
 
+function setFilterTipo(value){
+  const fTipo = document.getElementById('fTipo');
+  if(fTipo) fTipo.value = value;
+  
+  // Actualizar estado visual de los botones
+  document.querySelectorAll('.tipo-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  if(value === '') {
+    document.querySelector('.tipo-btn-all')?.classList.add('active');
+  } else if(value === 'consumible') {
+    document.querySelector('.tipo-btn-consumible')?.classList.add('active');
+  } else if(value === 'inventariable') {
+    document.querySelector('.tipo-btn-inventariable')?.classList.add('active');
+  }
+  
+  renderInv();
+}
+
 function renderInv(){
   const mc=document.getElementById('iContent');
   if(!itemsLoaded){
