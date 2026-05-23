@@ -364,20 +364,6 @@
           <button class="mini-btn" onclick="openCatsModal()" title="Gestionar categorías">⚙️</button>
         </div>
         <select id="fTipo" onchange="renderInv()" style="display:none"><option value="">Todos los tipos</option><option value="consumible">Consumibles</option><option value="inventariable">Inventariables</option></select>
-        <div class="tipo-filter-buttons">
-          <button class="tipo-btn tipo-btn-all active" onclick="setFilterTipo('')" title="Ver todos los items">
-            <span class="tipo-icon">📋</span>
-            <span class="tipo-label">Todos</span>
-          </button>
-          <button class="tipo-btn tipo-btn-consumible" onclick="setFilterTipo('consumible')" title="Mostrar solo consumibles">
-            <span class="tipo-icon">🧴</span>
-            <span class="tipo-label">Consumibles</span>
-          </button>
-          <button class="tipo-btn tipo-btn-inventariable" onclick="setFilterTipo('inventariable')" title="Mostrar solo inventariables">
-            <span class="tipo-icon">🔧</span>
-            <span class="tipo-label">Inventariable</span>
-          </button>
-        </div>
       </div>
     </div>
     <div class="bulkbar print-no" id="bulkBar" style="display:none">
@@ -402,6 +388,20 @@
     <div class="srow">
       <span class="clbl" id="iCount"></span>
       <span class="lalert" id="iLow"></span>
+      <div class="tipo-filter-buttons">
+        <button class="tipo-btn tipo-btn-all active" onclick="setFilterTipo('')" title="Ver todos los items">
+          <span class="tipo-icon">📋</span>
+          <span class="tipo-label">Todos</span>
+        </button>
+        <button class="tipo-btn tipo-btn-consumible" onclick="setFilterTipo('consumible')" title="Mostrar solo consumibles">
+          <span class="tipo-icon">🧴</span>
+          <span class="tipo-label">Consumibles</span>
+        </button>
+        <button class="tipo-btn tipo-btn-inventariable" onclick="setFilterTipo('inventariable')" title="Mostrar solo inventariables">
+          <span class="tipo-icon">🔧</span>
+          <span class="tipo-label">Inventariable</span>
+        </button>
+      </div>
     </div>
     <div class="pager-top print-no" id="pagerTop"></div>
     <div id="iContent"></div>
