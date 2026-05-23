@@ -415,15 +415,12 @@
     <div class="fg">
       <div><label class="fl">Referencia</label><input class="fi-w" id="f_ref" placeholder="ej. R-10K"></div>
       <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
-      <div><label class="fl">Categoría</label>
-        <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
-      </div>
-      <div class="full"><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
       <div>
         <label class="fl">Ubicación</label>
         <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
         <datalist id="locList"></datalist>
       </div>
+      <div class="full"><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
       <div class="full">
         <label class="fl">Foto principal</label>
         <input type="hidden" id="f_foto">
@@ -444,6 +441,16 @@
           </div>
         </div>
       </div>
+      <div><label class="fl">Categoría</label>
+        <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
+      </div>
+      <div><label class="fl">Tags</label>
+        <div style="position:relative">
+          <input class="fi-w" id="f_tags" placeholder="Arduino, SMD, 230V, robótica, medida..." autocomplete="off" style="padding-right:30px">
+          <datalist id="tagList"></datalist>
+          <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+        </div>
+      </div>
       <div><label class="fl">Ciclo</label>
         <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
           <option value="">Sin asignar</option>
@@ -455,21 +462,14 @@
       <div><label class="fl">Estado</label>
         <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
       </div>
+      <label class="check-row">
+        <input type="checkbox" id="f_mant" onchange="toggleMaintFields()">
+        <span><strong>Necesita reparación</strong></span>
+      </label>
       <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
       <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
       <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
-      <div><label class="fl">Tags</label>
-        <div style="position:relative">
-          <input class="fi-w" id="f_tags" placeholder="Arduino, SMD, 230V, robótica, medida..." autocomplete="off" style="padding-right:30px">
-          <datalist id="tagList"></datalist>
-          <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
-        </div>
-      </div>
-      <label class="check-row full">
-        <input type="checkbox" id="f_mant" onchange="toggleMaintFields()">
-        <span><strong>Necesita mantenimiento o reparación</strong><small>Márcalo para que aparezca en el acceso rápido de mantenimiento.</small></span>
-      </label>
-      <div class="maint-fields full" id="maintFields">
+      <div class="maint-fields full" id="maintFields" style="border-top:1px solid var(--border);padding-top:12px;margin-top:6px">
         <div>
           <label class="fl">Fecha de aviso</label>
           <input class="fi-w" id="f_mantFecha" type="date">
