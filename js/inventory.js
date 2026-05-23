@@ -100,7 +100,7 @@ function isTouchLike(){
 }
 function getInvRenderMode(){
   if(view==='table' && window.innerWidth > 900 && !isTouchLike()) return 'table';
-  if(window.innerWidth < 640 && isTouchLike()) return 'list';
+  if(window.innerWidth < 640) return 'list';
   return 'cards';
 }
 
