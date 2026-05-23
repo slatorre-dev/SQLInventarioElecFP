@@ -1299,15 +1299,16 @@ async function saveGenerarUnidades(){
       document.getElementById('f_es_contenedor').checked = true;
       modalHasChanges = false;
       updateModalIndicator();
-    } else if(!padre.es_contenedor){
-      // Padre existe pero no es contenedor todavía
-      const padreUpd = {...padre, es_contenedor:1, tipo_material:'inventariable', ref: padre.ref || `${prefijo}-00`};
+    } else {
+      // Padre ya existe — actualizar ref a SET-XXX-00 y asegurar es_contenedor
+      const padreUpd = {...padre, es_contenedor:1, tipo_material:'inventariable', ref:`${prefijo}-00`};
       const r = await apiPost({action:'update', item:padreUpd});
       if(!r.ok) throw new Error(r.error);
       const idx = items.findIndex(x=>Number(x.id)===padreId);
       items[idx] = padreUpd;
       padre = padreUpd;
       document.getElementById('f_es_contenedor').checked = true;
+      document.getElementById('f_ref').value = padreUpd.ref;
     }
 
     let creados = 0;
