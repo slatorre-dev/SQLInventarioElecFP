@@ -1204,12 +1204,20 @@ function toggleGenerarUnidades(){
   const panel = document.getElementById('genUnidadesPanel');
   const visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : '';
+  const refInput = document.getElementById('f_ref');
   if(!visible){
-    // Prefijo por defecto: CONT- + primeras 3 letras del nombre del ítem
     const nombre = document.getElementById('f_item').value.trim();
     const prefijo = 'SET-' + nombre.slice(0,3).toUpperCase().replace(/[^A-Z]/g,'');
     document.getElementById('genUnidadesPrefijo').value = prefijo;
+    // Forzar ref del padre y bloquear el campo para evitar conflictos
+    refInput.value = prefijo + '-00';
+    refInput.readOnly = true;
+    refInput.style.opacity = '0.5';
     renderGenUnidadesTable();
+  } else {
+    // Al cancelar, restaurar el campo ref
+    refInput.readOnly = false;
+    refInput.style.opacity = '';
   }
 }
 
@@ -1339,6 +1347,9 @@ async function saveGenerarUnidades(){
       }
     }
 
+    const refInput = document.getElementById('f_ref');
+    refInput.readOnly = false;
+    refInput.style.opacity = '';
     toggleGenerarUnidades();
     renderHijosList();
     toast(`Padre + ${creados} unidades creadas correctamente`,'ok');
