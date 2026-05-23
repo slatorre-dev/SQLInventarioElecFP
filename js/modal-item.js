@@ -755,13 +755,16 @@ function duplicateItem(id){
 }
 
 function _autoRef(name){
+  const esContenedor = document.getElementById('f_es_contenedor')?.checked;
   const clean = name.normalize('NFD').split('').filter(c=>c.charCodeAt(0)<0x300||c.charCodeAt(0)>0x36F).join('');
-  const prefix = clean.replace(/[^a-zA-Z]/g,'').slice(0,3);
-  if(!prefix) return '';
-  const cap = prefix.charAt(0).toUpperCase() + prefix.slice(1).toLowerCase();
-  const pat = new RegExp('^' + cap + '-\\d+$');
-  const nums = items.filter(x=>x.id!==eid).map(x=>x.ref||'').filter(r=>pat.test(r)).map(r=>parseInt(r.split('-')[1])||0);
-  return cap + '-' + (nums.length ? Math.max(...nums)+1 : 1);
+  const short = clean.replace(/[^a-zA-Z]/g,'').slice(0,3).toUpperCase();
+  if(!short) return '';
+  const prefix = esContenedor ? 'CONT-' + short : short.charAt(0).toUpperCase() + short.slice(1).toLowerCase();
+  const pat = esContenedor
+    ? new RegExp('^CONT-' + short + '-\\d+$')
+    : new RegExp('^' + prefix + '-\\d+$');
+  const nums = items.filter(x=>x.id!==eid).map(x=>x.ref||'').filter(r=>pat.test(r)).map(r=>parseInt(r.split('-').pop())||0);
+  return prefix + '-' + (nums.length ? Math.max(...nums)+1 : 1);
 }
 function closeM(force=false){
   if(!force && modalHasChanges){
@@ -1204,7 +1207,7 @@ function toggleGenerarUnidades(){
   if(!visible){
     // Prefijo por defecto: CONT- + primeras 3 letras del nombre del ítem
     const nombre = document.getElementById('f_item').value.trim();
-    const prefijo = 'CONT-' + nombre.slice(0,3).toUpperCase().replace(/\s/g,'');
+    const prefijo = 'SET-' + nombre.slice(0,3).toUpperCase().replace(/\s/g,'');
     document.getElementById('genUnidadesPrefijo').value = prefijo;
     renderGenUnidadesTable();
   }
