@@ -449,7 +449,7 @@
           </div>
         </div>
       </div>
-      <div class="full" style="display:grid;grid-template-columns:1.5fr 1.8fr 0.7fr 0.5fr;gap:12px;align-items:flex-start">
+      <div class="full" style="display:grid;grid-template-columns:1.3fr 1.6fr 0.6fr 1fr;gap:12px;align-items:flex-start">
         <div><label class="fl">Categoría</label>
           <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
         </div>
@@ -463,9 +463,12 @@
         <div><label class="fl">Estado</label>
           <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
         </div>
-        <label style="display:flex;align-items:center;gap:4px;padding:4px 6px;cursor:pointer;background:#FFD700;border-radius:6px;font-size:11px;white-space:nowrap">
-          <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer;min-width:16px;width:16px;height:16px">
-          <span style="font-weight:bold">Solicitar</span>
+        <label style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 8px;cursor:pointer;background:#FFD700;border-radius:6px;font-size:11px">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer;min-width:16px;width:16px;height:16px">
+            <span style="font-weight:bold">Solicitar</span>
+          </div>
+          <span style="font-weight:bold;font-size:10px;line-height:1.2">mantenimiento</span>
         </label>
       </div>
       <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
