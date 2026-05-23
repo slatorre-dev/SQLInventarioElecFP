@@ -437,10 +437,13 @@ function updateModSelect(){
 function syncCicloLabels(){
   const sel = document.getElementById('f_ciclo');
   if(!sel) return;
+  const isMobile = () => window.innerWidth <= 600;
   const collapse = () => {
     Array.from(sel.options).forEach(o=>{ if(o.dataset.full) o.textContent = o.dataset.full; });
-    const o = sel.selectedOptions[0];
-    if(o && o.dataset.alias) o.textContent = o.dataset.alias;
+    if(isMobile()){
+      const o = sel.selectedOptions[0];
+      if(o && o.dataset.alias) o.textContent = o.dataset.alias;
+    }
   };
   const expand = () => Array.from(sel.options).forEach(o=>{ if(o.dataset.full) o.textContent = o.dataset.full; });
   if(!sel._aliasBound){
