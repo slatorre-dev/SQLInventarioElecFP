@@ -16,8 +16,11 @@ const ENDPOINT_MAP = {
 
 function urlWithAuth(endpoint, params={}){
   const u = encodeURIComponent(SESSION?.usuario||'');
-  const p = encodeURIComponent(SESSION?.password||'');
-  let url = `/api/${endpoint}?u=${u}&p=${p}`;
+  // Si es Google OAuth, usar session_token; si no, usar password
+  const auth = SESSION?.session_token 
+    ? `t=${encodeURIComponent(SESSION.session_token)}`
+    : `p=${encodeURIComponent(SESSION?.password||'')}`;
+  let url = `/api/${endpoint}?u=${u}&${auth}`;
   for (const [key, val] of Object.entries(params)) {
     if (val != null) url += `&${encodeURIComponent(key)}=${encodeURIComponent(val)}`;
   }
@@ -41,9 +44,8 @@ async function apiPost(payload){
     return {ok:false, error:'No tienes permisos para realizar esta acción'};
   }
   const endpoint = ENDPOINT_MAP[payload.action] || payload.action;
-  const u = encodeURIComponent(SESSION?.usuario||'');
-  const p = encodeURIComponent(SESSION?.password||'');
-  const r = await fetch(`/api/${endpoint}?u=${u}&p=${p}`, {
+  const url = urlWithAuth(endpoint);
+  const r = await fetch(url, {
     method:'POST',
     body: JSON.stringify(payload),
     headers: {'Content-Type':'application/json'},

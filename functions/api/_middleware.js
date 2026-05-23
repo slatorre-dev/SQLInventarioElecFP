@@ -3,22 +3,34 @@ export async function onRequest({ request, env, next, data }) {
 
   // Rutas públicas
   if (url.pathname.startsWith('/api/auth')) return next();
-  if (url.pathname.startsWith('/api/oauth/callback')) return next();
-  if (url.pathname.startsWith('/api/oauth/start')) return next();
+  if (url.pathname.startsWith('/api/oauth')) return next(); // Incluye callback, start, login-google
   if (url.pathname.startsWith('/api/backup')) return next();
 
   const u = url.searchParams.get('u') || '';
   const p = url.searchParams.get('p') || '';
-  if (!u || !p) return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
+  const t = url.searchParams.get('t') || ''; // session_token (para Google OAuth)
 
-  const user = await env.DB.prepare(
-    'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND password=?'
-  ).bind(u.trim(), p).first();
+  // Validar autenticación
+  let user = null;
 
-  if (!user) return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
+  if (u && p) {
+    // Método 1: Username + Password (login tradicional)
+    user = await env.DB.prepare(
+      'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND password=?'
+    ).bind(u.trim(), p).first();
+  } else if (u && t) {
+    // Método 2: Username + Session Token (Google OAuth)
+    user = await env.DB.prepare(
+      'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND session_token=?'
+    ).bind(u.trim(), t).first();
+  }
 
-  // Pasar user via data (Request es inmutable, no acepta propiedades nuevas)
+  if (!user) {
+    return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
+  }
+
+  // Pasar user via data (Request es inmutable)
   data.user = user;
-  request.user = user; // compatibilidad con handlers existentes
+  request.user = user; // compatibilidad
   return next();
 }

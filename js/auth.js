@@ -46,6 +46,78 @@ async function doLogin(){
   }
 }
 
+// ═════════════════════════════════════════════════════════
+// GOOGLE SIGN-IN
+// ═════════════════════════════════════════════════════════
+async function handleGoogleSignIn(response) {
+  console.log('Google Sign-In response:', response);
+  
+  const errorEl = document.getElementById('loginError');
+  const okEl = document.getElementById('loginOk');
+  
+  if (!response.credential) {
+    errorEl.textContent = 'Error: no se recibió token de Google';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  try {
+    errorEl.classList.remove('show');
+    
+    const btn = document.querySelector('.g_id_signin');
+    const originalHTML = btn?.innerHTML;
+    if (btn) btn.innerHTML = '<span style="font-size:14px">Comprobando...</span>';
+
+    // Enviar token al backend
+    const loginRes = await fetch('/api/oauth/login-google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: response.credential }),
+    });
+
+    const loginData = await loginRes.json();
+
+    if (!loginData.ok) {
+      throw new Error(loginData.error || 'Error en el servidor');
+    }
+
+    // Crear SESSION compatible
+    SESSION = {
+      usuario: loginData.user.usuario,
+      nombre: loginData.user.nombre,
+      email: loginData.user.email,
+      rol: loginData.user.rol,
+      google_id: loginData.user.google_id,
+      auth_method: 'google',
+      session_token: loginData.user.session_token, // ← Token para requests posteriores
+    };
+
+    localStorage.setItem('inv_session', JSON.stringify(SESSION));
+
+    // Limpiar formulario y mostrar éxito
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+
+    okEl.textContent = `✓ ¡Bienvenido ${loginData.user.nombre}!`;
+    okEl.classList.add('show');
+
+    // Cargar datos del usuario
+    showUserChip();
+    _showOverlay();
+    loadData();
+
+    if (btn) btn.innerHTML = originalHTML;
+
+  } catch(err) {
+    console.error('Error en Google Sign-In:', err);
+    errorEl.textContent = err.message || 'Error al procesar login de Google';
+    errorEl.classList.add('show');
+    
+    const btn = document.querySelector('.g_id_signin');
+    if (btn) btn.innerHTML = '<span style="font-size:14px">Sign in with Google</span>';
+  }
+}
+
 function logout(){
   if(!confirm('¿Cerrar sesión?')) return;
   localStorage.removeItem('inv_session');

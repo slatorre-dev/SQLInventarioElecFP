@@ -1916,3 +1916,52 @@ html, body {
   }
 }
 
+
+/* ═════════════════════════════════════════════════════════ */
+/* ══ GOOGLE SIGN-IN ══ */
+/* ═════════════════════════════════════════════════════════ */
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0 16px;
+  gap: 12px;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.login-divider span {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.google-signin-btn {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 16px;
+}
+
+.google-signin-btn div {
+  display: flex;
+  justify-content: center;
+}
+
+/* Ajustar tamaño del botón de Google */
+.g_id_signin {
+  width: 100% !important;
+}
+
+.g_id_signin > div {
+  display: flex;
+  justify-content: center;
+}

@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -172,6 +173,20 @@
           <input type="password" id="loginPass" autocomplete="current-password">
         </div>
         <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+
+        <!-- Google Sign-In -->
+        <div class="login-divider">
+          <span>o continúa con</span>
+        </div>
+        <div class="google-signin-btn">
+          <div id="g_id_onload"
+               data-client_id="374986567801-lamnmhp3p3jtudo9f4db3s5kum7ef1v9.apps.googleusercontent.com"
+               data-callback="handleGoogleSignIn"
+               data-auto_prompt="false">
+          </div>
+          <div class="g_id_signin" data-type="standard" data-size="large" data-theme="light"></div>
+        </div>
+
         <div class="login-footer">
           Si no tienes cuenta, contacta con el administrador del centro
           <br><button class="login-link" onclick="showRecovery()">¿Olvidaste tu contraseña?</button>
