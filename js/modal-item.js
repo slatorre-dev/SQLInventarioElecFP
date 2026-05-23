@@ -1195,3 +1195,112 @@ async function openHistorial(){
 function closeHistorial(){
   document.getElementById('mItemHistorial').classList.remove('open');
 }
+
+// ── GENERAR UNIDADES ──────────────────────────────────────────
+function toggleGenerarUnidades(){
+  const panel = document.getElementById('genUnidadesPanel');
+  const visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : '';
+  if(!visible){
+    // Prefijo por defecto: primeras 3 letras del nombre del ítem
+    const nombre = document.getElementById('f_item').value.trim();
+    const prefijo = nombre.slice(0,3).toUpperCase().replace(/\s/g,'');
+    document.getElementById('genUnidadesPrefijo').value = prefijo;
+    renderGenUnidadesTable();
+  }
+}
+
+function renderGenUnidadesTable(){
+  const qty = Math.min(50, Math.max(1, Number(document.getElementById('genUnidadesQty').value) || 2));
+  const prefijo = document.getElementById('genUnidadesPrefijo').value.trim() || 'UNIT';
+  const nombre = document.getElementById('f_item').value.trim() || 'Unidad';
+  const ESTADOS = ['Bueno','Deteriorado','Avería','Baja'];
+  const container = document.getElementById('genUnidadesTable');
+  // Conservar obs/estado ya introducidos si se re-renderiza
+  const prev = {};
+  container.querySelectorAll('tr[data-idx]').forEach(tr => {
+    const i = tr.dataset.idx;
+    prev[i] = {
+      est: tr.querySelector('.gen-est')?.value || 'Bueno',
+      obs: tr.querySelector('.gen-obs')?.value || ''
+    };
+  });
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead><tr style="background:var(--accent);color:#fff">
+      <th style="padding:5px 8px;text-align:left;width:110px">Ref.</th>
+      <th style="padding:5px 8px;text-align:left">Nombre</th>
+      <th style="padding:5px 8px;text-align:left;width:120px">Estado</th>
+      <th style="padding:5px 8px;text-align:left">Observaciones</th>
+    </tr></thead><tbody>`;
+  for(let i=1; i<=qty; i++){
+    const n = String(i).padStart(2,'0');
+    const ref = `${prefijo}-${n}`;
+    const p = prev[i] || {est:'Bueno', obs:''};
+    const opts = ESTADOS.map(e=>`<option${e===p.est?' selected':''}>${e}</option>`).join('');
+    html += `<tr data-idx="${i}" style="border-bottom:1px solid var(--border)">
+      <td style="padding:4px 8px;font-family:var(--mono);color:var(--muted)">${ref}</td>
+      <td style="padding:4px 8px">${nombre} #${n}</td>
+      <td style="padding:4px 6px"><select class="fi-w gen-est" style="font-size:11px;padding:3px 6px">${opts}</select></td>
+      <td style="padding:4px 6px"><input class="fi-w gen-obs" type="text" placeholder="Nota opcional..." value="${escHtml(p.obs)}" style="font-size:11px;padding:3px 6px"></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+async function saveGenerarUnidades(){
+  if(!eid){ toast('Guarda primero el ítem padre','err'); return; }
+  const qty = Math.min(50, Math.max(1, Number(document.getElementById('genUnidadesQty').value) || 2));
+  const prefijo = document.getElementById('genUnidadesPrefijo').value.trim() || 'UNIT';
+  const nombre = document.getElementById('f_item').value.trim() || 'Unidad';
+  const padre = items.find(x=>Number(x.id)===Number(eid));
+  if(!padre){ toast('No se encontró el ítem padre','err'); return; }
+
+  const rows = document.getElementById('genUnidadesTable').querySelectorAll('tr[data-idx]');
+  const btn = document.querySelector('#genUnidadesPanel .btn-loan');
+  btn.disabled = true; btn.textContent = '⏳ Creando...';
+
+  // Asegurar que el padre es contenedor
+  if(!padre.es_contenedor){
+    const padreUpd = {...padre, es_contenedor:1, tipo_material:'inventariable'};
+    const r = await apiPost({action:'update', item:padreUpd});
+    if(!r.ok){ toast('Error actualizando padre: '+r.error,'err'); btn.disabled=false; btn.textContent='✅ Crear unidades'; return; }
+    const idx = items.findIndex(x=>Number(x.id)===Number(eid));
+    items[idx] = padreUpd;
+    document.getElementById('f_es_contenedor').checked = true;
+  }
+
+  let creados = 0;
+  for(const row of rows){
+    const i = row.dataset.idx;
+    const n = String(i).padStart(2,'0');
+    const est = row.querySelector('.gen-est')?.value || 'Bueno';
+    const obs = row.querySelector('.gen-obs')?.value || '';
+    const hijo = {
+      ref: `${prefijo}-${n}`,
+      item: `${nombre} #${n}`,
+      aula: padre.aula,
+      mod: padre.mod || '',
+      cat: padre.cat || '',
+      loc: padre.loc || '',
+      qty: 1, min: 0,
+      est,
+      obs,
+      tipo_material: 'inventariable',
+      es_contenedor: 0,
+      parent_id: Number(eid),
+      tags: padre.tags || '',
+      fecha: new Date().toISOString().split('T')[0]
+    };
+    const r = await apiPost({action:'add', item:hijo});
+    if(r.ok){
+      items.push({...hijo, id: r.id});
+      creados++;
+    }
+  }
+
+  btn.disabled=false; btn.textContent='✅ Crear unidades';
+  toggleGenerarUnidades();
+  renderHijosList();
+  toast(`${creados} unidades creadas correctamente`,'ok');
+}

@@ -572,7 +572,24 @@
               <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                 <span style="font-size:12px;color:var(--muted)">Marca los ítems que pertenecen a esta caja:</span>
-                <button type="button" class="btn btn-sm btn-loan" onclick="saveHijosCaja()" style="font-size:12px;padding:4px 10px">💾 Guardar selección</button>
+                <div style="display:flex;gap:6px">
+                  <button type="button" class="btn btn-sm" onclick="toggleGenerarUnidades()" style="font-size:12px;padding:4px 10px">⚡ Generar unidades</button>
+                  <button type="button" class="btn btn-sm btn-loan" onclick="saveHijosCaja()" style="font-size:12px;padding:4px 10px">💾 Guardar selección</button>
+                </div>
+              </div>
+              <!-- Panel generar unidades -->
+              <div id="genUnidadesPanel" style="display:none;border:1.5px solid var(--accent);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--accent-l,#eff6ff)">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                  <label style="font-size:13px;font-weight:600;white-space:nowrap">Unidades a crear:</label>
+                  <input type="number" id="genUnidadesQty" min="1" max="50" value="2" style="width:70px" class="fi-w" oninput="renderGenUnidadesTable()">
+                  <label style="font-size:13px;font-weight:600;white-space:nowrap">Prefijo ref.:</label>
+                  <input type="text" id="genUnidadesPrefijo" class="fi-w" placeholder="ej. POL" style="width:90px" oninput="renderGenUnidadesTable()">
+                </div>
+                <div id="genUnidadesTable" style="max-height:240px;overflow-y:auto;margin-bottom:10px"></div>
+                <div style="display:flex;justify-content:flex-end;gap:8px">
+                  <button type="button" class="btn btn-sm" onclick="toggleGenerarUnidades()" style="font-size:12px;padding:4px 10px">Cancelar</button>
+                  <button type="button" class="btn btn-sm btn-loan" onclick="saveGenerarUnidades()" style="font-size:12px;padding:4px 10px">✅ Crear unidades</button>
+                </div>
               </div>
               <input class="fi-w" id="f_hijos_search" type="text" placeholder="🔍 Buscar ítem..." oninput="renderHijosList()" style="margin-bottom:6px">
               <div id="f_hijos_list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2,#f9fafb)"></div>
