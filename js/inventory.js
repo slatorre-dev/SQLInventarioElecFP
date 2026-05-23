@@ -16,6 +16,15 @@ function renderSubStats(data,low){
   animateCount(document.getElementById('sst-mant'), mant);
 }
 
+function toggleActionMenu(evt, itemId){
+  evt.stopPropagation();
+  const menu = document.getElementById(`am-${itemId}`);
+  if(!menu) return;
+  const isVisible = menu.style.display !== 'none';
+  document.querySelectorAll('[id^="am-"]').forEach(m => m.style.display = 'none');
+  if(!isVisible) menu.style.display = 'block';
+}
+
 function getBase(){
   return items.filter(x=>{
     if(cf.type==='aula') return x.aula===cf.id;
@@ -497,13 +506,22 @@ function rTable(data,mc){
         <td style="color:var(--muted);font-size:12px" title="${x.loc||''}">${x.loc?(x.loc.length>10?x.loc.slice(0,10)+'…':x.loc):'—'}</td>
         <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:'—'}</td>
         <td style="color:var(--muted);font-size:12px" title="${utilTitle}"><span class="table-util-text">${utilVisible}</span></td>
-        <td><div style="display:flex;gap:6px">
+        <td><div style="display:flex;gap:6px;position:relative">
           <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
           ${esContenedor
             ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
             : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
           }
           <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
+          <div style="position:relative">
+            <button class="btn btn-sm" onclick="toggleActionMenu(event,${x.id})" title="Más acciones">⋯</button>
+            <div id="am-${x.id}" class="action-menu" style="display:none;position:absolute;right:0;top:100%;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:1000;min-width:180px">
+              <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
+              <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
+              <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
+              ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
+            </div>
+          </div>
         </div></td>
       </tr>`;
     }).join('')}</tbody>
@@ -554,13 +572,22 @@ function rCards(data,mc){
         ${x.mantNota?`<br>${x.mantNota}`:''}
       </div>`:''}
       ${x.obs?`<div class="cobs">💬 ${x.obs}</div>`:''}
-      <div class="cfoot">
+      <div class="cfoot" style="position:relative">
         <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
         ${esContenedor2
           ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
           : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
         }
         <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
+        <div style="position:relative">
+          <button class="btn btn-sm" onclick="toggleActionMenu(event,${x.id})" title="Más acciones">⋯</button>
+          <div id="am-${x.id}" class="action-menu" style="display:none;position:absolute;right:0;top:100%;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:1000;min-width:180px">
+            <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
+            <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
+            <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
+            ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
+          </div>
+        </div>
       </div>
     </div>`;
   }).join('')}</div>`;
