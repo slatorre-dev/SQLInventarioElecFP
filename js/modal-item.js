@@ -928,6 +928,7 @@ async function saveItem(){
       fillTagSuggestions();
       toast('Ítem añadido','ok');
     }
+    modalHasChanges = false;
     closeM(true);
     if(cf) openSub(); else renderHome();
   } catch(err) { toast('Error: '+err.message,'err'); }
