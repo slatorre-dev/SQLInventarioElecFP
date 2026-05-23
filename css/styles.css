@@ -406,11 +406,10 @@ body{
 .sub-bc .bc-mid{color:var(--muted);font-weight:700}
 .sub-bc .bc-current{color:var(--text);font-weight:800;font-size:16px;padding:5px 12px;border-radius:20px;background:rgba(0,0,0,.06);border:1.5px solid rgba(0,0,0,.1)}
 .sub-bc .sep{color:var(--accent);font-weight:700;font-size:16px;margin:0 2px;opacity:.5}
-.sub-title-row{display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:12px;flex-wrap:wrap;position:relative}
-.sub-title{font-size:28px;font-weight:800;letter-spacing:-.4px;background:linear-gradient(135deg,#059669,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0;position:absolute;left:0;top:50%;transform:translateY(-50%)}
+.sub-title-row{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:24px;margin-bottom:12px}
+.sub-title{font-size:28px;font-weight:800;letter-spacing:-.4px;background:linear-gradient(135deg,#059669,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;flex-shrink:0}
 .sub-title-row .sub-title{margin-bottom:0}
-.sub-title-spacer{flex:1;min-width:0}
-.sub-stats-compact{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;flex:2}
+.sub-stats-compact{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;grid-column:2;justify-self:center}
 .scard-compact{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:10px;font-size:13px;transition:all .25s;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .scard-compact:hover{background:var(--white);border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
 .scard-compact .icon{font-size:20px;opacity:.9}
@@ -996,9 +995,9 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .scard-compact .icon{font-size:18px}
   .scard-compact .num{font-size:16px;font-weight:800}
   .scard-compact .lbl{font-size:11px}
-  .sub-title-row{flex-direction:column;justify-content:center;position:relative}
-  .sub-title{position:relative;left:auto;top:auto;transform:none;margin-bottom:12px}
-  .sub-stats-compact{justify-content:center;gap:10px}
+  .sub-title-row{grid-template-columns:1fr}
+  .sub-title{margin-bottom:12px}
+  .sub-stats-compact{grid-column:1;justify-content:center;gap:10px}
 
   /* ── SUBPAGE HEADER ── */
   .sub-header{padding:10px 14px 8px}
