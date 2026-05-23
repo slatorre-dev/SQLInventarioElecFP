@@ -993,15 +993,22 @@
     var cicloOptions = [];
     var catOptions = [];
 
+    // Cargar aulas desde la lista oficial AULAS
+    if (AULAS && AULAS.length > 0) {
+      AULAS.forEach(function(a) {
+        aulaOptions.push({id: a.id, name: a.name});
+      });
+    }
+
+    // Cargar categorías del inventario
     if (state.inventario && state.inventario.length > 0) {
       state.inventario.forEach(function(i) {
-        if (i.aula && aulaOptions.indexOf(i.aula) === -1) aulaOptions.push(i.aula);
         if (i.cat && catOptions.indexOf(i.cat) === -1) catOptions.push(i.cat);
       });
     }
-    aulaOptions.sort();
     catOptions.sort();
 
+    // Cargar ciclos
     if (CICLOS && CICLOS.length > 0) {
       CICLOS.forEach(function(c) {
         cicloOptions.push({id: c.id, name: c.name});
@@ -1009,7 +1016,7 @@
     }
 
     var selectAula = '<select class="ag-input-field ag-new-item-aula" style="padding:7px"><option value="">-- Seleccionar aula --</option>' +
-      aulaOptions.map(function(a) { return '<option value="' + esc(a) + '">' + esc(a) + '</option>'; }).join('') + '</select>';
+      aulaOptions.map(function(a) { return '<option value="' + esc(a.id) + '">' + esc(a.name) + '</option>'; }).join('') + '</select>';
     
     var selectCat = '<select class="ag-input-field ag-new-item-cat" style="padding:7px"><option value="">-- Seleccionar categoría --</option>' +
       catOptions.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('') + '</select>';
