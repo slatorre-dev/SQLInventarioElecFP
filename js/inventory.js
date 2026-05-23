@@ -287,6 +287,8 @@ function renderBulkActionControl(){
     <div id="bulkFotoPreview" style="margin-top:8px;padding:8px;border-radius:4px;background:var(--surface2);display:none">
       <img id="bulkFotoImg" style="max-width:100px;max-height:100px;border-radius:4px">
     </div>`;
+  } else if(action === 'delete'){
+    box.innerHTML = '<span style="color:#dc2626;font-weight:700;font-size:12px">⚠ Se eliminarán permanentemente</span>';
   } else {
     box.innerHTML = '';
   }
@@ -324,11 +326,64 @@ function handleBulkPhotoUpload(){
   reader.readAsDataURL(file);
 }
 
+function _bulkDelDialog(selected){
+  return new Promise(resolve => {
+    if(!confirm(`⚠ ATENCIÓN\n\nVas a eliminar ${selected.length} ítem${selected.length!==1?'s':''} permanentemente.\n\n¿Estás seguro? Se pedirá una segunda confirmación.`)){
+      resolve(false); return;
+    }
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)';
+    document.body.appendChild(overlay);
+    let secs = 5;
+    let tick;
+    const cancel = () => { clearInterval(tick); overlay.remove(); resolve(false); };
+    const confirm2 = () => { clearInterval(tick); overlay.remove(); resolve(true); };
+    const render = () => {
+      overlay.innerHTML = `<div style="background:#fff;border-radius:16px;padding:28px 32px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+        <div style="font-size:32px;margin-bottom:8px">🗑️</div>
+        <div style="font-size:18px;font-weight:800;color:#dc2626;margin-bottom:8px">Eliminar ${selected.length} ítem${selected.length!==1?'s':''}</div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:16px">Esta acción es <strong>irreversible</strong>.<br>Puedes cancelar en los próximos segundos.</div>
+        <div style="font-size:48px;font-weight:900;color:#dc2626;margin-bottom:16px">${secs}</div>
+        <button id="_bdCancel" style="padding:10px 24px;border-radius:8px;border:1.5px solid #e5e7eb;background:#f9fafb;cursor:pointer;font-size:14px;font-weight:600;margin-right:10px">Cancelar</button>
+        <button id="_bdConfirm" ${secs>0?'disabled style="opacity:.35;cursor:not-allowed;':'style="cursor:pointer;'} padding:10px 24px;border-radius:8px;border:none;background:#dc2626;color:#fff;font-size:14px;font-weight:700">Eliminar ahora</button>
+      </div>`;
+      overlay.querySelector('#_bdCancel').onclick = cancel;
+      overlay.querySelector('#_bdConfirm').onclick = secs > 0 ? null : confirm2;
+    };
+    render();
+    tick = setInterval(() => {
+      secs--;
+      render();
+      if(secs <= 0) clearInterval(tick);
+    }, 1000);
+  });
+}
+
+async function bulkDeleteWithCountdown(selected){
+  if(!requirePerm('items.delete')) return;
+  const confirmed = await _bulkDelDialog(selected);
+  if(!confirmed) return;
+  let ok = 0;
+  for(const it of selected){
+    try {
+      const res = await apiPost({action:'delete', id:it.id});
+      if(!res.ok) throw new Error(res.error);
+      const idx = items.findIndex(x=>String(x.id)===String(it.id));
+      if(idx >= 0) items.splice(idx, 1);
+      ok++;
+    } catch(e){ console.warn('[bulk delete]', it.id, e); }
+  }
+  bulkSelected.clear();
+  toast(`${ok} ítem${ok!==1?'s':''} eliminado${ok!==1?'s':''}`,'ok');
+  if(cf) openSub(); else renderHome();
+}
+
 async function applyBulkAction(){
   if(!requirePerm('items.write')) return;
   const selected = getSelectedItems();
   if(!selected.length) return;
   const action = document.getElementById('bulkAction').value;
+  if(action === 'delete'){ bulkDeleteWithCountdown(selected); return; }
   let patch = null;
   if(action === 'loc') patch = { loc: document.getElementById('bulkLoc').value.trim() };
   else if(action === 'cat') patch = { cat: document.getElementById('bulkCat').value };
