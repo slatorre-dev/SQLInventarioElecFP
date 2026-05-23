@@ -499,14 +499,10 @@ function rTable(data,mc){
         <td style="color:var(--muted);font-size:12px" title="${utilTitle}"><span class="table-util-text">${utilVisible}</span></td>
         <td><div style="display:flex;gap:6px">
           <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
-          <button class="btn btn-sm" onclick="duplicateItem(${x.id})" title="Duplicar">⧉</button>
-          <button class="btn btn-sm" onclick="openDocsModal(${x.id})" title="Documentación">📌</button>
           ${esContenedor
             ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
             : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
           }
-          <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="${isPedido(x.id)?'Quitar del pedido':'Añadir al pedido'}">🛒</button>
-          ${ocultoBtnHtml(x)}
           <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
         </div></td>
       </tr>`;
@@ -560,14 +556,10 @@ function rCards(data,mc){
       ${x.obs?`<div class="cobs">💬 ${x.obs}</div>`:''}
       <div class="cfoot">
         <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
-        <button class="btn btn-sm" onclick="duplicateItem(${x.id})" title="Duplicar">⧉</button>
-        <button class="btn btn-sm" onclick="openDocsModal(${x.id})" title="Documentación">📌</button>
         ${esContenedor2
           ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
           : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
         }
-        <button class="btn btn-sm btn-pedido${isPedido(x.id)?' activo':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
-        ${ocultoBtnHtml(x)}
         <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
       </div>
     </div>`;
