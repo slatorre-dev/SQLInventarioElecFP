@@ -1623,6 +1623,89 @@ html, body {
   .home-hero h1 {
     font-size: 20px;
   }
+
+  /* ── MEJORAS MÓVIL ESPECÍFICAS V320d ── */
+
+  /* 1️⃣ STATS CARDS: Una fila con SOLO icono + número (sin etiquetas) */
+  .stats-strip {
+    display: flex !important;
+    flex-wrap: nowrap;
+    gap: 6px !important;
+    margin-bottom: 16px !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .scard {
+    flex: 0 0 auto;
+    padding: 8px 6px !important;
+    min-width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .scard-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .scard-num {
+    font-size: 16px !important;
+    line-height: 1;
+  }
+
+  .scard-lbl {
+    display: none !important;
+  }
+
+  /* 2️⃣ MODAL INMERSIVO: Fullscreen en móvil */
+  #mItem .modal {
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    position: fixed;
+    inset: 0;
+  }
+
+  #mItem .mh {
+    padding: 16px 16px 14px;
+    border-radius: 0;
+  }
+
+  #mItem .fg {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+  }
+
+  #mItem .mf {
+    padding: 12px 16px;
+  }
+
+  /* 3️⃣ OCULTAR FILTRO DE TIPOS (ya está en stats) */
+  #fTipo {
+    display: none !important;
+  }
+
+  /* 4️⃣ OTROS MODALES: Más comprimidos y responsivos */
+  .modal {
+    width: 100vw !important;
+    max-height: 95vh !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 14px 12px !important;
+  }
+
+  .mh {
+    margin-bottom: 14px;
+  }
+
+  .mt {
+    font-size: 17px;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════ */
