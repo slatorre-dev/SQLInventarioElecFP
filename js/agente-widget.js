@@ -65,6 +65,7 @@
       'Cuando el usuario quiera un material, localízalo y confirma disponibilidad. ' +
       'Si lo quiere pedir prestado, dile literalmente: "Para pedirlo prestado, escribe: pedir prestado [nombre]" — ' +
       'NUNCA digas que se abrirá un formulario automáticamente, porque solo se abre con esa frase específica. ' +
+      'Si el usuario quiere crear/añadir un item, ayuda ofreciendo: "Di: quiero añadir [nombre del item]" para abrir el formulario. ' +
       'Sé conciso. Responde en español. Usa tablas markdown si es útil.' +
       (systemExtra || '');
 
@@ -537,6 +538,7 @@
                 '<div style="margin-bottom:6px">🔍 "¿Dónde está la Fusionadora de fibra?"</div>',
                 '<div style="margin-bottom:6px">🔍 "¿Quién tiene el Osciloscopio?"</div>',
                 '<div style="margin-bottom:6px">🔍 "Necesito pedir prestado un Multímetro"</div>',
+                '<div style="margin-bottom:6px">📦 "Quiero añadir un Multimetro digital nuevo"</div>',
                 '<div style="margin-bottom:6px">📦 "¿Qué materiales están bajo stock mínimo?"</div>',
                 '<div>⚠️ "¿Qué ítems tienen campos incompletos?"</div>',
               '</div>',
@@ -892,6 +894,9 @@
     }
     if (input.includes('pedir') || input.includes('prestado')) {
       suggestions.push({ text: '✅ Facilitar préstamo', q: input });
+    }
+    if (input.includes('añadir') || input.includes('anadir') || input.includes('crear') || input.includes('nuevo') || input.includes('agregar')) {
+      suggestions.push({ text: '📦 Crear nuevo item', q: input });
     }
     if (input.includes('stock') || input.includes('minimo') || input.includes('mínimo')) {
       suggestions.push({ text: '📦 Ver tabla de stock', q: input });
