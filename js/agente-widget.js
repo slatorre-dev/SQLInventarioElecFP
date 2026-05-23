@@ -991,23 +991,20 @@
 
     var aulaOptions = [];
     var cicloOptions = [];
-    var modOptions = [];
     var catOptions = [];
 
     if (state.inventario && state.inventario.length > 0) {
       state.inventario.forEach(function(i) {
         if (i.aula && aulaOptions.indexOf(i.aula) === -1) aulaOptions.push(i.aula);
-        if (i.mod && modOptions.indexOf(i.mod) === -1) modOptions.push(i.mod);
         if (i.cat && catOptions.indexOf(i.cat) === -1) catOptions.push(i.cat);
       });
     }
     aulaOptions.sort();
-    modOptions.sort();
     catOptions.sort();
 
     if (CICLOS && CICLOS.length > 0) {
       CICLOS.forEach(function(c) {
-        cicloOptions.push(c.nombre || c);
+        cicloOptions.push({id: c.id, name: c.name});
       });
     }
 
@@ -1018,10 +1015,9 @@
       catOptions.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('') + '</select>';
     
     var selectCiclo = '<select class="ag-input-field ag-new-item-ciclo" style="padding:7px"><option value="">-- Seleccionar ciclo --</option>' +
-      cicloOptions.map(function(c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('') + '</select>';
+      cicloOptions.map(function(c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('') + '</select>';
     
-    var selectMod = '<select class="ag-input-field ag-new-item-mod" style="padding:7px"><option value="">-- Seleccionar módulo --</option>' +
-      modOptions.map(function(m) { return '<option value="' + esc(m) + '">' + esc(m) + '</option>'; }).join('') + '</select>';
+    var selectMod = '<select class="ag-input-field ag-new-item-mod" style="padding:7px"><option value="">-- Seleccionar módulo --</option></select>';
 
     formDiv.innerHTML =
       '<div style="margin-bottom:10px"><strong style="color:#10b981">📦 Crear nuevo item:</strong></div>' +
@@ -1058,7 +1054,27 @@
     el.messages.scrollTop = el.messages.scrollHeight;
 
     var nameInput = formDiv.querySelector('.ag-new-item-name');
+    var cicloSelect = formDiv.querySelector('.ag-new-item-ciclo');
+    var modSelect = formDiv.querySelector('.ag-new-item-mod');
+    
     nameInput.focus();
+
+    // Cargar módulos cuando se selecciona un ciclo
+    cicloSelect.addEventListener('change', function() {
+      var cicloId = cicloSelect.value;
+      modSelect.innerHTML = '<option value="">-- Seleccionar módulo --</option>';
+      if (cicloId && CICLOS) {
+        var ciclo = CICLOS.find(function(c) { return c.id === cicloId; });
+        if (ciclo && ciclo.modulos && ciclo.modulos.length > 0) {
+          ciclo.modulos.forEach(function(m) {
+            var opt = document.createElement('option');
+            opt.value = m.cod;
+            opt.textContent = m.name;
+            modSelect.appendChild(opt);
+          });
+        }
+      }
+    });
 
     formDiv.querySelector('.ag-new-item-cancel').addEventListener('click', function() {
       formDiv.remove();
