@@ -716,6 +716,9 @@ function openModal(id=null, src=null){
 
   resetModalChanges();
   captureModalOriginalValues();
+  
+  // Auto-focus en nombre para escribir directo
+  setTimeout(() => document.getElementById('f_item').focus(), 0);
 }
 
 function duplicateItem(id){

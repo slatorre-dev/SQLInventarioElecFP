@@ -415,12 +415,15 @@
     <div class="fg">
       <div><label class="fl">Referencia</label><input class="fi-w" id="f_ref" placeholder="ej. R-10K"></div>
       <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
+      <div><label class="fl">Categoría</label>
+        <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
+      </div>
+      <div class="full"><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
       <div>
         <label class="fl">Ubicación</label>
         <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
         <datalist id="locList"></datalist>
       </div>
-      <div class="full"><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
       <div class="full">
         <label class="fl">Foto principal</label>
         <input type="hidden" id="f_foto">
@@ -437,9 +440,6 @@
             </div>
           </div>
         </div>
-      </div>
-      <div><label class="fl">Categoría</label>
-        <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
       </div>
       <div><label class="fl">Ciclo</label>
         <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
