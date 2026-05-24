@@ -824,12 +824,12 @@
 
     // Buscar items que contengan AL MENOS UNA palabra clave
     var matches = state.inventario.filter(function(i) {
-      var texto = [
+      var texto = normalize([
         (i.nombre || i.name || i.item || ''),
         (i.aula || i.classroom || ''),
         (i.cat || i.categoria || i.category || ''),
         (i.ref || i.referencia || '')
-      ].join(' ').toLowerCase();
+      ].join(' '));
 
       return keywords.some(function(kw) { return texto.includes(kw); });
     });
@@ -1002,8 +1002,8 @@
     // Si no hay sugerencias específicas, mostrar materiales que coincidan
     if (!suggestions.length && state.inventario.length) {
       var matching = state.inventario.filter(function(i) {
-        var nombre = (i.nombre || '').toLowerCase();
-        return nombre.includes(input) && nombre.length > 0;
+        var nombre = normalize(i.nombre || '');
+        return nombre.includes(normalize(input)) && nombre.length > 0;
       }).slice(0, 3);
 
       matching.forEach(function(item) {
