@@ -1338,6 +1338,7 @@ async function saveGenerarUnidades(){
         es_contenedor: 0,
         parent_id: padreId,
         tags: padre.tags || '',
+        foto: padre.foto || '',
         fecha: new Date().toISOString().split('T')[0]
       };
       const r = await apiPost({action:'add', item:hijo});
