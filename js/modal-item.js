@@ -591,6 +591,15 @@ function setMainPhotoFromFile(file){
   });
 }
 
+function fotoFileChanged(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  setMainPhotoFromFile(file).then(ok => {
+    if (!ok) toast('No se pudo cargar la imagen', 'err');
+    input.value = ''; // reset para permitir seleccionar la misma foto otra vez
+  });
+}
+
 function fillParentSelect(currentId){
   const sel = document.getElementById('f_parent_id');
   if(!sel) return;

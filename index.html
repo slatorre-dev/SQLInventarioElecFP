@@ -494,9 +494,11 @@
         <div class="full">
           <label class="fl">Foto principal</label>
           <input type="hidden" id="f_foto">
+          <input type="file" id="f_foto_file" accept="image/*" capture="environment" style="display:none" onchange="fotoFileChanged(this)">
           <div class="photo-picker">
             <div class="photo-col">
               <div class="photo-preview" id="f_foto_preview" onclick="viewPhotoModal()" style="cursor:pointer"><span>📷</span></div>
+              <button type="button" class="btn btn-sm" onclick="document.getElementById('f_foto_file').click()" style="font-size:11px;padding:4px 6px;white-space:nowrap;width:100%;margin-top:4px" title="Hacer foto o subir imagen">📷 Foto</button>
               <div id="qrButtonContainer" style="display:none">
                 <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:11px;padding:4px 6px;white-space:nowrap;width:100%">🖨️ QR</button>
               </div>

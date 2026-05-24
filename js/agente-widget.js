@@ -17,6 +17,8 @@
   var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
   var AGENTE_NOMBRE = 'Volt';    // Nombre del agente IA
   var LEARN_KEY = 'volt_intent_examples_v1';
+  var HISTORY_KEY = 'volt_chat_history_v1';
+  var HISTORY_MAX = 40; // máximo de mensajes a persistir
 
   // Obtener credenciales — usa SESSION global de la app (state.js)
   function getCreds() {
@@ -732,10 +734,17 @@
   }
 
   // ── Chat ───────────────────────────────────────────────────────────────────
+  var _historyRestored = false;
   function renderChatReady() {
     var sendBtn = el.panel.querySelector('#ag-send');
     sendBtn.disabled = false;
     if (state.messages.length === 0) {
+      // Restaurar historial persistido la primera vez (limpia el "Conectando...")
+      if (!_historyRestored) {
+        _historyRestored = true;
+        el.messages.innerHTML = '';
+        restoreHistory();
+      }
       injectarStatsPanel();
       el.panel.querySelector('#ag-quick').style.display = 'flex';
       el.chatInput.focus();
@@ -2823,6 +2832,7 @@
   function limpiarPantallaChat(mostrarAviso) {
     state.messages = [];
     state.contextItem = null;
+    try { localStorage.removeItem(HISTORY_KEY); } catch(e) {}
     if (el.messages) el.messages.innerHTML = '';
     if (el.panel) {
       var quick = el.panel.querySelector('#ag-quick');
@@ -2931,6 +2941,7 @@
     div.innerHTML = html;
     el.messages.appendChild(div);
     el.messages.scrollTop = el.messages.scrollHeight;
+    saveHistory('ai', html);
   }
 
   function appendMsgInDiv(div, text, color) {
@@ -3186,11 +3197,40 @@
     });
   }
 
+  function saveHistory(role, content) {
+    try {
+      var hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      hist.push({ role: role, content: content, ts: Date.now() });
+      if (hist.length > HISTORY_MAX) hist = hist.slice(-HISTORY_MAX);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+    } catch(e) {}
+  }
+
+  function restoreHistory() {
+    try {
+      var hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      if (!hist.length) return;
+      // Separador visual
+      var sep = document.createElement('div');
+      sep.style.cssText = 'text-align:center;font-size:10px;color:#334155;padding:4px 0;border-top:1px solid #1e293b;margin-bottom:4px';
+      sep.textContent = '— conversación anterior —';
+      el.messages.appendChild(sep);
+      hist.forEach(function(m) {
+        var div = document.createElement('div');
+        div.className = 'ag-msg ag-msg-' + (m.role === 'user' ? 'user' : 'ai');
+        if (m.role === 'user') div.textContent = m.content;
+        else div.innerHTML = m.content; // ya está en HTML
+        el.messages.appendChild(div);
+      });
+      el.messages.scrollTop = el.messages.scrollHeight;
+    } catch(e) {}
+  }
+
   function appendMsg(role, html) {
     var div = document.createElement('div');
     div.className = 'ag-msg ag-msg-' + (role === 'user' ? 'user' : 'ai');
-    if (role === 'user') div.textContent = html;
-    else div.innerHTML = md2html(html);
+    if (role === 'user') { div.textContent = html; saveHistory(role, html); }
+    else { var rendered = md2html(html); div.innerHTML = rendered; saveHistory(role, rendered); }
     el.messages.appendChild(div);
     el.messages.scrollTop = el.messages.scrollHeight;
   }
