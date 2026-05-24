@@ -635,39 +635,47 @@ function rCards(data,mc){
       <label class="bulk-card-check" onclick="event.stopPropagation()" title="Seleccionar">
         <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
       </label>
-      ${x.foto?`<img class="card-photo quick-item-trigger" src="${x.foto}" alt="Foto de ${x.item}" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:''}
-      <div class="ch">
-        <div class="card-title-wrap">
-          <div class="item-title-line">
-            <div class="cname item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${parentItem2?'↳ ':''}${x.item}</div>
-            ${esContenedor2?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
-            <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
+      <div class="card-head">
+        ${x.foto?`<img class="card-photo quick-item-trigger" src="${x.foto}" alt="Foto de ${x.item}" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:''}
+        <div class="ch">
+          <div class="card-title-wrap">
+            <div class="item-title-line">
+              <div class="cname item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${parentItem2?'↳ ':''}${x.item}</div>
+              ${esContenedor2?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
+              <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
+            </div>
+            <div class="cref">${x.ref||''}${parentItem2?` · <span style="color:#15803d;font-size:10px">📦 ${parentItem2.ref||parentItem2.item}</span>`:''}</div>
           </div>
-          <div class="cref">${x.ref||''}${parentItem2?` · <span style="color:#15803d;font-size:10px">📦 ${parentItem2.ref||parentItem2.item}</span>`:''}</div>
+          <div class="cqbox"><div class="cqbig" style="color:${low?'var(--red)':'var(--green)'}">${x.qty}</div><div class="cqmin">mín. ${x.min}</div></div>
         </div>
-        <div class="cqbox"><div class="cqbig" style="color:${low?'var(--red)':'var(--green)'}">${x.qty}</div><div class="cqmin">mín. ${x.min}</div></div>
       </div>
       <div class="cpills">
         ${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};font-size:11px">${cat.i} ${x.cat}</span>`:''}
         <span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:11px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>
         ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:''}
         ${mant?`<span class="cpill maintenance-pill">🛠️ ${mantStatus}</span>`:''}
-        ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${mod.ciclo.icon||'📚'} ${mod.name}</span>`:''}
-        ${tags.slice(0,4).map(t=>`<span class="tag-pill">${escHtml(t)}</span>`).join('')}
       </div>
       <div class="cfg">
         <div><div class="cfl">Aula</div><div class="cfv">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</div></div>
         <div><div class="cfl">Ubicación</div><div class="cfv">${x.loc||'—'}</div></div>
-        <div><div class="cfl">Utilidad</div><div class="cfv" style="font-size:11px" title="${x.util||''}">${shortText(x.util)||'—'}</div></div>
-        <div><div class="cfl">Proveedor</div><div class="cfv" style="font-size:11px" title="${x.proveedor||''}">${shortText(x.proveedor)||'—'}</div></div>
-        <div><div class="cfl">Tags</div><div class="cfv" style="font-size:11px" title="${x.tags||''}">${shortText(x.tags)||'—'}</div></div>
-        <div><div class="cfl">Revisión</div><div class="cfv" style="font-family:var(--mono);font-size:11px">${x.fecha||'—'}</div></div>
       </div>
-      ${mant?`<div class="maint-note">
-        <strong>${mantStatus}</strong>${x.mantFecha?` · ${x.mantFecha}`:''}${x.mantResp?` · ${x.mantResp}`:''}
-        ${x.mantNota?`<br>${x.mantNota}`:''}
-      </div>`:''}
-      ${x.obs?`<div class="cobs">💬 ${x.obs}</div>`:''}
+      <button class="card-expand-btn" onclick="toggleCardExtra(this)">▼ Ver más</button>
+      <div class="card-extra">
+        ${(mod||tags.length)?`<div class="cpills">
+          ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${mod.ciclo.icon||'📚'} ${mod.name}</span>`:''}
+          ${tags.slice(0,4).map(t=>`<span class="tag-pill">${escHtml(t)}</span>`).join('')}
+        </div>`:''}
+        <div class="cfg cfg-extra">
+          ${x.util?`<div><div class="cfl">Utilidad</div><div class="cfv" style="font-size:11px" title="${x.util||''}">${shortText(x.util)}</div></div>`:''}
+          ${x.proveedor?`<div><div class="cfl">Proveedor</div><div class="cfv" style="font-size:11px" title="${x.proveedor||''}">${shortText(x.proveedor)}</div></div>`:''}
+          <div><div class="cfl">Revisión</div><div class="cfv" style="font-family:var(--mono);font-size:11px">${x.fecha||'—'}</div></div>
+        </div>
+        ${mant?`<div class="maint-note">
+          <strong>${mantStatus}</strong>${x.mantFecha?` · ${x.mantFecha}`:''}${x.mantResp?` · ${x.mantResp}`:''}
+          ${x.mantNota?`<br>${x.mantNota}`:''}
+        </div>`:''}
+        ${x.obs?`<div class="cobs">💬 ${x.obs}</div>`:''}
+      </div>
       <div class="cfoot" style="position:relative">
         <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
         ${esContenedor2
@@ -687,6 +695,12 @@ function rCards(data,mc){
       </div>
     </div>`;
   }).join('')}</div>`;
+}
+
+function toggleCardExtra(btn){
+  const extra=btn.nextElementSibling;
+  extra.classList.toggle('open');
+  btn.textContent=extra.classList.contains('open')?'▲ Ver menos':'▼ Ver más';
 }
 
 function rList(data,mc){

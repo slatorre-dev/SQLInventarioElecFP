@@ -585,6 +585,9 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .icard:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);transform:translateY(-3px);border-color:var(--accent)}
 .icard.low{border-left-color:var(--red);border-left-width:3px}
 .card-photo{width:100%;aspect-ratio:16/9;display:block;object-fit:cover;border:1px solid var(--border);border-radius:8px;background:var(--surface2);margin-bottom:12px}
+.card-expand-btn{display:none}
+.card-extra{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.cfg-extra{border-top:none!important;padding-top:0!important}
 @media (max-width: 900px){
   .card-photo{width:50%;aspect-ratio:4/3}
 }
@@ -690,6 +693,12 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .cfg{grid-template-columns:1fr 1fr}
   .cfoot{overflow-x:auto;padding-bottom:2px}
   .cfoot .btn{flex:0 0 auto}
+  .card-head{display:flex;gap:10px;align-items:flex-start}
+  .card-head .card-photo{width:72px!important;height:72px!important;aspect-ratio:1/1!important;margin-bottom:0!important;flex-shrink:0;object-position:center}
+  .card-head .ch{flex:1;min-width:0;margin-bottom:0}
+  .card-extra{display:none;border-top:none;margin-top:0;padding-top:0}
+  .card-extra.open{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+  .card-expand-btn{display:block;width:100%;background:none;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:12px;padding:6px 0;cursor:pointer;text-align:center;margin-top:8px;font-family:inherit}
   .tw{display:none!important}
   #mItemHistorial .tw{display:table!important}
   .mbg{backdrop-filter:none!important}
