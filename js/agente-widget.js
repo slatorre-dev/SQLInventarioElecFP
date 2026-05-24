@@ -16,6 +16,7 @@
   var AI_ENDPOINT = '/proxy/ai';  // Pages Function — el token vive en el servidor
   var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
   var AGENTE_NOMBRE = 'Volt';    // Nombre del agente IA
+  var LEARN_KEY = 'volt_intent_examples_v1';
 
   // Obtener credenciales — usa SESSION global de la app (state.js)
   function getCreds() {
@@ -77,7 +78,10 @@
       '- MANTENIMIENTO: "solicita mantenimiento para el soldador", "hay que revisarlo", ' +
       '"se ha roto el osciloscopio", "requiere reparación", "llevar al técnico"\n' +
       '- AÑADIR ÍTEM: "añade un polímetro en el aula 35", "dar de alta una impresora", ' +
-      '"nuevo equipo en el taller", "inventariar un osciloscopio", "ha llegado nuevo material"\n' +
+      '"nuevo equipo en el taller", "inventariar un osciloscopio", "ha llegado nuevo material", ' +
+      '"mete en inventario una fuente", "registrar entrada de material"\n' +
+      '- EDITAR FICHA: "edita el osciloscopio", "abre la ficha del taladro", "cambia el aula", ' +
+      '"mueve el polímetro al taller", "corrige la ubicación", "modifica los datos"\n' +
       '- CONSULTAS: "¿stock bajo?", "¿quién tiene el osciloscopio?", "¿qué hay en el Aula 35?", ' +
       '"¿qué necesita mantenimiento?", "¿está prestado?", "lista de préstamos activos", ' +
       '"¿cuántos multímetros hay?", "resumen del aula 14"\n' +
@@ -291,6 +295,7 @@
     inventario: [],
     messages: [],
     contextItem: null,  // último ítem en contexto (para "este", "esta", etc.)
+    learnedIntents: [],
     // csv
     csvParsed: [],
     // audit filter
@@ -491,6 +496,7 @@
     panel.querySelector('#ag-send').addEventListener('click', sendChat);
     panel.querySelector('#ag-scan').addEventListener('click', startScan);
     panel.querySelector('#ag-mic').addEventListener('click', startMic);
+    panel.querySelector('#ag-clear').addEventListener('click', function() { limpiarPantallaChat(true); });
 
     // Quick actions
     panel.querySelectorAll('.ag-quick-btn').forEach(function(b) {
@@ -571,6 +577,7 @@
           '<div class="ag-input-row">',
             '<button id="ag-scan" class="ag-send" title="Escanear código QR / código de barras" style="background:#1e293b">📷</button>',
             '<button id="ag-mic" class="ag-send ag-mic-btn" title="Hablar por micrófono" style="background:#1e293b">🎤</button>',
+            '<button id="ag-clear" class="ag-send" title="Borrar pantalla del chat" style="background:#1e293b">🧹</button>',
             '<input id="ag-chat-input" class="ag-input" placeholder="Dame el multímetro · Devuelvo el soldador · ¿Qué hay en Aula 35?">',
             '<button id="ag-send" class="ag-send" disabled>➤</button>',
           '</div>',
@@ -721,7 +728,14 @@
     'de', 'del', 'al', 'a', 'en', 'con', 'por', 'para', 'que', 'qué', 'cual', 'cuál',
     'tiene', 'tienes', 'hay', 'cuanto', 'cuánto', 'cuanta', 'cuánta', 'cuantos', 'cuántos',
     'quiero', 'quieres', 'necesito', 'necesitas', 'puedo', 'puedes', 'pedir', 'prestado',
-    'busco', 'buscar', 'me', 'te', 'se', 'su', 'sus', 'mi', 'tu', 'es', 'son',
+    'prestada', 'prestame', 'prestar', 'prestamelo', 'prestamela', 'devolver', 'devuelvo',
+    'devuelve', 'devuelto', 'devuelta', 'retornar', 'entregar', 'entrego', 'traigo',
+    'busco', 'buscar', 'usar', 'coger', 'sacar', 'llevar', 'llevarme', 'dame', 'dejame',
+    'actualiza', 'actualizar', 'cambia', 'cambiar', 'modifica', 'modificar', 'editar',
+    'edita', 'corrige', 'corregir', 'mover', 'mueve', 'trasladar', 'traslada', 'abre',
+    'abrir', 'ficha', 'datos', 'aula', 'ubicacion', 'ubicación', 'categoria', 'categoría',
+    'ciclo', 'modulo', 'módulo', 'proveedor', 'referencia', 'nombre', 'estado',
+    'cantidad', 'stock', 'unidades', 'existencias', 'me', 'te', 'se', 'su', 'sus', 'mi', 'tu', 'es', 'son',
     'y', 'o', 'pero', 'si', 'no', 'lo', 'le', 'les', 'sobre', 'como', 'cómo'];
 
   function extractKeywords(query) {
@@ -922,17 +936,27 @@
     }
     if (input.includes('pedir') || input.includes('prestado') || input.includes('dame') ||
         input.includes('préstame') || input.includes('prestame') || input.includes('coger') ||
-        input.includes('llevarme') || input.includes('necesito') || input.includes('reservar')) {
+        input.includes('llevarme') || input.includes('prestar') || input.includes('necesito') ||
+        input.includes('reservar') || input.includes('usar') || input.includes('sacar')) {
       suggestions.push({ text: '✅ Registrar préstamo', q: input });
     }
     if (input.includes('devolver') || input.includes('devuelvo') || input.includes('retornar') ||
-        input.includes('traigo') || input.includes('entrego') || input.includes('cerrar prestamo')) {
+        input.includes('traigo') || input.includes('entrego') || input.includes('devuelto') ||
+        input.includes('devuelta') || input.includes('vuelta') || input.includes('cerrar prestamo') ||
+        input.includes('cerrar préstamo')) {
       suggestions.push({ text: '↩ Registrar devolución', q: input });
     }
     if (input.includes('añadir') || input.includes('anadir') || input.includes('crear') ||
         input.includes('nuevo') || input.includes('agregar') || input.includes('dar de alta') ||
-        input.includes('alta') || input.includes('inventariar')) {
+        input.includes('alta') || input.includes('inventariar') || input.includes('registrar entrada') ||
+        input.includes('meter en inventario') || input.includes('ha llegado') || input.includes('hemos comprado')) {
       suggestions.push({ text: '📦 Crear nuevo item', q: input });
+    }
+    if (input.includes('editar') || input.includes('modificar') || input.includes('corregir') ||
+        input.includes('cambiar aula') || input.includes('cambiar ubicacion') || input.includes('cambiar ubicación') ||
+        input.includes('mover') || input.includes('trasladar') || input.includes('abre la ficha') ||
+        input.includes('abrir ficha')) {
+      suggestions.push({ text: '✏️ Abrir ficha para editar', q: input });
     }
     if (input.includes('stock') || input.includes('minimo') || input.includes('mínimo') ||
         input.includes('cantidad') || input.includes('unidades') || input.includes('reponer')) {
@@ -984,34 +1008,43 @@
   // ── Detectar intención de préstamo ────────────────────────────────────────
   function detectarIntencionPrestamo(query) {
     var q = normalize(query || '');  // normalize() quita tildes → un solo patrón por palabra
+    var scored = scoreIntentions(q);
+    if (scored && scored.tipo === 'prestamo') return true;
     var patrones = ['pedir prestado', 'pedirlo prestado', 'pedirla prestada', 'prestamo',
-      'puedo pedir', 'me llevo', 'me lo llevo', 'me la llevo', 'cojo', 'tomo prestado',
-      'facilitar prestamo', 'lo quiero', 'la quiero',
-      'lo necesito', 'la necesito', 'quiero pedir', 'quiero coger', 'reservar',
+      'prestar el', 'prestar la', 'prestar un', 'prestar una', 'prestamo de',
+      'puedo pedir', 'me llevo', 'me lo llevo', 'me la llevo', 'cojo', 'cogemos', 'tomo prestado',
+      'facilitar prestamo', 'dejar prestado', 'dejarme', 'lo quiero', 'la quiero',
+      'lo necesito', 'la necesito', 'quiero pedir', 'quiero coger', 'quiero usar', 'reservar',
       'abre el formulario', 'abrir formulario', 'abrir el formulario', 'rellenar formulario',
       'quiero el', 'quiero la', 'pedirla', 'pedirlo', 'pidela', 'pidelo',
-      'tramitar', 'tramitalo', 'gestionar prestamo', 'solicitar',
+      'tramitar', 'tramitalo', 'gestionar prestamo', 'solicitar', 'solicito',
       'si por favor', 'dale', 'venga', 'adelante',
       // pedir / coger / llevar
       'dame el', 'dame la', 'dame un', 'dame una', 'deme el', 'deme la', 'deme un', 'deme una',
-      'prestame', 'prestamelo', 'prestamela',
-      'dejame', 'dejamelo', 'dejamela',
-      'me hace falta', 'necesito usar', 'necesito coger',
+      'pasame el', 'pasame la', 'pasame un', 'pasame una',
+      'prestame', 'prestamelo', 'prestamela', 'prestanos', 'prestanos el', 'prestanos la',
+      'dejame', 'dejamelo', 'dejamela', 'dejanos', 'dejanos el', 'dejanos la',
+      'me hace falta', 'nos hace falta', 'necesito usar', 'necesito coger', 'necesitamos usar',
       'necesito el', 'necesito la', 'necesito un', 'necesito una',
+      'necesitamos el', 'necesitamos la', 'necesitamos un', 'necesitamos una',
       'voy a coger', 'voy a llevarme', 'voy a usar', 'voy a tomar', 'voy a pedir',
-      'me lo llevo prestado', 'me la llevo prestada', 'coger prestado',
-      'puedo usar', 'puedo coger', 'puedo llevarme', 'puedo tomar',
+      'vamos a coger', 'vamos a usar', 'vamos a llevarnos', 'me lo llevo prestado', 'me la llevo prestada',
+      'coger prestado', 'sacar prestado', 'sacar del almacen', 'sacar del inventario',
+      'puedo usar', 'puedo coger', 'puedo llevarme', 'puedo tomar', 'puedes prestarme',
       'me lo cojo', 'me la cojo', 'cojo el', 'cojo la', 'cojo un', 'cojo una',
-      'me lo tomo', 'me la tomo', 'tomo el', 'tomo la',
-      'llevarme el', 'llevarme la', 'llevarme un', 'llevarme una',
+      'cogemos el', 'cogemos la', 'cogemos un', 'cogemos una',
+      'me lo tomo', 'me la tomo', 'tomo el', 'tomo la', 'saco el', 'saco la', 'saco un', 'saco una',
+      'llevarme el', 'llevarme la', 'llevarme un', 'llevarme una', 'llevarnos el', 'llevarnos la',
       'quiero cogerlo', 'quiero cogerla', 'quiero tomarlo', 'quiero tomarla',
-      'quiero llevarmelo', 'quiero llevarmela',
+      'quiero llevarmelo', 'quiero llevarmela', 'quiero sacarlo', 'quiero sacarla',
       'me interesa', 'me quedo con', 'me quedo ese', 'me quedo esa',
       'ese quiero', 'esa quiero', 'lo pido', 'la pido', 'lo solicito', 'la solicito',
       'ponlo a mi nombre', 'ponla a mi nombre', 'a mi nombre',
       // registrar préstamo
       'apuntar prestamo', 'anotar prestamo', 'registrar prestamo',
+      'apunta un prestamo', 'anota un prestamo', 'registra un prestamo',
       'hacer el prestamo', 'abrir prestamo', 'nuevo prestamo', 'formalizar prestamo',
+      'crear prestamo', 'dar salida', 'salida de material',
       // frases implícitas coloquiales
       'me llevo prestado', 'me llevo prestada', 'en prestamo',
       'para llevarme', 'quiero llevarlo', 'quiero llevarla'];
@@ -1034,29 +1067,40 @@
 
   function detectarIntencionAnadirItem(query) {
     var q = (query || '').toLowerCase().trim();
+    var n = normalize(q);
+    var scored = scoreIntentions(n);
+    if (scored && scored.tipo !== 'anadir' && scored.score >= 7) return false;
+    if (scored && scored.tipo === 'anadir') return true;
     var patrones = ['añadir', 'anadir', 'agregar', 'crear', 'nuevo item', 'nuevo ítem', 'nuevo material',
       'añadir item', 'anadir item', 'agregar item', 'crear item', 'registro nuevo', 'registrar nuevo',
       'incluir material', 'meter item', 'poner item', 'nuevo producto', 'alta item', 'alta material',
-      'incorporar', 'incluir nuevo', 'añadir material', 'anadir material', 'agregar material',
+      'incorporar', 'incorpora', 'incluir nuevo', 'añadir material', 'anadir material', 'agregar material',
+      'meter material', 'crear material', 'registrar material', 'registrar equipo',
       // dar de alta
       'dar de alta', 'darlo de alta', 'darla de alta', 'quiero dar de alta', 'quiero registrar',
       'nueva alta', 'alta nuevo', 'alta nueva', 'alta de equipo', 'alta de instrumento',
+      'alta en inventario', 'alta de material', 'alta de item',
       // inventariar
       'inventariar', 'inventariarlo', 'inventariarla', 'quiero inventariar', 'necesito inventariar',
+      'meter inventario', 'registrar inventario',
       // entrada al inventario
       'entrada al inventario', 'entrada de material', 'entrada de item', 'entrada de ítem',
       'meter al inventario', 'meter en el inventario', 'poner al inventario', 'poner en el inventario',
       'añadir al inventario', 'agregar al inventario', 'anadir al inventario', 'incluir en el inventario',
-      'apuntar en el inventario', 'registrar en inventario',
+      'apuntar en el inventario', 'registrar en inventario', 'registrar entrada',
+      'nueva entrada', 'entrada nueva', 'dar entrada', 'recepcionar material',
       // nueva adquisición
       'nueva adquisicion', 'nueva adquisición', 'hemos adquirido', 'hemos comprado',
+      'he comprado', 'han comprado', 'compra nueva', 'material comprado',
       'acaba de llegar', 'acabamos de recibir', 'nos han traído', 'nos han traido',
       'nos han dado', 'han llegado nuevos', 'han llegado nuevas', 'ha llegado nuevo', 'ha llegado nueva',
+      'ha llegado material', 'llego material', 'recibido material',
       'llega nuevo', 'llega nueva', 'nuevo equipo', 'nuevo aparato', 'nuevo instrumento',
       'nuevo dispositivo', 'nueva herramienta', 'nueva maquina', 'nueva máquina',
       // quiero/necesito crear
       'quiero crear', 'necesito crear', 'necesito añadir', 'necesito agregar', 'necesito anadir',
-      'quiero incluir', 'quiero dar entrada', 'dar entrada a'];
+      'quiero incluir', 'quiero dar entrada', 'dar entrada a', 'puedes crear', 'puedes añadir',
+      'puedes anadir', 'puedes registrar'];
     return patrones.some(function(p) { return q.includes(p); });
   }
 
@@ -1064,10 +1108,13 @@
     var q = normalize(query || '');
     // 1. Quitar el verbo de acción (primera aparición)
     var verbos = ['quiero anadir', 'quiero agregar', 'quiero crear', 'quiero añadir',
+      'anade un', 'anade una', 'anade el', 'anade la', 'anade',
       'anadir un', 'anadir una', 'anadir el', 'anadir la', 'anadir',
       'añadir un', 'añadir una', 'añadir el', 'añadir la', 'añadir',
-      'agregar un', 'agregar una', 'agregar', 'crear un', 'crear una', 'crear',
-      'nuevo', 'nueva', 'registrar', 'incorporar', 'meter', 'poner'];
+      'agrega un', 'agrega una', 'agrega el', 'agrega la', 'agrega',
+      'agregar un', 'agregar una', 'agregar', 'crea un', 'crea una', 'crea',
+      'crear un', 'crear una', 'crear', 'registra un', 'registra una', 'registra',
+      'nuevo', 'nueva', 'registrar', 'incorporar', 'incorpora', 'meter', 'mete', 'poner', 'pon'];
     var resto = q;
     for (var i = 0; i < verbos.length; i++) {
       var idx = resto.indexOf(verbos[i]);
@@ -1394,18 +1441,201 @@
     return list.some(function(p) { return q.includes(p); });
   }
 
+  function detectarComandoLimpiarPantalla(query) {
+    var n = normalize(query || '');
+    return matchAny(n, [
+      'borra la pantalla', 'borrar la pantalla', 'limpia la pantalla', 'limpiar la pantalla',
+      'borra pantalla', 'limpia pantalla', 'borra el chat', 'borrar el chat',
+      'limpia el chat', 'limpiar el chat', 'vaciar chat', 'vacia el chat',
+      'borra conversacion', 'borrar conversacion', 'limpia conversacion',
+      'nueva conversacion', 'reinicia el chat', 'reset chat'
+    ]);
+  }
+
+  var INTENT_LABELS = {
+    anadir: 'Añadir ítem',
+    prestamo: 'Préstamo',
+    devolver: 'Devolución',
+    stock: 'Stock',
+    estado: 'Estado',
+    mantenimiento: 'Mantenimiento',
+    editar: 'Editar ficha',
+    quien_tiene: 'Préstamos activos',
+    resumen_aula: 'Resumen aula',
+    stock_bajo: 'Stock bajo',
+    lista_mantenimiento: 'Lista mantenimiento'
+  };
+
+  function cargarAprendizajes() {
+    try {
+      var raw = localStorage.getItem(LEARN_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      state.learnedIntents = Array.isArray(parsed) ? parsed.filter(function(x) {
+        return x && x.phrase && x.intent && INTENT_LABELS[x.intent];
+      }).slice(-80) : [];
+    } catch(e) {
+      state.learnedIntents = [];
+    }
+  }
+
+  function guardarAprendizaje(frase, intent) {
+    cargarAprendizajes();
+    var phrase = normalize(frase || '');
+    if (!phrase || !INTENT_LABELS[intent]) return false;
+    state.learnedIntents = state.learnedIntents.filter(function(x) {
+      return !(x.phrase === phrase && x.intent === intent);
+    });
+    state.learnedIntents.push({
+      phrase: phrase,
+      raw: frase,
+      intent: intent,
+      createdAt: new Date().toISOString()
+    });
+    state.learnedIntents = state.learnedIntents.slice(-80);
+    try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents)); } catch(e) {}
+    return true;
+  }
+
+  function learnedIntentScore(n, phrase) {
+    if (!n || !phrase) return 0;
+    if (n === phrase) return 28;
+    if (n.includes(phrase) || phrase.includes(n)) return 22;
+    var words = phrase.split(/\s+/).filter(function(w) { return w.length > 3; });
+    if (!words.length) return 0;
+    var hits = words.filter(function(w) { return n.includes(w); }).length;
+    return hits >= Math.ceil(words.length * 0.7) ? 14 : 0;
+  }
+
+  function scorePatterns(n, rules) {
+    return rules.reduce(function(total, rule) {
+      var pattern = Array.isArray(rule) ? rule[0] : rule;
+      var weight = Array.isArray(rule) ? rule[1] : 1;
+      return total + (n.includes(pattern) ? weight : 0);
+    }, 0);
+  }
+
+  function scoreIntentions(n) {
+    var scores = [
+      { tipo: 'anadir', score: scorePatterns(n, [
+        ['anade', 10], ['añade', 10], ['anadir', 10], ['añadir', 10], ['agregar', 9],
+        ['dar de alta', 10], ['alta de material', 9], ['alta de item', 9], ['alta en inventario', 9],
+        ['inventariar', 9], ['registrar entrada', 10], ['dar entrada', 9], ['nueva entrada', 9],
+        ['meter en el inventario', 9], ['meter al inventario', 9], ['nuevo material', 8],
+        ['nuevo item', 8], ['nuevo equipo', 7], ['ha llegado', 7], ['hemos comprado', 7],
+        ['recibido material', 7], ['recepcionar material', 8], ['crear material', 7],
+        ['registrar material', 7], ['registrar equipo', 7]
+      ]) },
+      { tipo: 'prestamo', score: scorePatterns(n, [
+        ['prestamo', 8], ['pedir prestado', 10], ['prestame', 10], ['prestanos', 10],
+        ['dame el', 8], ['dame la', 8], ['dejame', 8], ['necesito usar', 7],
+        ['me llevo', 8], ['voy a usar', 7], ['vamos a usar', 7], ['cojo el', 7],
+        ['saco el', 7], ['sacar prestado', 9], ['dar salida', 8], ['salida de material', 8],
+        ['ponlo a mi nombre', 9], ['ponla a mi nombre', 9], ['registrar prestamo', 10],
+        ['apuntar prestamo', 10], ['anotar prestamo', 10]
+      ]) },
+      { tipo: 'devolver', score: scorePatterns(n, [
+        ['devolver', 10], ['devuelvo', 10], ['devuelve', 9], ['devolucion', 10],
+        ['retornar', 8], ['entrego', 8], ['entregar', 8], ['lo traigo', 9],
+        ['la traigo', 9], ['lo traemos', 9], ['la traemos', 9], ['he devuelto', 10],
+        ['esta de vuelta', 10], ['cerrar prestamo', 9], ['registrar devolucion', 10],
+        ['marcar como devuelto', 10], ['dar por devuelto', 10]
+      ]) },
+      { tipo: 'stock', score: scorePatterns(n, [
+        ['stock', 7], ['cantidad', 6], ['unidades', 6], ['existencias', 6],
+        ['quedan ', 7], ['tenemos ', 5], ['actualiza', 6], ['actualizar', 6],
+        ['cambia la cantidad', 9], ['modificar cantidad', 9], ['corregir stock', 9],
+        ['recuento', 7], ['inventario fisico', 8], ['hay en total', 8]
+      ]) },
+      { tipo: 'estado', score: scorePatterns(n, [
+        ['estado', 7], ['marca como', 7], ['marcar como', 7], ['averia', 8],
+        ['deteriorado', 8], ['deteriorada', 8], ['buen estado', 8], ['dar de baja', 8],
+        ['no funciona', 8], ['esta fallando', 8], ['fuera de servicio', 8],
+        ['inutilizable', 8], ['irreparable', 8]
+      ]) },
+      { tipo: 'mantenimiento', score: scorePatterns(n, [
+        ['mantenimiento', 8], ['reparacion', 7], ['revision', 7], ['reparar', 7],
+        ['revisar', 7], ['incidencia', 9], ['parte de averia', 9], ['reportar fallo', 8],
+        ['solicita mantenimiento', 10], ['marcar para mantenimiento', 10],
+        ['enviar a mantenimiento', 9], ['llevar a reparar', 9]
+      ]) },
+      { tipo: 'quien_tiene', score: scorePatterns(n, [
+        ['quien tiene', 10], ['quien lo tiene', 10], ['prestamos activos', 10],
+        ['prestamos pendientes', 9], ['que hay prestado', 9], ['material prestado', 8],
+        ['prestado a', 8], ['quien se ha llevado', 9], ['a quien esta prestado', 10]
+      ]) },
+      { tipo: 'resumen_aula', score: scorePatterns(n, [
+        ['que hay en', 9], ['resumen del aula', 10], ['inventario del aula', 10],
+        ['listar aula', 8], ['items del aula', 9], ['material del aula', 9],
+        ['material del taller', 9], ['contenido del aula', 8]
+      ]) },
+      { tipo: 'stock_bajo', score: scorePatterns(n, [
+        ['stock bajo', 10], ['poco stock', 9], ['sin stock', 9], ['stock critico', 10],
+        ['por debajo del minimo', 10], ['bajo minimo', 10], ['agotados', 8],
+        ['lista de compra', 8], ['que hay que reponer', 9]
+      ]) },
+      { tipo: 'lista_mantenimiento', score: scorePatterns(n, [
+        ['que necesita mantenimiento', 10], ['mantenimientos pendientes', 10],
+        ['pendiente de mantenimiento', 9], ['lista de reparaciones', 9],
+        ['incidencias abiertas', 10], ['partes pendientes', 9], ['que hay averiado', 8]
+      ]) },
+      { tipo: 'editar', score: scorePatterns(n, [
+        ['editar', 8], ['edita', 8], ['abrir ficha', 9], ['abre la ficha', 9],
+        ['modificar ficha', 9], ['actualizar ficha', 9], ['actualizar datos', 8],
+        ['corregir ficha', 9], ['cambiar aula', 8], ['cambiar de aula', 8],
+        ['cambiar ubicacion', 8], ['corrige ubicacion', 8], ['mover el', 7],
+        ['mueve el', 7], ['trasladar el', 7], ['cambiar proveedor', 8],
+        ['cambiar referencia', 8], ['cambiar nombre', 8]
+      ]) }
+    ];
+
+    // Penalizaciones para evitar falsos positivos por palabras usadas como contexto
+    if (scores[0].score > 0 && matchAny(n, ['prestamo', 'devolucion', 'devolver', 'stock bajo'])) scores[0].score -= 8;
+    if (scores[5].score > 0 && matchAny(n, ['ciclo de mantenimiento', 'modulo de mantenimiento'])) scores[5].score -= 7;
+    if (scores[3].score > 0 && scores[8].score >= scores[3].score) scores[3].score -= 4;
+
+    if (!state.learnedIntents.length) cargarAprendizajes();
+    state.learnedIntents.forEach(function(ex) {
+      var learnedScore = learnedIntentScore(n, ex.phrase);
+      if (!learnedScore) return;
+      var row = scores.find(function(s) { return s.tipo === ex.intent; });
+      if (row) row.score += learnedScore;
+    });
+
+    scores.sort(function(a, b) { return b.score - a.score; });
+    return scores[0].score >= 7 ? scores[0] : null;
+  }
+
   function detectarIntencion(q) {
     var n = normalize(q);
+    var scored = scoreIntentions(n);
+    if (scored && scored.tipo !== 'anadir' && scored.tipo !== 'prestamo') {
+      if (scored.tipo === 'stock') {
+        var numScored = n.match(/\b(\d+)\s*(unidades?|uds?\.?|ud\.?|piezas?|ejemplares?|items?|existencias?)?\b/);
+        return { tipo: 'stock', cantidad: numScored ? parseInt(numScored[1]) : null };
+      }
+      if (scored.tipo === 'estado') {
+        var estadoScored = null;
+        if (matchAny(n, ['averia', 'averiado', 'averiada', 'no funciona', 'estropeado', 'estropeada',
+            'funciona mal', 'esta fallando', 'no arranca', 'no enciende', 'no prende', 'no va', 'fuera de servicio'])) estadoScored = 'Avería';
+        else if (matchAny(n, ['deteriorado', 'deteriorada', 'mal estado', 'desgastado', 'desgastada', 'se ha deteriorado', 'funciona regular'])) estadoScored = 'Deteriorado';
+        else if (matchAny(n, ['bueno', 'buena', 'buen estado', 'bien', 'ok', 'funciona', 'perfecto', 'perfecta'])) estadoScored = 'Bueno';
+        else if (matchAny(n, ['baja', 'dar de baja', 'darlo de baja', 'darla de baja', 'desecho', 'inservible', 'inutilizable', 'irreparable', 'poner en baja'])) estadoScored = 'Baja';
+        return { tipo: 'estado', estado: estadoScored };
+      }
+      return { tipo: scored.tipo };
+    }
 
     // DEVOLVER PRÉSTAMO
     if (matchAny(n, ['devolver', 'devuelve', 'devolvemos', 'retornar', 'retorna', 'regresa', 'regresar',
         'ya lo tengo', 'ya la tengo', 'lo devuelvo', 'la devuelvo', 'devolverlo', 'devolverla',
-        'entregar', 'entrega', 'ha vuelto', 'han vuelto', 'devolucion',
+        'entregar', 'entrega', 'entrego', 'entregamos', 'ha vuelto', 'han vuelto', 'devolucion',
         'quiero devolver', 'voy a devolver', 'ya lo devuelvo', 'ya la devuelvo',
-        'lo traigo', 'la traigo', 'ya lo traje', 'ya la traje', 'ya lo he traido', 'ya la he traido',
+        'lo traigo', 'la traigo', 'lo traemos', 'la traemos', 'ya lo traje', 'ya la traje',
+        'ya lo he traido', 'ya la he traido', 'lo he traido', 'la he traido',
         'lo he devuelto', 'la he devuelto', 'he devuelto', 'hemos devuelto',
-        'ya esta de vuelta', 'ya ha llegado', 'ya esta aqui',
+        'ya esta de vuelta', 'esta de vuelta', 'viene de vuelta', 'ya ha llegado', 'ya esta aqui',
         'cerrar prestamo', 'finalizar prestamo', 'terminar prestamo', 'completar prestamo',
+        'cerrar devolucion', 'registrar devolucion', 'anotar devolucion',
         'marcar como devuelto', 'marcar devuelto', 'dar por devuelto', 'dar por devuelta',
         'se devolvio', 'se ha devuelto', 'lo han devuelto', 'la han devuelto',
         'se entrego', 'se ha entregado', 'han entregado',
@@ -1418,15 +1648,18 @@
         'modifica la cantidad', 'modificar cantidad', 'stock a ', 'cantidad a ', 'hay ahora',
         'quedan ', 'tenemos ', 'unidades a ', 'ponlo a ', 'ponla a ', 'ajusta', 'ajustar stock',
         'nueva cantidad', 'cambiar stock', 'modifica stock',
-        'subir stock', 'bajar stock', 'reducir stock', 'aumentar stock',
+        'subir stock', 'bajar stock', 'reducir stock', 'aumentar stock', 'regularizar stock',
+        'corregir stock', 'corregir cantidad', 'rectificar stock', 'rectificar cantidad',
+        'inventario fisico', 'recuento', 'tras contar', 'contados ', 'contadas ',
         'actualiza el stock', 'actualiza las unidades', 'actualiza la cantidad',
         'actualizar el stock', 'actualizar las unidades', 'actualizar la cantidad',
         'pon stock', 'pon el stock', 'mete la cantidad', 'mete el stock',
         'cambia el numero', 'cambia las unidades', 'modificar las unidades',
         'sube el stock', 'baja el stock', 'sube la cantidad', 'baja la cantidad',
         'incrementar stock', 'decrementar stock', 'reponer stock', 'añadir al stock',
-        'quitar del stock', 'sumar al stock', 'restar del stock'])) {
-      var numMatch = n.match(/\b(\d+)\s*(unidades?|uds?|ud)?\b/);
+        'quitar del stock', 'sumar al stock', 'restar del stock', 'poner existencias',
+        'existencias a ', 'hay en total', 'total de unidades'])) {
+      var numMatch = n.match(/\b(\d+)\s*(unidades?|uds?\.?|ud\.?|piezas?|ejemplares?|items?|existencias?)?\b/);
       return { tipo: 'stock', cantidad: numMatch ? parseInt(numMatch[1]) : null };
     }
 
@@ -1437,15 +1670,16 @@
         'poner como', 'catalogar como', 'clasificar como', 'registrar como',
         'marcarlo como', 'marcarla como', 'cambiar su estado', 'cambiar el estado a',
         'se ha estropeado', 'ya no funciona', 'esta estropeado', 'esta estropeada',
-        'funciona mal', 'esta en mal estado', 'se ha deteriorado', 'esta fallando',
+        'funciona mal', 'funciona regular', 'esta en mal estado', 'se ha deteriorado', 'esta fallando',
         'no arranca', 'no enciende', 'no prende', 'no va', 'no va bien',
-        'poner en baja', 'poner a baja', 'darlo de baja', 'darla de baja', 'mandar a baja'])) {
+        'poner en baja', 'poner a baja', 'darlo de baja', 'darla de baja', 'mandar a baja',
+        'retirar del servicio', 'fuera de servicio', 'inutilizable', 'irreparable'])) {
       var estado = null;
       if (matchAny(n, ['averia', 'averiado', 'averiada', 'no funciona', 'estropeado', 'estropeada',
-          'funciona mal', 'esta fallando', 'no arranca', 'no enciende', 'no prende', 'no va'])) estado = 'Avería';
-      else if (matchAny(n, ['deteriorado', 'deteriorada', 'mal estado', 'desgastado', 'se ha deteriorado'])) estado = 'Deteriorado';
+          'funciona mal', 'esta fallando', 'no arranca', 'no enciende', 'no prende', 'no va', 'fuera de servicio'])) estado = 'Avería';
+      else if (matchAny(n, ['deteriorado', 'deteriorada', 'mal estado', 'desgastado', 'desgastada', 'se ha deteriorado', 'funciona regular'])) estado = 'Deteriorado';
       else if (matchAny(n, ['bueno', 'buena', 'buen estado', 'bien', 'ok', 'funciona', 'perfecto', 'perfecta'])) estado = 'Bueno';
-      else if (matchAny(n, ['baja', 'dar de baja', 'darlo de baja', 'darla de baja', 'desecho', 'inservible', 'poner en baja'])) estado = 'Baja';
+      else if (matchAny(n, ['baja', 'dar de baja', 'darlo de baja', 'darla de baja', 'desecho', 'inservible', 'inutilizable', 'irreparable', 'poner en baja'])) estado = 'Baja';
       return { tipo: 'estado', estado: estado };
     }
 
@@ -1462,8 +1696,10 @@
         'llevar al tecnico', 'hay que llevarlo al tecnico', 'requiere mantenimiento',
         'requiere revision', 'requiere reparacion', 'requiere atencion',
         'notificar mantenimiento', 'aviso de mantenimiento', 'tiene un fallo',
-        'reportar averia', 'reportar fallo', 'reportar problema',
-        'poner en mantenimiento', 'enviar a mantenimiento', 'necesita repararse'])) {
+        'reportar averia', 'reportar fallo', 'reportar problema', 'abrir incidencia',
+        'crear incidencia', 'parte de averia', 'parte de reparacion',
+        'poner en mantenimiento', 'enviar a mantenimiento', 'mandar a mantenimiento',
+        'llevar a reparar', 'necesita repararse'])) {
       return { tipo: 'mantenimiento' };
     }
 
@@ -1473,7 +1709,9 @@
         'quien lo tiene ahora', 'quien se lo llevo', 'que profesor tiene', 'que profesora tiene',
         'a quien esta prestado', 'a quien se lo di', 'quien tiene el prestamo',
         'prestamos de', 'que hay prestado', 'listar prestamos', 'ver prestamos', 'mostrar prestamos',
-        'historial de prestamos', 'que esta prestado', 'quien tiene algo prestado'])) {
+        'historial de prestamos', 'que esta prestado', 'quien tiene algo prestado',
+        'material prestado', 'materiales prestados', 'prestado a', 'prestada a',
+        'que se ha llevado', 'que se llevo', 'quien se ha llevado'])) {
       return { tipo: 'quien_tiene' };
     }
 
@@ -1486,7 +1724,9 @@
         'dame el listado del aula', 'dame el listado de', 'listado del aula', 'listado de la clase',
         'dame un resumen de', 'dame el resumen de', 'ver todo lo que hay en',
         'mostrar todo lo de', 'contenido del aula', 'contenido de la clase',
-        'que esta en el aula', 'que esta en la clase', 'ver inventario del aula'])) {
+        'que esta en el aula', 'que esta en la clase', 'ver inventario del aula',
+        'inventario de clase', 'inventario de taller', 'material del aula',
+        'material de la clase', 'material del taller'])) {
       return { tipo: 'resumen_aula' };
     }
 
@@ -1499,7 +1739,8 @@
         'punto de pedido', 'necesitar reponer', 'que hay que comprar', 'que falta comprar',
         'lista de compra', 'que necesitamos reponer', 'que hay que reponer',
         'agotados', 'agotadas', 'se acabo', 'se han acabado',
-        'falta stock', 'falta material', 'hace falta reponer'])) {
+        'falta stock', 'falta material', 'hace falta reponer', 'bajo minimo',
+        'por debajo de minimo', 'material agotado', 'materiales agotados'])) {
       return { tipo: 'stock_bajo' };
     }
 
@@ -1512,8 +1753,24 @@
         'que esta para reparar', 'que esta roto', 'que esta averiado', 'que no funciona',
         'items en mantenimiento', 'items pendientes de mantenimiento',
         'por reparar', 'en cola de reparacion', 'que tienen fallo',
-        'que tiene un fallo', 'que hay roto', 'que hay averiado'])) {
+        'que tiene un fallo', 'que hay roto', 'que hay averiado',
+        'incidencias abiertas', 'partes de averia', 'partes pendientes'])) {
       return { tipo: 'lista_mantenimiento' };
+    }
+
+    // EDITAR / ABRIR FICHA DE ITEM
+    if (matchAny(n, ['editar item', 'editar material', 'editar ficha', 'edita el', 'edita la',
+        'abrir ficha', 'abre la ficha', 'abre el item', 'abre el material',
+        'modificar item', 'modificar material', 'modificar ficha', 'modifica el', 'modifica la',
+        'corregir ficha', 'corrige el', 'corrige la', 'cambiar aula', 'cambia el aula',
+        'cambiar de aula', 'cambiar a aula', 'pasar al aula', 'pasar a aula',
+        'cambiar ubicacion', 'cambia la ubicacion', 'corrige ubicacion', 'modifica ubicacion',
+        'mover a ', 'mueve a ', 'mover el', 'mover la', 'mueve el', 'mueve la',
+        'trasladar a ', 'traslada a ', 'trasladar el', 'trasladar la', 'traslada el', 'traslada la',
+        'llevar al aula', 'llevar a aula', 'cambiar categoria', 'cambiar ciclo', 'cambiar modulo',
+        'cambiar proveedor', 'cambiar referencia', 'cambiar nombre', 'actualizar ficha',
+        'actualizar datos', 'modificar datos'])) {
+      return { tipo: 'editar' };
     }
 
     return null;
@@ -2114,6 +2371,59 @@
     el.messages.scrollTop = el.messages.scrollHeight;
   }
 
+  function mostrarAprendizajeIntencion(frase, detectada) {
+    if (!frase) return;
+    var div = document.createElement('div');
+    div.className = 'ag-msg ag-msg-ai';
+    div.style.cssText = 'max-width:95%;background:#0b1220;border:1px dashed #334155;padding:8px';
+    var actual = detectada && INTENT_LABELS[detectada] ? ' · detecté: ' + INTENT_LABELS[detectada] : '';
+    div.innerHTML =
+      '<div style="display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap">' +
+        '<span style="font-size:11px;color:#94a3b8">¿No era eso?' + esc(actual) + '</span>' +
+        '<button class="ag-quick-btn ag-learn-open" style="font-size:10px;padding:5px 8px">Enseñar intención</button>' +
+      '</div>' +
+      '<div class="ag-learn-options" style="display:none;gap:5px;flex-wrap:wrap;margin-top:7px"></div>' +
+      '<div class="ag-learn-result" style="font-size:11px;margin-top:6px;color:#94a3b8"></div>';
+    el.messages.appendChild(div);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    var opts = div.querySelector('.ag-learn-options');
+    Object.keys(INTENT_LABELS).forEach(function(intent) {
+      var btn = document.createElement('button');
+      btn.className = 'ag-quick-btn';
+      btn.style.fontSize = '10px';
+      btn.textContent = INTENT_LABELS[intent];
+      btn.addEventListener('click', function() {
+        guardarAprendizaje(frase, intent);
+        div.querySelector('.ag-learn-result').innerHTML = '✅ Aprendido: "' + esc(frase) + '" → ' + esc(INTENT_LABELS[intent]);
+        opts.style.display = 'none';
+        div.querySelector('.ag-learn-open').disabled = true;
+      });
+      opts.appendChild(btn);
+    });
+
+    div.querySelector('.ag-learn-open').addEventListener('click', function() {
+      opts.style.display = opts.style.display === 'none' ? 'flex' : 'none';
+      el.messages.scrollTop = el.messages.scrollHeight;
+    });
+  }
+
+  function limpiarPantallaChat(mostrarAviso) {
+    state.messages = [];
+    state.contextItem = null;
+    if (el.messages) el.messages.innerHTML = '';
+    if (el.panel) {
+      var quick = el.panel.querySelector('#ag-quick');
+      var sug = el.panel.querySelector('#ag-suggestions');
+      var send = el.panel.querySelector('#ag-send');
+      if (quick) quick.style.display = 'flex';
+      if (sug) sug.style.display = 'none';
+      if (send) send.disabled = false;
+    }
+    if (mostrarAviso) appendMsg('ai', 'Pantalla borrada. Los aprendizajes guardados se mantienen.');
+    if (el.chatInput) el.chatInput.focus();
+  }
+
   function appendMsgHtml(html) {
     var div = document.createElement('div');
     div.className = 'ag-msg ag-msg-ai';
@@ -2136,6 +2446,11 @@
     input.value = '';
     el.panel.querySelector('#ag-quick').style.display = 'none';
 
+    if (detectarComandoLimpiarPantalla(q)) {
+      limpiarPantallaChat(true);
+      return;
+    }
+
     // Añadir mensaje usuario
     state.messages.push({ role: 'user', content: q });
     appendMsg('user', q);
@@ -2144,6 +2459,7 @@
     if (detectarIntencionAnadirItem(q)) {
       var nombreExtraido = extraerNombreItem(q);
       mostrarFormularioNuevoItem(nombreExtraido, q); // pasa frase completa para autocompletar
+      mostrarAprendizajeIntencion(q, 'anadir');
       return;
     }
 
@@ -2154,12 +2470,14 @@
       if (intencion.tipo === 'stock_bajo' || intencion.tipo === 'lista_mantenimiento' ||
           intencion.tipo === 'resumen_aula' || intencion.tipo === 'quien_tiene') {
         respuestaConsultaDirecta(intencion.tipo, q);
+        mostrarAprendizajeIntencion(q, intencion.tipo);
         return;
       }
       // Acciones que necesitan un ítem: buscar primero
       if (intencion.tipo === 'devolver') {
         var nDev = normalize(q);
-        var termBusq = nDev.replace(/\b(devolver|devuelve|devolvemos|quiero devolver|voy a devolver|retornar|retorna|cerrar prestamo|finalizar prestamo|marcar como devuelto|marcar devuelto|ya lo devuelvo|ya la devuelvo|lo traigo|la traigo|ya lo traje|ya la traje|he devuelto)\b/g,'').trim();
+        var termBusq = nDev.replace(/\b(devolver|devuelve|devolvemos|devolverlo|devolverla|quiero devolver|voy a devolver|retornar|retorna|regresar|regresa|entregar|entrega|entrego|entregamos|cerrar prestamo|finalizar prestamo|terminar prestamo|completar prestamo|cerrar devolucion|registrar devolucion|anotar devolucion|marcar como devuelto|marcar devuelto|dar por devuelto|dar por devuelta|ya lo devuelvo|ya la devuelvo|lo devuelvo|la devuelvo|lo traigo|la traigo|lo traemos|la traemos|ya lo traje|ya la traje|ya lo he traido|ya la he traido|lo he traido|la he traido|he devuelto|hemos devuelto|lo he devuelto|la he devuelto|ya esta de vuelta|esta de vuelta|viene de vuelta)\b/g,'').trim();
+        termBusq = termBusq.replace(/\b(el|la|los|las|un|una|unos|unas|prestamo|devolucion)\b/g,'').replace(/\s+/g,' ').trim();
         // Separar "ítem de [persona]"
         var personaDevMatch = termBusq.match(/\bde\s+([\wà-ÿ]+(?:\s+[\wà-ÿ]+)?)\s*$/);
         var personaDev = null;
@@ -2168,24 +2486,36 @@
         var prestActivos = buscarPrestamosActivos(itemDev, personaDev);
         if (!prestActivos.length) prestActivos = buscarPrestamosActivos('', null);
         mostrarFormularioDevolucion(prestActivos, itemDev || null);
+        mostrarAprendizajeIntencion(q, 'devolver');
         return;
       }
       if (intencion.tipo === 'stock') {
         seleccionarItemYEjecutar(q, function(item) {
           mostrarFormularioStock(item, intencion.cantidad);
         });
+        mostrarAprendizajeIntencion(q, 'stock');
         return;
       }
       if (intencion.tipo === 'estado') {
         seleccionarItemYEjecutar(q, function(item) {
           mostrarFormularioEstado(item, intencion.estado);
         });
+        mostrarAprendizajeIntencion(q, 'estado');
         return;
       }
       if (intencion.tipo === 'mantenimiento') {
         seleccionarItemYEjecutar(q, function(item) {
           mostrarFormularioMantenimiento(item);
         });
+        mostrarAprendizajeIntencion(q, 'mantenimiento');
+        return;
+      }
+      if (intencion.tipo === 'editar') {
+        seleccionarItemYEjecutar(q, function(item) {
+          appendMsg('ai', 'Abro la ficha de "' + esc(item.item || item.nombre || item.name || 'este item') + '" para editarla.');
+          navigateToItem(item.id);
+        });
+        mostrarAprendizajeIntencion(q, 'editar');
         return;
       }
     }
@@ -2214,6 +2544,7 @@
       if (encontrados && encontrados.length > 0) {
         if (encontrados.length === 1) {
           mostrarFormularioPrestamo(encontrados[0], q);
+          mostrarAprendizajeIntencion(q, 'prestamo');
           return;
         }
         // Si hay varios, pedir que elija
@@ -2230,6 +2561,7 @@
           btn.addEventListener('click', (function(it) { return function() {
             listaMsg.remove();
             mostrarFormularioPrestamo(it, q);
+            mostrarAprendizajeIntencion(q, 'prestamo');
           }; })(item));
           listaMsg.appendChild(btn);
         });
@@ -2239,6 +2571,7 @@
       }
       // No encontró item — pedir al usuario que lo especifique
       appendMsg('ai', '¿Qué material quieres pedir prestado? Dime el nombre y lo busco en el inventario.');
+      mostrarAprendizajeIntencion(q, 'prestamo');
       state.loading = false;
       el.panel.querySelector('#ag-send').disabled = false;
       return;
@@ -2291,6 +2624,7 @@
     }).then(function() {
       if (aiDiv) { aiDiv.innerHTML = md2html(full); linkifyItems(aiDiv); }
       state.messages.push({ role: 'assistant', content: full });
+      mostrarAprendizajeIntencion(q, null);
       state.loading = false;
       el.panel.querySelector('#ag-send').disabled = false;
     }).catch(function(e) {
