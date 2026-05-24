@@ -627,6 +627,7 @@
     el.fab.innerHTML = '✕ Cerrar';
     if (!state.dataLoaded) loadData();
     else renderCurrentTab();
+    if (!LEARN_LOADED) cargarAprendizajes();
   }
   function closePanel() {
     state.open = false;
@@ -1551,7 +1552,44 @@
     lista_mantenimiento: 'Lista mantenimiento'
   };
 
-  function cargarAprendizajes() {
+  var LEARN_LOADED = false; // flag: ya cargado desde backend en esta sesión
+  var MIGRATE_FLAG = 'volt_intents_migrated_v1';
+
+  function apiCreds() {
+    var c = getCreds();
+    if (!c) return '';
+    return '?u=' + encodeURIComponent(c.u) + '&p=' + encodeURIComponent(c.p);
+  }
+
+  // Carga aprendizajes desde backend; fallback a localStorage si falla
+  function cargarAprendizajes(callback) {
+    var creds = apiCreds();
+    if (!creds) {
+      _cargarAprendizajesLocal();
+      if (callback) callback();
+      return;
+    }
+    fetch('/api/intent-learning' + creds)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok && Array.isArray(data.items)) {
+          state.learnedIntents = data.items.map(function(x) {
+            return { phrase: x.phraseNorm, raw: x.phraseRaw, intent: x.intent, id: x.id, weight: x.weight };
+          }).filter(function(x) { return INTENT_LABELS[x.intent]; });
+          LEARN_LOADED = true;
+          _migrarLocalStorageSiNecesario();
+        } else {
+          _cargarAprendizajesLocal();
+        }
+        if (callback) callback();
+      })
+      .catch(function() {
+        _cargarAprendizajesLocal();
+        if (callback) callback();
+      });
+  }
+
+  function _cargarAprendizajesLocal() {
     try {
       var raw = localStorage.getItem(LEARN_KEY);
       var parsed = raw ? JSON.parse(raw) : [];
@@ -1563,21 +1601,57 @@
     }
   }
 
+  function _migrarLocalStorageSiNecesario() {
+    if (localStorage.getItem(MIGRATE_FLAG)) return;
+    var raw = null;
+    try { raw = localStorage.getItem(LEARN_KEY); } catch(e) {}
+    if (!raw) { localStorage.setItem(MIGRATE_FLAG, '1'); return; }
+    var items = [];
+    try { items = JSON.parse(raw) || []; } catch(e) {}
+    if (!Array.isArray(items) || !items.length) { localStorage.setItem(MIGRATE_FLAG, '1'); return; }
+    var payload = items.filter(function(x) { return x.phrase && INTENT_LABELS[x.intent]; })
+      .map(function(x) { return { phrase: x.raw || x.phrase, intent: x.intent }; });
+    if (!payload.length) { localStorage.setItem(MIGRATE_FLAG, '1'); return; }
+    fetch('/api/intent-learning/bulk-import' + apiCreds(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: payload })
+    }).then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok) {
+          localStorage.setItem(MIGRATE_FLAG, '1');
+          cargarAprendizajes(); // recargar desde backend tras migración
+        }
+      })
+      .catch(function() {});
+  }
+
   function guardarAprendizaje(frase, intent) {
-    cargarAprendizajes();
     var phrase = normalize(frase || '');
     if (!phrase || !INTENT_LABELS[intent]) return false;
+    // Actualización optimista en memoria
     state.learnedIntents = state.learnedIntents.filter(function(x) {
       return !(x.phrase === phrase && x.intent === intent);
     });
-    state.learnedIntents.push({
-      phrase: phrase,
-      raw: frase,
-      intent: intent,
-      createdAt: new Date().toISOString()
-    });
-    state.learnedIntents = state.learnedIntents.slice(-80);
-    try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents)); } catch(e) {}
+    state.learnedIntents.push({ phrase: phrase, raw: frase, intent: intent });
+    // Persistir en backend
+    var creds = apiCreds();
+    if (creds) {
+      fetch('/api/intent-learning' + creds, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phrase: frase, intent: intent })
+      }).then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.ok) cargarAprendizajes(); // sincronizar IDs y weights
+        })
+        .catch(function() {
+          // fallback: guardar en localStorage si backend falla
+          try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents.slice(-80))); } catch(e) {}
+        });
+    } else {
+      try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents.slice(-80))); } catch(e) {}
+    }
     return true;
   }
 
@@ -1678,7 +1752,7 @@
     if (scores[5].score > 0 && matchAny(n, ['ciclo de mantenimiento', 'modulo de mantenimiento'])) scores[5].score -= 7;
     if (scores[3].score > 0 && scores[8].score >= scores[3].score) scores[3].score -= 4;
 
-    if (!state.learnedIntents.length) cargarAprendizajes();
+    if (!LEARN_LOADED && !state.learnedIntents.length) _cargarAprendizajesLocal();
     state.learnedIntents.forEach(function(ex) {
       var learnedScore = learnedIntentScore(n, ex.phrase);
       if (!learnedScore) return;
@@ -2578,37 +2652,49 @@
   }
 
   function mostrarAprendizajesGuardados() {
-    cargarAprendizajes();
-    if (!state.learnedIntents.length) {
-      appendMsg('ai', 'No hay aprendizajes guardados todavía.');
-      return;
-    }
-    appendMsgHtml(
-      '<strong style="color:#7dd3fc">Aprendizajes guardados (' + state.learnedIntents.length + ')</strong>' +
-      '<table class="ag-table" style="width:100%;margin-top:8px;font-size:10px"><thead><tr><th>Frase</th><th>Intención</th></tr></thead><tbody>' +
-        state.learnedIntents.slice().reverse().slice(0, 20).map(function(ex) {
-          return '<tr><td>' + esc(ex.raw || ex.phrase) + '</td><td>' + esc(INTENT_LABELS[ex.intent] || ex.intent) + '</td></tr>';
-        }).join('') +
-      '</tbody></table>' +
-      (state.learnedIntents.length > 20 ? '<div style="font-size:10px;color:#94a3b8;margin-top:6px">Mostrando los 20 últimos.</div>' : '')
-    );
+    cargarAprendizajes(function() {
+      if (!state.learnedIntents.length) {
+        appendMsg('ai', 'No hay aprendizajes guardados todavía.');
+        return;
+      }
+      appendMsgHtml(
+        '<strong style="color:#7dd3fc">Aprendizajes guardados (' + state.learnedIntents.length + ')</strong>' +
+        '<table class="ag-table" style="width:100%;margin-top:8px;font-size:10px"><thead><tr><th>Frase</th><th>Intención</th></tr></thead><tbody>' +
+          state.learnedIntents.slice().reverse().slice(0, 20).map(function(ex) {
+            return '<tr><td>' + esc(ex.raw || ex.phrase) + '</td><td>' + esc(INTENT_LABELS[ex.intent] || ex.intent) + '</td></tr>';
+          }).join('') +
+        '</tbody></table>' +
+        (state.learnedIntents.length > 20 ? '<div style="font-size:10px;color:#94a3b8;margin-top:6px">Mostrando los 20 últimos.</div>' : '')
+      );
+    });
   }
 
   function borrarAprendizajesGuardados() {
+    var creds = apiCreds();
+    if (creds) {
+      fetch('/api/intent-learning/clear' + creds, { method: 'POST' })
+        .catch(function() {});
+    }
     state.learnedIntents = [];
-    try { localStorage.removeItem(LEARN_KEY); } catch(e) {}
+    try { localStorage.removeItem(LEARN_KEY); localStorage.removeItem(MIGRATE_FLAG); } catch(e) {}
     appendMsg('ai', 'Aprendizajes borrados. Volt seguirá usando sus reglas base.');
   }
 
   function deshacerUltimaEnsenanza() {
-    cargarAprendizajes();
-    var last = state.learnedIntents.pop();
+    var last = state.learnedIntents[state.learnedIntents.length - 1];
     if (!last) {
       appendMsg('ai', 'No hay ninguna enseñanza que deshacer.');
       return;
     }
-    try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents)); } catch(e) {}
-    appendMsg('ai', 'Deshecha la última enseñanza: "' + (last.raw || last.phrase) + '" → ' + (INTENT_LABELS[last.intent] || last.intent) + '.');
+    state.learnedIntents.pop();
+    var creds = apiCreds();
+    if (last.id && creds) {
+      fetch('/api/intent-learning/' + last.id + creds, { method: 'DELETE' })
+        .catch(function() {});
+    } else {
+      try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents)); } catch(e) {}
+    }
+    appendMsg('ai', 'Deshecha la última enseñanza: "' + esc(last.raw || last.phrase) + '" → ' + esc(INTENT_LABELS[last.intent] || last.intent) + '.');
   }
 
   function gestionarComandoRapido(q) {
