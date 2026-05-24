@@ -1138,6 +1138,11 @@ function initFabNuevoDraggable(){
     startLeft=r.left; startTop=r.top;
     fab.style.transition='none';
     if(e.cancelable) e.preventDefault();
+    if(e.touches){
+      document.addEventListener('touchmove',onMove,{passive:true});
+      document.addEventListener('touchend',onUp);
+      document.addEventListener('touchcancel',onUp);
+    }
   }
 
   function onMove(e){
@@ -1151,6 +1156,9 @@ function initFabNuevoDraggable(){
   function onUp(){
     if(!dragging) return;
     dragging=false;
+    document.removeEventListener('touchmove',onMove);
+    document.removeEventListener('touchend',onUp);
+    document.removeEventListener('touchcancel',onUp);
     fab.style.transition='';
     if(moved){
       const r=fab.getBoundingClientRect();
@@ -1163,9 +1171,7 @@ function initFabNuevoDraggable(){
   fab.addEventListener('mousedown',onDown);
   fab.addEventListener('touchstart',onDown,{passive:false});
   document.addEventListener('mousemove',onMove);
-  document.addEventListener('touchmove',onMove,{passive:false});
   document.addEventListener('mouseup',onUp);
-  document.addEventListener('touchend',onUp);
   window.addEventListener('resize',()=>{if(fab.offsetWidth>0){const r=fab.getBoundingClientRect();applyPos(r.top,r.left);}});
 }
 

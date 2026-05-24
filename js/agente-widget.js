@@ -436,6 +436,11 @@
       startTop = rect.top;
       fab.style.transition = 'none';
       if (e.cancelable) e.preventDefault();
+      if (e.touches) {
+        document.addEventListener('touchmove', onMove, { passive: true });
+        document.addEventListener('touchend', onUp);
+        document.addEventListener('touchcancel', onUp);
+      }
     }
 
     function onMove(e) {
@@ -450,6 +455,9 @@
     function onUp() {
       if (!dragging) return;
       dragging = false;
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      document.removeEventListener('touchcancel', onUp);
       fab.style.transition = '';
       if (moved) {
         // Guardar posición
@@ -464,9 +472,7 @@
     fab.addEventListener('mousedown', onDown);
     fab.addEventListener('touchstart', onDown, { passive: false });
     document.addEventListener('mousemove', onMove);
-    document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('mouseup', onUp);
-    document.addEventListener('touchend', onUp);
 
     // Reajustar si cambia el tamaño de ventana
     window.addEventListener('resize', function() {
