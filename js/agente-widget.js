@@ -1295,9 +1295,6 @@
     var cicloSelect = formDiv.querySelector('.ag-new-item-ciclo');
     var modSelect = formDiv.querySelector('.ag-new-item-mod');
 
-    // Autocompletar campos desde la frase completa
-    if (fraseCompleta) autocompletarFormulario(formDiv, fraseCompleta);
-
     actualizarAvisoSimilares(formDiv);
     nameInput.addEventListener('input', function() { actualizarAvisoSimilares(formDiv); });
     nameInput.focus();
@@ -1318,6 +1315,9 @@
         }
       }
     });
+
+    // Autocompletar DESPUÉS de registrar el listener de ciclo, para que el dispatchEvent('change') llene los módulos
+    if (fraseCompleta) autocompletarFormulario(formDiv, fraseCompleta);
 
     formDiv.querySelector('.ag-new-item-cancel').addEventListener('click', function() {
       formDiv.remove();
@@ -1981,7 +1981,7 @@
     var n = normalize(q);
     if (typeof CICLOS === 'undefined' || !CICLOS || !CICLOS.length) return null;
     var CICLO_KW = {
-      'gm_telecom':  ['telecom', 'telecomunicacion', ' it ', ' it,', ' it.', ' it$', 'inst telecom', 'gm telecom'],
+      'gm_telecom':  ['telecom', 'telecomunicacion', 'telecomunicaciones', 'instalaciones de telecom', ' it ', ' it,', ' it.', ' it$', 'inst telecom', 'gm telecom'],
       'gm_electric': ['iea', 'electricas automaticas', 'electrica automatica', 'instalacion electrica',
                       'automatica', 'automaticas', 'gm electric', 'inst electr'],
       'gs_mantelec': ['mantelec', 'mantenimiento electronico', ' me ', ' me,', ' me.', 'gs mantelec'],
