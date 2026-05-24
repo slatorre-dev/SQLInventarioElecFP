@@ -58,7 +58,7 @@
     <button class="mob-menu-btn" id="mobMenuBtn" onclick="toggleMobMenu()" title="Menú">⋮</button>
     <div class="topbar-btns" id="topbarBtns" onclick="closeMobMenu()">
       <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ Nuevo ítem</button>
-      <button class="tbtn" id="btnPres" style="display:none" onclick="goPrestamos()">⌛ Préstamos</button>
+      <button class="tbtn" id="btnPres" style="display:none;position:relative" onclick="goPrestamos()">⌛ Préstamos<span id="presVencBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px"></span></button>
       <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Pedidos<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
       <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 Exportar</button>
       <button class="tbtn" id="btnImp" onclick="openImportModal()">📤 Importar</button>

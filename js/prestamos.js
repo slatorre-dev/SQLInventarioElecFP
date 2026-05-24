@@ -17,6 +17,18 @@ function getVencidos(){
   return getPrestamosActivos().filter(isVencido);
 }
 
+function updatePresVencBadge(){
+  const badge = document.getElementById('presVencBadge');
+  if(!badge) return;
+  const n = getVencidos().length;
+  if(n > 0){
+    badge.textContent = n > 99 ? '99+' : n;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function goPrestamos(tab){
   _push({page:'prestamos'}, '#prestamos');
   cf=null; currentCiclo=null;
@@ -167,6 +179,7 @@ function _renderGrouped(groupKey){
 }
 
 function renderPrestamos(){
+  updatePresVencBadge();
   if(currentPresTab==='profesor'){ _renderGrouped('profesor'); return; }
   if(currentPresTab==='aula'){     _renderGrouped('aula');     return; }
   if(currentPresTab==='material'){ _renderGrouped('material'); return; }

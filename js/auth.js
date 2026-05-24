@@ -234,6 +234,7 @@ async function loadData(){
     profesores = res.profesores || [];
     prestamos = res.prestamos || [];
     itemsLoaded = true;
+    if(typeof updatePresVencBadge === 'function') updatePresVencBadge();
     setConn('ok','sincronizado');
     if(typeof renderHome === 'function' && document.getElementById('pH').classList.contains('active')) renderHome();
     else if(cf) openSub();
