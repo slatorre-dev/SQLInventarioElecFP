@@ -1129,6 +1129,64 @@
     return resto.split(/[.,;:?!]/)[0].trim() || '';
   }
 
+  function buscarItemsSimilares(nombre, limite) {
+    var n = normalize(nombre || '');
+    if (!n || n.length < 3 || !state.inventario || !state.inventario.length) return [];
+    var words = n.split(/\s+/).filter(function(w) {
+      return w.length >= 3 && STOP_WORDS.indexOf(w) === -1;
+    });
+    if (!words.length) return [];
+
+    var scored = state.inventario.map(function(item) {
+      var nombreItem = item.item || item.nombre || item.name || '';
+      var textoNombre = normalize(nombreItem);
+      var textoCompleto = normalize([
+        nombreItem,
+        item.ref || item.referencia || '',
+        item.cat || item.categoria || ''
+      ].join(' '));
+      var score = 0;
+      if (textoNombre === n) score += 20;
+      if (textoNombre.includes(n) || n.includes(textoNombre)) score += 12;
+      words.forEach(function(w) {
+        if (textoNombre.includes(w)) score += 5;
+        else if (textoCompleto.includes(w)) score += 2;
+      });
+      return { item: item, score: score };
+    }).filter(function(row) {
+      return row.score >= 5;
+    });
+
+    scored.sort(function(a, b) { return b.score - a.score; });
+    return scored.slice(0, limite || 5).map(function(row) { return row.item; });
+  }
+
+  function actualizarAvisoSimilares(formDiv) {
+    var input = formDiv.querySelector('.ag-new-item-name');
+    var box = formDiv.querySelector('.ag-new-item-similar');
+    if (!input || !box) return;
+    var similares = buscarItemsSimilares(input.value, 5);
+    if (!similares.length) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    box.style.display = 'block';
+    box.innerHTML =
+      '<strong style="color:#fbbf24">⚠ Ya existen ' + similares.length + ' ítem' + (similares.length !== 1 ? 's' : '') + ' similar' + (similares.length !== 1 ? 'es' : '') + ':</strong>' +
+      '<div style="margin-top:5px;display:grid;gap:3px">' +
+        similares.map(function(it) {
+          var qty = it.qty != null ? it.qty : (it.cantidad || 0);
+          var nombreItem = it.item || it.nombre || it.name || '(sin nombre)';
+          return '<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid #1f2937;padding-top:3px">' +
+            '<span style="color:#cbd5e1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nombreItem) + '</span>' +
+            '<span style="color:#64748b;white-space:nowrap">' + esc(it.aula || '—') + ' · ' + qty + ' ud.</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div style="margin-top:5px;color:#64748b">Puedes crearlo igualmente si es un material distinto.</div>';
+  }
+
   function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
@@ -1175,6 +1233,7 @@
       '<div style="margin-bottom:10px"><strong style="color:#10b981">📦 Crear nuevo item:</strong></div>' +
       '<label class="ag-label">Nombre del item *</label>' +
       '<input class="ag-input-field ag-new-item-name" placeholder="Ej: Osciloscopio digital" value="' + esc(nombreInicial || '') + '">' +
+      '<div class="ag-new-item-similar" style="display:none;margin-top:6px;padding:7px 8px;background:#111827;border:1px solid #334155;border-radius:6px;font-size:10px;color:#94a3b8;line-height:1.35"></div>' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
         '<div style="flex:1"><label class="ag-label">Tipo *</label>' +
         '<select class="ag-input-field ag-new-item-tipo" style="padding:7px"><option value="consumible">Consumible</option><option value="inventariable">Inventariable</option></select></div>' +
@@ -1214,6 +1273,8 @@
     // Autocompletar campos desde la frase completa
     if (fraseCompleta) autocompletarFormulario(formDiv, fraseCompleta);
 
+    actualizarAvisoSimilares(formDiv);
+    nameInput.addEventListener('input', function() { actualizarAvisoSimilares(formDiv); });
     nameInput.focus();
 
     // Cargar módulos cuando se selecciona un ciclo
@@ -2424,6 +2485,83 @@
     if (el.chatInput) el.chatInput.focus();
   }
 
+  function mostrarAyudaVolt() {
+    appendMsgHtml(
+      '<strong style="color:#7dd3fc">Qué puede hacer Volt</strong>' +
+      '<div style="font-size:11px;line-height:1.55;margin-top:6px;color:#cbd5e1">' +
+        '<div>📦 <strong>Añadir:</strong> "añade un osciloscopio en aula 40"</div>' +
+        '<div>✅ <strong>Préstamos:</strong> "dame el multímetro", "me llevo el taladro"</div>' +
+        '<div>↩ <strong>Devolver:</strong> "devuelvo el osciloscopio", "cerrar préstamo"</div>' +
+        '<div>📊 <strong>Stock:</strong> "quedan 20 resistencias", "actualiza stock a 5"</div>' +
+        '<div>🔧 <strong>Estado/mantenimiento:</strong> "está averiado", "solicitar reparación"</div>' +
+        '<div>🔍 <strong>Consultas:</strong> "qué hay en aula 35", "quién tiene el soldador"</div>' +
+        '<div>✏️ <strong>Editar:</strong> "abre la ficha del polímetro", "cambia el aula"</div>' +
+        '<div style="margin-top:6px;color:#94a3b8">Comandos: borra la pantalla · ver aprendizajes · borra aprendizajes · deshacer última enseñanza</div>' +
+      '</div>'
+    );
+  }
+
+  function mostrarAprendizajesGuardados() {
+    cargarAprendizajes();
+    if (!state.learnedIntents.length) {
+      appendMsg('ai', 'No hay aprendizajes guardados todavía.');
+      return;
+    }
+    appendMsgHtml(
+      '<strong style="color:#7dd3fc">Aprendizajes guardados (' + state.learnedIntents.length + ')</strong>' +
+      '<table class="ag-table" style="width:100%;margin-top:8px;font-size:10px"><thead><tr><th>Frase</th><th>Intención</th></tr></thead><tbody>' +
+        state.learnedIntents.slice().reverse().slice(0, 20).map(function(ex) {
+          return '<tr><td>' + esc(ex.raw || ex.phrase) + '</td><td>' + esc(INTENT_LABELS[ex.intent] || ex.intent) + '</td></tr>';
+        }).join('') +
+      '</tbody></table>' +
+      (state.learnedIntents.length > 20 ? '<div style="font-size:10px;color:#94a3b8;margin-top:6px">Mostrando los 20 últimos.</div>' : '')
+    );
+  }
+
+  function borrarAprendizajesGuardados() {
+    state.learnedIntents = [];
+    try { localStorage.removeItem(LEARN_KEY); } catch(e) {}
+    appendMsg('ai', 'Aprendizajes borrados. Volt seguirá usando sus reglas base.');
+  }
+
+  function deshacerUltimaEnsenanza() {
+    cargarAprendizajes();
+    var last = state.learnedIntents.pop();
+    if (!last) {
+      appendMsg('ai', 'No hay ninguna enseñanza que deshacer.');
+      return;
+    }
+    try { localStorage.setItem(LEARN_KEY, JSON.stringify(state.learnedIntents)); } catch(e) {}
+    appendMsg('ai', 'Deshecha la última enseñanza: "' + (last.raw || last.phrase) + '" → ' + (INTENT_LABELS[last.intent] || last.intent) + '.');
+  }
+
+  function gestionarComandoRapido(q) {
+    var n = normalize(q || '');
+    if (!n) return false;
+    if (n === 'ayuda' || n === 'help' || n === 'que puedes hacer' || n === 'que sabes hacer' ||
+        n === 'comandos' || n === 'muestra ayuda') {
+      mostrarAyudaVolt();
+      return true;
+    }
+    if (matchAny(n, ['ver aprendizajes', 'mostrar aprendizajes', 'lista aprendizajes',
+        'aprendizajes guardados', 'que has aprendido'])) {
+      mostrarAprendizajesGuardados();
+      return true;
+    }
+    if (matchAny(n, ['borra aprendizajes', 'borrar aprendizajes', 'limpia aprendizajes',
+        'elimina aprendizajes', 'reset aprendizajes'])) {
+      borrarAprendizajesGuardados();
+      return true;
+    }
+    if (matchAny(n, ['deshacer ultima enseñanza', 'deshacer ultima ensenanza',
+        'deshaz ultima enseñanza', 'deshaz ultima ensenanza', 'deshacer ultimo aprendizaje',
+        'deshaz ultimo aprendizaje'])) {
+      deshacerUltimaEnsenanza();
+      return true;
+    }
+    return false;
+  }
+
   function appendMsgHtml(html) {
     var div = document.createElement('div');
     div.className = 'ag-msg ag-msg-ai';
@@ -2454,6 +2592,8 @@
     // Añadir mensaje usuario
     state.messages.push({ role: 'user', content: q });
     appendMsg('user', q);
+
+    if (gestionarComandoRapido(q)) return;
 
     // ── INTERCEPTAR ACCIÓN DE AÑADIR ITEM ─────────────────────
     if (detectarIntencionAnadirItem(q)) {
