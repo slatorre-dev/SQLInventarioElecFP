@@ -981,17 +981,24 @@
   }
 
   function extraerNombreItem(query) {
-    var q = (query || '').trim();
-    var keywords = ['añadir', 'anadir', 'agregar', 'crear', 'poner', 'meter', 'registrar', 'incorporar', 'incluir', 'nuevo', 'nueva', 'alta', 'un ', 'una ', 'el ', 'la '];
-    var qLower = q.toLowerCase();
+    var q = normalize(query || '');
+    // 1. Quitar el verbo de acción (primera aparición)
+    var verbos = ['quiero anadir', 'quiero agregar', 'quiero crear', 'quiero añadir',
+      'anadir un', 'anadir una', 'anadir el', 'anadir la', 'anadir',
+      'añadir un', 'añadir una', 'añadir el', 'añadir la', 'añadir',
+      'agregar un', 'agregar una', 'agregar', 'crear un', 'crear una', 'crear',
+      'nuevo', 'nueva', 'registrar', 'incorporar', 'meter', 'poner'];
     var resto = q;
-    for (var i = 0; i < keywords.length; i++) {
-      var idx = qLower.indexOf(keywords[i]);
-      if (idx !== -1) {
-        resto = q.substring(idx + keywords[i].length).trim();
-      }
+    for (var i = 0; i < verbos.length; i++) {
+      var idx = resto.indexOf(verbos[i]);
+      if (idx !== -1) { resto = resto.substring(idx + verbos[i].length).trim(); break; }
     }
-    resto = resto.replace(/^(un|una|el|la|de|que|si|para)\s+/i, '').trim();
+    // 2. Quitar artículos iniciales
+    resto = resto.replace(/^(un|una|el|la|los|las|de)\s+/i, '').trim();
+    // 3. Cortar en preposiciones de lugar/contexto
+    var corte = resto.search(/\s+(?:en el|en la|en aula|en clase|en taller|en el aula|para el|para la|al aula)\b/i);
+    if (corte > 0) resto = resto.substring(0, corte).trim();
+    // 4. Cortar en puntuación
     return resto.split(/[.,;:?!]/)[0].trim() || '';
   }
 
@@ -1379,15 +1386,16 @@
   // ── Extraer ubicación desde frase ─────────────────────────────────
   function extraerUbicacionDeFrase(q) {
     var n = normalize(q);
-    var m = n.match(/(?:en el|en la|en|armario|estanteria|vitrina|cajón|cajon|caja|mesa|sobre)\s+([a-záéíóúüñ0-9\s_-]{2,30}?)(?:\s+del|\s+de la|\s+,|\s+y\s|\s*$)/i);
-    if (m) return m[1].trim();
-    // Buscar ubicaciones existentes en el inventario
+    // Buscar patrón: "en el armario X", "en la estantería X", "en vitrina X"...
+    var m = n.match(/\ben (?:el |la )?(?:armario|estanteria|vitrina|cajon|caja|mesa|balda|rack|panel)\s*([a-z0-9áéíóúüñ\s_-]{1,25}?)(?:\s*$|\s+(?:del|de|y|,|\.))/i);
+    if (m) return (m[0].replace(/^en (?:el |la )?/i,'')).trim().replace(/\s+(del|de|y|,|\.).*$/i,'').trim();
+    // Buscar ubicaciones existentes en el inventario que aparezcan en la frase
     if (state.inventario && state.inventario.length) {
       var locs = {};
       state.inventario.forEach(function(it) { if (it.loc) locs[normalize(it.loc)] = it.loc; });
       var keys = Object.keys(locs).sort(function(a,b){ return b.length - a.length; });
       for (var i = 0; i < keys.length; i++) {
-        if (n.includes(keys[i])) return locs[keys[i]];
+        if (keys[i].length > 3 && n.includes(keys[i])) return locs[keys[i]];
       }
     }
     return null;
@@ -1624,66 +1632,63 @@
     var n = normalize(q);
 
     if (tipo === 'stock_bajo') {
-      var bajos = (items || []).filter(function(x) {
-        return x.min && Number(x.qty) < Number(x.min);
-      });
+      var bajos = (items || []).filter(function(x) { return x.min && Number(x.qty) < Number(x.min); });
       if (!bajos.length) { appendMsg('ai', '✅ No hay ítems con stock bajo en este momento.'); return true; }
-      var tabla = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Aula</th><th>Stock</th><th>Mín.</th></tr></thead><tbody>' +
+      appendMsgHtml('<strong style="color:#fbbf24">⚠ ' + bajos.length + ' ítems con stock bajo:</strong>' +
+        '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Aula</th><th>Stock</th><th>Mín.</th></tr></thead><tbody>' +
         bajos.slice(0,15).map(function(x) {
           return '<tr><td>' + esc(x.item) + '</td><td>' + esc(x.aula||'—') + '</td>' +
             '<td style="color:#ef4444;font-weight:700">' + x.qty + '</td><td>' + x.min + '</td></tr>';
-        }).join('') + '</tbody></table>';
-      appendMsg('ai', '⚠ **' + bajos.length + ' ítems con stock bajo:**\n\n' + tabla); return true;
+        }).join('') + '</tbody></table>');
+      return true;
     }
 
     if (tipo === 'lista_mantenimiento') {
       var mant = (items || []).filter(function(x) { return x.mant == 1 || x.mant === '1'; });
       if (!mant.length) { appendMsg('ai', '✅ No hay ítems pendientes de mantenimiento.'); return true; }
-      var tabla2 = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Aula</th><th>Estado</th><th>Responsable</th></tr></thead><tbody>' +
+      appendMsgHtml('<strong style="color:#fbbf24">🛠 ' + mant.length + ' ítems con mantenimiento pendiente:</strong>' +
+        '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Aula</th><th>Estado</th><th>Responsable</th></tr></thead><tbody>' +
         mant.slice(0,15).map(function(x) {
           return '<tr><td>' + esc(x.item) + '</td><td>' + esc(x.aula||'—') + '</td>' +
             '<td>' + esc(x.mantEstado||'Pendiente') + '</td><td>' + esc(x.mantResp||'—') + '</td></tr>';
-        }).join('') + '</tbody></table>';
-      appendMsg('ai', '🛠 **' + mant.length + ' ítems con mantenimiento pendiente:**\n\n' + tabla2); return true;
+        }).join('') + '</tbody></table>');
+      return true;
     }
 
     if (tipo === 'resumen_aula') {
       var aula = extraerAulaDeFrase(q);
-      var aulaItems = (items || []).filter(function(x) {
-        if (aula) return x.aula === aula.id;
-        return false;
-      });
       if (!aula) { appendMsg('ai', '¿De qué aula quieres el resumen? Ej: "¿qué hay en el Aula 35?"'); return true; }
+      var aulaItems = (items || []).filter(function(x) { return x.aula === aula.id; });
       if (!aulaItems.length) { appendMsg('ai', 'No encontré ítems en ' + esc(aula.name) + '.'); return true; }
       var bajos2 = aulaItems.filter(function(x) { return x.min && Number(x.qty) < Number(x.min); }).length;
       var mant2 = aulaItems.filter(function(x) { return x.mant == 1 || x.mant === '1'; }).length;
-      var tabla3 = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Cant.</th><th>Estado</th><th>Ubicación</th></tr></thead><tbody>' +
+      appendMsgHtml('<strong style="color:#67e8f9">🏫 Resumen ' + esc(aula.name) + '</strong> — ' +
+        aulaItems.length + ' ítems · <span style="color:#ef4444">⚠ ' + bajos2 + ' stock bajo</span> · <span style="color:#fbbf24">🛠 ' + mant2 + ' mantenimiento</span>' +
+        '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Cant.</th><th>Estado</th><th>Ubicación</th></tr></thead><tbody>' +
         aulaItems.slice(0,20).map(function(x) {
           var low = x.min && Number(x.qty) < Number(x.min);
           return '<tr><td>' + esc(x.item) + '</td>' +
             '<td style="color:' + (low?'#ef4444':'#34d399') + ';font-weight:700">' + x.qty + '</td>' +
             '<td>' + esc(x.est||'—') + '</td><td style="color:#64748b">' + esc(x.loc||'—') + '</td></tr>';
-        }).join('') + '</tbody></table>';
-      appendMsg('ai', '🏫 **Resumen ' + esc(aula.name) + '** — ' + aulaItems.length + ' ítems · ⚠ ' + bajos2 + ' stock bajo · 🛠 ' + mant2 + ' mantenimiento\n\n' + tabla3);
+        }).join('') + '</tbody></table>');
       return true;
     }
 
     if (tipo === 'quien_tiene') {
-      // Extraer nombre del ítem de la pregunta
       var activos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) { return p.estado === 'Activo'; });
       if (!activos.length) { appendMsg('ai', 'No hay préstamos activos en este momento.'); return true; }
-      // Filtrar por lo que se menciona en la pregunta
-      var palabras = n.replace(/quien|quién|tiene|prestado|cogido|lleva|tiene|el|la|los|las|un|una/g,'').trim();
+      var palabras = n.replace(/\b(quien|quien|tiene|prestado|cogido|lleva|el|la|los|las|un|una|que|se|lo|la)\b/g,'').trim();
       var filtrados = palabras.length > 2 ? activos.filter(function(p) {
         return normalize(p.itemNombre||'').includes(palabras) || normalize(p.profesorNombre||'').includes(palabras);
       }) : activos;
-      var tabla4 = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Profesor</th><th>Cant.</th><th>Desde</th><th>Prevista</th></tr></thead><tbody>' +
+      appendMsgHtml('<strong style="color:#7dd3fc">📋 Préstamos activos' +
+        (palabras.length > 2 ? ' para "' + esc(palabras) + '"' : '') + ' (' + filtrados.length + '):</strong>' +
+        '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Profesor</th><th>Cant.</th><th>Desde</th><th>Prevista</th></tr></thead><tbody>' +
         filtrados.slice(0,10).map(function(p) {
           return '<tr><td>' + esc(p.itemNombre||'—') + '</td><td>' + esc(p.profesorNombre||'—') + '</td>' +
             '<td>' + (p.cantidad||1) + '</td><td style="color:#64748b">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
             '<td style="color:#f59e0b">' + (p.fechaPrevista||'—').slice(0,10) + '</td></tr>';
-        }).join('') + '</tbody></table>';
-      appendMsg('ai', '📋 **Préstamos activos' + (palabras.length > 2 ? ' para "' + esc(palabras) + '"' : '') + '** (' + filtrados.length + '):\n\n' + tabla4);
+        }).join('') + '</tbody></table>');
       return true;
     }
 
@@ -1710,6 +1715,14 @@
       listMsg.appendChild(btn);
     });
     el.messages.appendChild(listMsg);
+    el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
+  function appendMsgHtml(html) {
+    var div = document.createElement('div');
+    div.className = 'ag-msg ag-msg-ai';
+    div.innerHTML = html;
+    el.messages.appendChild(div);
     el.messages.scrollTop = el.messages.scrollHeight;
   }
 
