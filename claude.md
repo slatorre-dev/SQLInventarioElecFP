@@ -1,6 +1,6 @@
 # Nota de Trabajo - SQLInventarioElecFP
 
-**Estado:** v317+ | Mayo 2026 | Documentación completa
+**Estado:** v338 | Mayo 2026 | Documentación completa
 
 ---
 
@@ -113,12 +113,21 @@ Ver **ROADMAP.md** para detalles completos.
 
 ---
 
-## 🚀 Próximos Pasos (Hoy)
+## 🚀 Sesión 23/05/2026 — Completado
 
-1. ✅ Crear documentación completa (DEVELOPMENT.md, ARCHITECTURE.md, API.md, ROADMAP.md, SECURITY.md)
-2. ⏳ Hacer commit con documentación
-3. ⏳ Iniciar FASE 1: [1.1] Bearer tokens
-4. ⏳ Crear branch `feature/security-refactor`
+1. ✅ Ciclo/Módulo full-width en PC, alias en móvil
+2. ✅ Vista tabla/cards toggle (PC) — móvil siempre cards
+3. ✅ Contenedores SET-XXX-00 (padre) + hijos SET-XXX-01..N en un paso
+4. ✅ Bulk delete con doble confirmación + cuenta atrás 5s
+5. ✅ Agente Volt: devolver préstamo, actualizar stock, cambiar estado, marcar mantenimiento
+6. ✅ Agente Volt: consultas directas (stock bajo, quién tiene, resumen aula, lista mantenimiento)
+7. ✅ NLP flexible español + autocomplete formulario desde frase natural
+8. ✅ Reconocimiento de voz (micrófono, Web Speech API es-ES)
+9. ✅ Fixes: extracción nombre/ubicación, tablas HTML en agente
+
+## ⏳ Pendiente (Próximas sesiones)
+- Iniciar FASE 1 seguridad: Bearer tokens, password hashing, rate-limiting
+- Crear branch `feature/security-refactor`
 
 ---
 
@@ -151,7 +160,7 @@ Ver **ROADMAP.md** para detalles completos.
 - **Runtime:** PowerShell 7+ (pwsh.exe)
 - **Terminal:** PowerShell en VS Code
 - **Git:** Remotes múltiples (sebantonio + slatorre-dev)
-- **Service Worker:** VERSION en `sw.js` (v317 actual)
+- **Service Worker:** VERSION en `sw.js` (v338 actual)
 - **Documentación:** GitHub (no local)
 
 ---
@@ -161,7 +170,12 @@ Ver **ROADMAP.md** para detalles completos.
 | Versión | Cambios | Fecha |
 |---------|---------|-------|
 | v317 | Ciclo/Módulo full width, Solicitar amarillo | Mayo 23, 2026 |
-| v318+ | Por implementar | - |
+| v318-v319 | Vista tabla/cards toggle, fix versión stale | Mayo 23, 2026 |
+| v320-v325 | Contenedores SET-/CONT-, bulk delete 5s countdown | Mayo 23, 2026 |
+| v326-v329 | Modal checkbox texto "agrupador", reset div bug | Mayo 23, 2026 |
+| v330-v337 | Agente Volt expandido: devolver, stock, estado, mantenimiento, consultas NL, fix extracción nombre/ubicación, tablas HTML | Mayo 23, 2026 |
+| v338 | Reconocimiento de voz (micrófono) para agente Volt | Mayo 23, 2026 |
+| v339+ | Por implementar | - |
 
 ---
 
