@@ -290,6 +290,7 @@
     dataLoaded: false,
     inventario: [],
     messages: [],
+    contextItem: null,  // último ítem en contexto (para "este", "esta", etc.)
     // csv
     csvParsed: [],
     // audit filter
@@ -551,6 +552,7 @@
             '</div>',
           '</div>',
           '<div id="ag-quick" class="ag-quick" style="display:none">',
+            '<div id="ag-stats-bar" style="display:none;gap:6px;flex-wrap:wrap;padding:0 14px 8px"></div>',
             '<div style="padding:14px;color:#64748b;font-size:11px;line-height:1.8;background:#0f172a;border-radius:8px;margin:0 14px 14px;border:1px solid #1e293b">',
               '<strong style="color:#7dd3fc;display:block;margin-bottom:8px">💡 PUEDES DECIRME:</strong>',
               '<div style="margin-left:12px;color:#94a3b8">',
@@ -641,6 +643,8 @@
 
   // ── Navegación a items desde el chat ──────────────────────────────────────
   function navigateToItem(id) {
+    var item = state.inventario.find(function(i) { return String(i.id) === String(id); });
+    if (item) state.contextItem = item;
     closePanel();
     if (typeof openItemRoute === 'function') openItemRoute(id);
     else if (typeof openModal === 'function') openModal(id);
@@ -705,6 +709,7 @@
     var sendBtn = el.panel.querySelector('#ag-send');
     sendBtn.disabled = false;
     if (state.messages.length === 0) {
+      injectarStatsPanel();
       el.panel.querySelector('#ag-quick').style.display = 'flex';
       el.chatInput.focus();
     }
@@ -978,21 +983,20 @@
 
   // ── Detectar intención de préstamo ────────────────────────────────────────
   function detectarIntencionPrestamo(query) {
-    var q = (query || '').toLowerCase().trim();
-    // Patrones directos de petición de préstamo
-    var patrones = ['pedir prestado', 'pedirlo prestado', 'pedirla prestada', 'préstamo', 'prestamo',
+    var q = normalize(query || '');  // normalize() quita tildes → un solo patrón por palabra
+    var patrones = ['pedir prestado', 'pedirlo prestado', 'pedirla prestada', 'prestamo',
       'puedo pedir', 'me llevo', 'me lo llevo', 'me la llevo', 'cojo', 'tomo prestado',
-      'facilitar préstamo', 'facilitar prestamo', 'lo quiero', 'la quiero',
+      'facilitar prestamo', 'lo quiero', 'la quiero',
       'lo necesito', 'la necesito', 'quiero pedir', 'quiero coger', 'reservar',
       'abre el formulario', 'abrir formulario', 'abrir el formulario', 'rellenar formulario',
-      'quiero el', 'quiero la', 'pedirla', 'pedirlo', 'pídela', 'pidela', 'pídelo', 'pidelo',
-      'tramitar', 'tramítalo', 'tramitalo', 'gestionar préstamo', 'gestionar prestamo',
-      'solicitar', 'sí, por favor', 'si por favor', 'dale', 'venga', 'adelante',
+      'quiero el', 'quiero la', 'pedirla', 'pedirlo', 'pidela', 'pidelo',
+      'tramitar', 'tramitalo', 'gestionar prestamo', 'solicitar',
+      'si por favor', 'dale', 'venga', 'adelante',
       // pedir / coger / llevar
       'dame el', 'dame la', 'dame un', 'dame una', 'deme el', 'deme la', 'deme un', 'deme una',
-      'préstame', 'prestame', 'préstamelo', 'prestamelo', 'préstamela', 'prestamela',
-      'déjame', 'dejame', 'déjamelo', 'dejamelo', 'déjamela', 'dejamela',
-      'me hace falta', 'me hará falta', 'necesito usar', 'necesito coger',
+      'prestame', 'prestamelo', 'prestamela',
+      'dejame', 'dejamelo', 'dejamela',
+      'me hace falta', 'necesito usar', 'necesito coger',
       'necesito el', 'necesito la', 'necesito un', 'necesito una',
       'voy a coger', 'voy a llevarme', 'voy a usar', 'voy a tomar', 'voy a pedir',
       'me lo llevo prestado', 'me la llevo prestada', 'coger prestado',
@@ -1001,29 +1005,26 @@
       'me lo tomo', 'me la tomo', 'tomo el', 'tomo la',
       'llevarme el', 'llevarme la', 'llevarme un', 'llevarme una',
       'quiero cogerlo', 'quiero cogerla', 'quiero tomarlo', 'quiero tomarla',
-      'quiero llevármelo', 'quiero llevarmelo', 'quiero llevármela', 'quiero llevarmela',
-      'me interesa', 'me interesa ese', 'me interesa esa',
-      'me quedo con', 'me quedo ese', 'me quedo esa',
+      'quiero llevarmelo', 'quiero llevarmela',
+      'me interesa', 'me quedo con', 'me quedo ese', 'me quedo esa',
       'ese quiero', 'esa quiero', 'lo pido', 'la pido', 'lo solicito', 'la solicito',
       'ponlo a mi nombre', 'ponla a mi nombre', 'a mi nombre',
       // registrar préstamo
-      'apuntar préstamo', 'apuntar prestamo', 'anotar préstamo', 'anotar prestamo',
-      'registrar préstamo', 'registrar prestamo', 'hacer el préstamo', 'hacer el prestamo',
-      'abrir préstamo', 'abrir prestamo', 'nuevo préstamo', 'nuevo prestamo',
-      'formalizar préstamo', 'formalizar prestamo',
+      'apuntar prestamo', 'anotar prestamo', 'registrar prestamo',
+      'hacer el prestamo', 'abrir prestamo', 'nuevo prestamo', 'formalizar prestamo',
       // frases implícitas coloquiales
-      'me llevo prestado', 'me llevo prestada', 'en préstamo', 'en prestamo',
-      'para llevarse', 'para llevarme', 'quiero llevarlo', 'quiero llevarla'];
+      'me llevo prestado', 'me llevo prestada', 'en prestamo',
+      'para llevarme', 'quiero llevarlo', 'quiero llevarla'];
     if (patrones.some(function(p) { return q.includes(p); })) return true;
 
     // Si la última respuesta del agente mencionó abrir un formulario de préstamo,
     // tratar respuestas afirmativas cortas como confirmación
     var lastAI = null;
     for (var i = state.messages.length - 1; i >= 0; i--) {
-      if (state.messages[i].role === 'assistant') { lastAI = state.messages[i].content.toLowerCase(); break; }
+      if (state.messages[i].role === 'assistant') { lastAI = normalize(state.messages[i].content); break; }
     }
-    var afirmaciones = ['si', 'sí', 'ok', 'vale', 'yes', 'claro', 'por supuesto', 'efectivamente', 'correcto'];
-    if (lastAI && (lastAI.includes('préstamo') || lastAI.includes('prestamo') || lastAI.includes('formulario'))) {
+    var afirmaciones = ['si', 'ok', 'vale', 'yes', 'claro', 'por supuesto', 'efectivamente', 'correcto'];
+    if (lastAI && (lastAI.includes('prestamo') || lastAI.includes('formulario'))) {
       if (afirmaciones.indexOf(q) !== -1 || q.length < 12 && afirmaciones.some(function(a){ return q.startsWith(a); })) {
         return true;
       }
@@ -1274,7 +1275,7 @@
     });
   }
 
-  function mostrarFormularioPrestamo(item) {
+  function mostrarFormularioPrestamo(item, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
@@ -1306,7 +1307,34 @@
     el.messages.scrollTop = el.messages.scrollHeight;
 
     var profInput = formDiv.querySelector('.ag-loan-prof');
-    profInput.focus();
+
+    // Autocompletar desde la frase original
+    if (queryOriginal) {
+      var autoMsgs = [];
+      var profe = extraerProfesorDeFrase(queryOriginal);
+      if (profe) { profInput.value = profe; autoMsgs.push('👤 ' + profe); }
+      var cant = extraerCantidadDeFrase(queryOriginal);
+      if (cant && cant > 1) {
+        var qtyEl = formDiv.querySelector('.ag-loan-qty');
+        if (qtyEl) { qtyEl.value = Math.min(cant, qty); autoMsgs.push('× ' + Math.min(cant, qty)); }
+      }
+      var fecha = extraerFechaDevolucion(queryOriginal);
+      if (fecha) {
+        var dateEl = formDiv.querySelector('.ag-loan-date');
+        if (dateEl) { dateEl.value = fecha; autoMsgs.push('📅 ' + fecha); }
+      }
+      if (autoMsgs.length) {
+        var loanResult = formDiv.querySelector('.ag-loan-result');
+        if (loanResult) {
+          loanResult.style.color = '#64748b';
+          loanResult.innerHTML = '✨ ' + autoMsgs.join(' · ');
+        }
+      }
+    }
+
+    // Enfocar el primer campo vacío obligatorio
+    if (!profInput.value) profInput.focus();
+    else { var aulaEl2 = formDiv.querySelector('.ag-loan-aula'); if (aulaEl2) aulaEl2.focus(); }
 
     formDiv.querySelector('.ag-loan-cancel').addEventListener('click', function() {
       formDiv.remove();
@@ -1696,18 +1724,110 @@
     }
   }
 
+  // ── Extraer nombre de profesor/a de una frase ─────────────────────
+  function extraerProfesorDeFrase(q) {
+    var q0 = (q || '').trim();
+    var m;
+    // "Juan se lleva / coge / necesita / pide..."
+    m = q0.match(/^([\wáéíóúüñÁÉÍÓÚÜÑ]+(?:\s+[\wáéíóúüñÁÉÍÓÚÜÑ]+)?)\s+(?:se\s+lleva|se\s+lo\s+lleva|coge|necesita|pide|quiere|solicita|toma|va\s+a)/i);
+    if (m && m[1].length > 2 && !/^(dame|necesito|quiero|pedir|coger|tomar|llevar)$/i.test(m[1])) return m[1].trim();
+    // "para [Nombre]" / "a nombre de [Nombre]" / "apunta que [Nombre]" / "es para [Nombre]"
+    m = q0.match(/(?:para|a\s+nombre\s+de|es\s+para|lo\s+pide|la\s+pide|apunta(?:\s+que)?(?:\s+a)?|anota(?:\s+que)?(?:\s+a)?)\s+([\wáéíóúüñÁÉÍÓÚÜÑ]+(?:\s+[\wáéíóúüñÁÉÍÓÚÜÑ]+)?)/i);
+    if (m && m[1].length > 2) return m[1].trim();
+    return null;
+  }
+
+  // ── Extraer cantidad numérica de una frase ────────────────────────
+  function extraerCantidadDeFrase(q) {
+    var n = normalize(q || '');
+    var m = n.match(/\b(\d+)\s*(?:unidades?|uds?\.?|ud\.?|piezas?|ejemplares?|items?)?/);
+    if (m) { var v = parseInt(m[1]); if (v > 0 && v < 1000) return v; }
+    var NUMS = { uno:1, una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7,
+                 ocho:8, nueve:9, diez:10, once:11, doce:12, quince:15, veinte:20, veinticinco:25 };
+    for (var w in NUMS) { if (new RegExp('\\b' + w + '\\b').test(n)) return NUMS[w]; }
+    return null;
+  }
+
+  // ── Extraer fecha de devolución prevista de una frase ─────────────
+  function extraerFechaDevolucion(q) {
+    var n = normalize(q || '');
+    var today = new Date();
+    var res = null;
+    if (/\bhoy\b/.test(n))                                         { res = new Date(today); }
+    else if (/\bmanana\b/.test(n))                                 { res = new Date(today); res.setDate(today.getDate()+1); }
+    else if (/\bpasado\s+manana\b/.test(n))                       { res = new Date(today); res.setDate(today.getDate()+2); }
+    else if (/\best[ae]\s+semana\b/.test(n))                      { res = new Date(today); res.setDate(today.getDate() + ((5-today.getDay()+7)%7 || 5)); }
+    else if (/\b(?:semana\s+que\s+viene|proxima\s+semana)\b/.test(n)) { res = new Date(today); res.setDate(today.getDate()+7); }
+    else if (/\b(?:en\s+un\s+mes|proximo\s+mes)\b/.test(n))       { res = new Date(today); res.setMonth(today.getMonth()+1); }
+    else {
+      var DIAS = { lunes:1, martes:2, miercoles:3, jueves:4, viernes:5, sabado:6, domingo:0 };
+      for (var dia in DIAS) {
+        if (new RegExp('\\b'+dia+'\\b').test(n)) {
+          var diff = (DIAS[dia] - today.getDay() + 7) % 7 || 7;
+          res = new Date(today); res.setDate(today.getDate()+diff); break;
+        }
+      }
+      if (!res) {
+        var md = n.match(/(?:hasta\s+el|para\s+el|el\s+dia)\s+(\d{1,2})/);
+        if (md) { res = new Date(today); res.setDate(parseInt(md[1])); if (res <= today) res.setMonth(res.getMonth()+1); }
+      }
+    }
+    return res ? res.toISOString().split('T')[0] : null;
+  }
+
+  // ── Obtener ítem en contexto actual de la app ─────────────────────
+  function obtenerItemContextoApp() {
+    if (state.contextItem) return state.contextItem;
+    var globals = ['currentItem', 'selectedItem', '_currentItem'];
+    for (var i = 0; i < globals.length; i++) {
+      if (typeof window[globals[i]] !== 'undefined' && window[globals[i]] && window[globals[i]].id) return window[globals[i]];
+    }
+    var hm = window.location.hash.match(/[?&]?(?:item|id)[=\/](\d+)/i);
+    if (hm) return state.inventario.find(function(it) { return String(it.id) === String(hm[1]); }) || null;
+    return null;
+  }
+
+  // ── Stats dinámicas en el panel de bienvenida ─────────────────────
+  function injectarStatsPanel() {
+    var statsEl = el.panel.querySelector('#ag-stats-bar');
+    if (!statsEl) return;
+    var inv = state.inventario || [];
+    var prestActivos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) { return p.estado === 'Activo'; });
+    var stockBajo = inv.filter(function(x) { return Number(x.min||0) > 0 && Number(x.qty != null ? x.qty : (x.cantidad||0)) < Number(x.min||0); });
+    var mantPend  = inv.filter(function(x) { return x.mant == 1 || x.mant === '1'; });
+    statsEl.innerHTML = '';
+    var parts = [];
+    if (prestActivos.length) parts.push({ txt: '📋 ' + prestActivos.length + ' prestados', q: 'préstamos activos', col: '#38bdf8' });
+    if (stockBajo.length)    parts.push({ txt: '⚠ '  + stockBajo.length   + ' stock bajo',    q: 'stock bajo',        col: '#ef4444' });
+    if (mantPend.length)     parts.push({ txt: '🔧 ' + mantPend.length    + ' mantenimiento', q: 'lista mantenimiento',col: '#fbbf24' });
+    if (!parts.length) { statsEl.style.display = 'none'; return; }
+    parts.forEach(function(p) {
+      var b = document.createElement('button');
+      b.className = 'ag-quick-btn';
+      b.style.cssText = 'font-size:10px;padding:4px 8px;border-color:' + p.col + ';color:' + p.col;
+      b.textContent = p.txt;
+      b.addEventListener('click', function() { sendChat(p.q); });
+      statsEl.appendChild(b);
+    });
+    statsEl.style.display = 'flex';
+  }
+
   // ── Buscar préstamos activos por nombre de ítem o persona ─────────
-  function buscarPrestamosActivos(q) {
-    var n = normalize(q);
+  function buscarPrestamosActivos(q, personaQ) {
+    var nItem = normalize(q || '');
+    var nPerso = normalize(personaQ || '');
     var activos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) {
       return p.estado === 'Activo';
     });
     if (!activos.length) return [];
-    return activos.filter(function(p) {
-      return normalize(p.itemNombre || '').includes(n) ||
-             normalize(p.profesorNombre || '').includes(n) ||
-             normalize(p.aulaDestino || '').includes(n);
+    var res = activos.filter(function(p) {
+      var okItem  = !nItem  || normalize(p.itemNombre||'').includes(nItem) || normalize(p.aulaDestino||'').includes(nItem);
+      var okPerso = !nPerso || normalize(p.profesorNombre||'').includes(nPerso);
+      return okItem && okPerso;
     });
+    // Si con los dos filtros no hay nada, relajar al filtro de ítem solo
+    if (!res.length && nItem) res = activos.filter(function(p) { return normalize(p.itemNombre||'').includes(nItem); });
+    return res;
   }
 
   // ── Formulario: DEVOLVER préstamo ─────────────────────────────────
@@ -2038,10 +2158,16 @@
       }
       // Acciones que necesitan un ítem: buscar primero
       if (intencion.tipo === 'devolver') {
-        var termBusq = q.replace(/devuelve|devolver|devolverlo|devolverla|devolucion|devolución/gi,'').trim();
-        var prestActivos = buscarPrestamosActivos(termBusq || '');
-        if (!prestActivos.length) prestActivos = buscarPrestamosActivos(''); // si no encuentra, mostrar todos
-        mostrarFormularioDevolucion(prestActivos, termBusq || null);
+        var nDev = normalize(q);
+        var termBusq = nDev.replace(/\b(devolver|devuelve|devolvemos|quiero devolver|voy a devolver|retornar|retorna|cerrar prestamo|finalizar prestamo|marcar como devuelto|marcar devuelto|ya lo devuelvo|ya la devuelvo|lo traigo|la traigo|ya lo traje|ya la traje|he devuelto)\b/g,'').trim();
+        // Separar "ítem de [persona]"
+        var personaDevMatch = termBusq.match(/\bde\s+([\wà-ÿ]+(?:\s+[\wà-ÿ]+)?)\s*$/);
+        var personaDev = null;
+        var itemDev = termBusq;
+        if (personaDevMatch) { personaDev = personaDevMatch[1].trim(); itemDev = termBusq.replace(personaDevMatch[0],'').trim(); }
+        var prestActivos = buscarPrestamosActivos(itemDev, personaDev);
+        if (!prestActivos.length) prestActivos = buscarPrestamosActivos('', null);
+        mostrarFormularioDevolucion(prestActivos, itemDev || null);
         return;
       }
       if (intencion.tipo === 'stock') {
@@ -2066,8 +2192,15 @@
 
     // ── INTERCEPTAR ACCIÓN DE PRÉSTAMO ─────────────────────────
     if (detectarIntencionPrestamo(q)) {
+      // Detectar referencias al ítem actual de la app ("este", "esta", "el de aquí"...)
+      var nPrest = normalize(q);
+      var refActual = matchAny(nPrest, ['este','esta','el de aqui','la de aqui','el actual','la actual',
+        'este item','este equipo','este instrumento','el que tengo','la que tengo',
+        'el de la pantalla','este mismo','esta misma','el que sale'])
+        ? obtenerItemContextoApp() : null;
+
       // Buscar item en la pregunta actual; si no hay, buscar en mensajes anteriores
-      var encontrados = searchInventoryItems(q);
+      var encontrados = refActual ? [refActual] : searchInventoryItems(q);
       if (!encontrados || encontrados.length === 0) {
         // Recorrer historial de mensajes recientes buscando el item mencionado
         for (var mi = state.messages.length - 2; mi >= 0 && mi >= state.messages.length - 6; mi--) {
@@ -2080,7 +2213,7 @@
       }
       if (encontrados && encontrados.length > 0) {
         if (encontrados.length === 1) {
-          mostrarFormularioPrestamo(encontrados[0]);
+          mostrarFormularioPrestamo(encontrados[0], q);
           return;
         }
         // Si hay varios, pedir que elija
@@ -2096,7 +2229,7 @@
           btn.innerHTML = '📦 ' + esc(nombreBtn) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ')</small>';
           btn.addEventListener('click', (function(it) { return function() {
             listaMsg.remove();
-            mostrarFormularioPrestamo(it);
+            mostrarFormularioPrestamo(it, q);
           }; })(item));
           listaMsg.appendChild(btn);
         });
