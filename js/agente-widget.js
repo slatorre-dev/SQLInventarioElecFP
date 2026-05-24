@@ -196,6 +196,8 @@
     .ag-input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 7px; color: #f1f5f9; padding: 8px 10px; font-size: 12px; outline: none; font-family: inherit; }
     .ag-send { background: #0369a1; border: none; border-radius: 7px; color: white; padding: 8px 12px; cursor: pointer; font-size: 14px; }
     .ag-send:disabled { background: #1e293b; cursor: not-allowed; }
+    .ag-mic-btn.listening { background: #dc2626 !important; animation: ag-mic-pulse 1s infinite; }
+    @keyframes ag-mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.5)} 50%{box-shadow:0 0 0 6px rgba(220,38,38,0)} }
 
     /* Tablas genéricas */
     .ag-table-wrap { overflow-x: auto; }
@@ -477,6 +479,7 @@
     el.chatInput.addEventListener('input', updateSuggestions);
     panel.querySelector('#ag-send').addEventListener('click', sendChat);
     panel.querySelector('#ag-scan').addEventListener('click', startScan);
+    panel.querySelector('#ag-mic').addEventListener('click', startMic);
 
     // Quick actions
     panel.querySelectorAll('.ag-quick-btn').forEach(function(b) {
@@ -553,6 +556,7 @@
           '<div id="ag-suggestions" class="ag-quick" style="display:none;padding:8px 14px;border-top:1px solid #1e293b;gap:4px"></div>',
           '<div class="ag-input-row">',
             '<button id="ag-scan" class="ag-send" title="Escanear código QR / código de barras" style="background:#1e293b">📷</button>',
+            '<button id="ag-mic" class="ag-send ag-mic-btn" title="Hablar por micrófono" style="background:#1e293b">🎤</button>',
             '<input id="ag-chat-input" class="ag-input" placeholder="Ej: ¿Dónde está...? | ¿Quién tiene...? | Necesito pedir...">',
             '<button id="ag-send" class="ag-send" disabled>➤</button>',
           '</div>',
@@ -1899,6 +1903,63 @@
     else div.innerHTML = md2html(html);
     el.messages.appendChild(div);
     el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
+  // ── Reconocimiento de voz ─────────────────────────────────────────────────
+  var _recognition = null;
+  function startMic() {
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      appendMsg('ai', '⚠ Tu navegador no soporta reconocimiento de voz. Prueba con Chrome en Android.');
+      return;
+    }
+    var micBtn = el.panel.querySelector('#ag-mic');
+    // Si ya está escuchando, parar
+    if (_recognition) {
+      _recognition.stop();
+      _recognition = null;
+      micBtn.classList.remove('listening');
+      micBtn.textContent = '🎤';
+      return;
+    }
+    _recognition = new SpeechRecognition();
+    _recognition.lang = 'es-ES';
+    _recognition.continuous = false;
+    _recognition.interimResults = true;
+
+    micBtn.classList.add('listening');
+    micBtn.textContent = '⏹';
+    el.chatInput.placeholder = '🎤 Escuchando...';
+
+    _recognition.onresult = function(e) {
+      var transcript = Array.from(e.results).map(function(r){ return r[0].transcript; }).join('');
+      el.chatInput.value = transcript;
+      // Si el resultado es final, enviar automáticamente
+      if (e.results[e.results.length - 1].isFinal) {
+        micBtn.classList.remove('listening');
+        micBtn.textContent = '🎤';
+        el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
+        _recognition = null;
+        setTimeout(function() { sendChat(transcript); }, 300);
+      }
+    };
+
+    _recognition.onerror = function(e) {
+      micBtn.classList.remove('listening');
+      micBtn.textContent = '🎤';
+      el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
+      _recognition = null;
+      if (e.error !== 'aborted') appendMsg('ai', '⚠ Error de micrófono: ' + e.error);
+    };
+
+    _recognition.onend = function() {
+      micBtn.classList.remove('listening');
+      micBtn.textContent = '🎤';
+      el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
+      _recognition = null;
+    };
+
+    _recognition.start();
   }
 
   // ── Escáner de QR / código de barras ──────────────────────────────────────
