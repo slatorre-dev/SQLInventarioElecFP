@@ -3201,78 +3201,99 @@
       return;
     }
     var micBtn = el.panel.querySelector('#ag-mic');
-    // Si ya está escuchando, parar
+    // Si ya está escuchando, parar y enviar lo acumulado
     if (_recognition) {
       _recognition.stop();
       _recognition = null;
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
+      el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
       return;
     }
-    _recognition = new SpeechRecognition();
-    _recognition.lang = 'es-ES';
-    _recognition.continuous = true;   // no corta al hacer pausa
-    _recognition.interimResults = true;
+    // Transcript acumulado entre sesiones de reconocimiento
+    var accumulatedText = '';
+    var silenceTimer = null;
+    var userStopped = false;
 
     micBtn.classList.add('listening');
     micBtn.textContent = '⏹';
     el.chatInput.placeholder = '🎤 Escuchando... (pausa de 2s para enviar)';
 
-    var silenceTimer = null;
-    var fullTranscript = '';
-
-    function stopMicAndSend(transcript) {
-      clearTimeout(silenceTimer);
-      if (_recognition) { try { _recognition.stop(); } catch(e) {} }
-      _recognition = null;
+    function resetMicUI() {
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
-      if (transcript && transcript.trim()) {
-        setTimeout(function() { sendChat(transcript.trim()); }, 200);
-      }
     }
 
-    _recognition.onresult = function(e) {
-      // Acumular todo el transcript (resultados finales + interim)
-      var interim = '';
-      fullTranscript = '';
-      for (var i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) fullTranscript += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      el.chatInput.value = fullTranscript + interim;
-
-      // Reiniciar timer de silencio — envía 2s después de la última palabra
+    function sendAndStop() {
       clearTimeout(silenceTimer);
-      silenceTimer = setTimeout(function() {
-        var text = fullTranscript || interim;
-        stopMicAndSend(text);
-      }, 2000);
-    };
-
-    _recognition.onerror = function(e) {
-      clearTimeout(silenceTimer);
-      micBtn.classList.remove('listening');
-      micBtn.textContent = '🎤';
-      el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
+      userStopped = true;
+      if (_recognition) { try { _recognition.stop(); } catch(e) {} }
       _recognition = null;
-      if (e.error !== 'aborted' && e.error !== 'no-speech') appendMsg('ai', '⚠ Error de micrófono: ' + e.error);
-    };
-
-    _recognition.onend = function() {
-      // Si termina por pausa del browser con texto acumulado, enviar
-      if (_recognition === null) return; // ya lo gestionó stopMicAndSend
-      clearTimeout(silenceTimer);
-      var text = fullTranscript || el.chatInput.value.trim();
-      micBtn.classList.remove('listening');
-      micBtn.textContent = '🎤';
-      el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
-      _recognition = null;
+      resetMicUI();
+      var text = accumulatedText.trim();
       if (text) setTimeout(function() { sendChat(text); }, 200);
-    };
+    }
 
-    _recognition.start();
+    function startSession() {
+      var r = new SpeechRecognition();
+      r.lang = 'es-ES';
+      r.continuous = false;      // más estable en móvil
+      r.interimResults = true;
+
+      r.onresult = function(e) {
+        var interim = '';
+        var sessionFinal = '';
+        for (var i = 0; i < e.results.length; i++) {
+          if (e.results[i].isFinal) sessionFinal += e.results[i][0].transcript + ' ';
+          else interim += e.results[i][0].transcript;
+        }
+        // Mostrar lo acumulado + esta sesión
+        el.chatInput.value = (accumulatedText + sessionFinal + interim).trim();
+        // Reiniciar temporizador de silencio
+        clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(function() {
+          // Confirmar lo final de esta sesión antes de enviar
+          accumulatedText += sessionFinal || interim;
+          sendAndStop();
+        }, 2000);
+      };
+
+      r.onerror = function(e) {
+        if (e.error === 'aborted') return;
+        if (e.error === 'no-speech') return; // ignorar — se gestiona en onend
+        clearTimeout(silenceTimer);
+        _recognition = null;
+        resetMicUI();
+        appendMsg('ai', '⚠ Error de micrófono: ' + e.error);
+      };
+
+      r.onend = function() {
+        if (userStopped) return;
+        // El STT cortó por pausa del sistema — acumular lo transcrito y reiniciar
+        var currentText = el.chatInput.value.trim();
+        if (currentText && currentText !== accumulatedText.trim()) {
+          accumulatedText = currentText + ' ';
+        }
+        // Si hay timer activo (el usuario aún está hablando), reiniciar sesión
+        if (silenceTimer !== null) {
+          // Esperar un poco y reiniciar para capturar el resto
+          setTimeout(function() {
+            if (!userStopped && _recognition === r) {
+              _recognition = startSession();
+            }
+          }, 100);
+        } else {
+          // Sin timer — pausa real, enviar lo acumulado
+          sendAndStop();
+        }
+      };
+
+      r.start();
+      return r;
+    }
+
+    _recognition = startSession();
   }
 
   // ── Escáner de QR / código de barras ──────────────────────────────────────
