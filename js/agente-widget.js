@@ -296,6 +296,7 @@
     inventario: [],
     messages: [],
     contextItem: null,  // último ítem en contexto (para "este", "esta", etc.)
+    contextAula: null,  // última aula mencionada en la conversación
     learnedIntents: [],
     // csv
     csvParsed: [],
@@ -658,6 +659,8 @@
     if (typeof openItemRoute === 'function') openItemRoute(id);
     else if (typeof openModal === 'function') openModal(id);
   }
+  // Exponer globalmente para onclick en botones generados dinámicamente
+  window.navigateToItem = navigateToItem;
 
   function linkifyItems(container) {
     if (!state.inventario.length) return;
@@ -951,22 +954,82 @@
     return null;
   }
 
+  // ── Contexto conversacional: extrae item/aula de mensajes anteriores ─────────
+  function resolverContextoConversacional(q) {
+    var n = normalize(q);
+    var esReferencia = matchAny(n, [
+      'ese', 'esa', 'ese mismo', 'esa misma', 'el mismo', 'la misma',
+      'el anterior', 'la anterior', 'ese item', 'esa pieza', 'ese equipo',
+      'cuantos hay', 'cuantas hay', 'y alli', 'y en el aula', 'y en la',
+      'tambien', 'igualmente', 'los mismos', 'las mismas', 'y ahi', 'y alla'
+    ]);
+
+    var aulaDetectada = extraerAulaDeFrase(q);
+    if (aulaDetectada) state.contextAula = aulaDetectada;
+    else if (state.contextAula && esReferencia) aulaDetectada = state.contextAula;
+
+    var itemCtx = state.contextItem || null;
+    if (esReferencia && !itemCtx) {
+      for (var i = state.messages.length - 2; i >= 0 && i >= state.messages.length - 8; i--) {
+        var msg = state.messages[i];
+        if (!msg || !msg.content) continue;
+        var cands = searchInventoryCandidates(msg.content, 3);
+        if (cands.length) { itemCtx = cands[0].item; state.contextItem = itemCtx; break; }
+      }
+    }
+
+    return { item: itemCtx, aula: aulaDetectada, esReferencia: esReferencia };
+  }
+
+  // ── Ficha completa de un item (stock + ubicación + estado + préstamos) ────────
+  function mostrarFichaItem(item) {
+    var qty = item.qty != null ? item.qty : (item.cantidad || 0);
+    var min = item.min != null ? item.min : (item.stock_min || 0);
+    var nombre = item.item || item.nombre || item.name || '(sin nombre)';
+    var aula = item.aula || '—';
+    var loc = item.loc || item.ubicacion || '—';
+    var estado = item.cond || item.estado_item || item.status || '—';
+    var ref = item.ref || item.referencia || '—';
+    var cat = item.cat || item.categoria || '—';
+    var mant = (item.mant == 1 || item.mant === '1') ? '⚠ Pendiente' : '✅ OK';
+    var prestActivos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) {
+      return p.estado === 'Activo' && String(p.itemId) === String(item.id);
+    });
+    var stockColor = (min > 0 && Number(qty) < Number(min)) ? '#ef4444' : '#34d399';
+
+    var html =
+      '<div style="margin-bottom:6px"><strong style="color:#7dd3fc;font-size:12px">' + esc(nombre) + '</strong>' +
+      ' <span style="color:#475569;font-size:10px">· ' + esc(ref) + '</span>' +
+      ' <button onclick="if(window.navigateToItem)window.navigateToItem(' + Number(item.id) + ')" ' +
+      'style="font-size:9px;padding:2px 6px;background:#1e293b;border:1px solid #334155;border-radius:4px;color:#7dd3fc;cursor:pointer;margin-left:6px">✏ Editar ficha</button></div>' +
+      '<table class="ag-table" style="width:100%;margin-top:4px"><tbody>' +
+      '<tr><td style="color:#94a3b8;width:90px">Aula</td><td>' + esc(aula) + '</td>' +
+          '<td style="color:#94a3b8;width:90px">Ubicación</td><td>' + esc(loc) + '</td></tr>' +
+      '<tr><td style="color:#94a3b8">Stock</td><td style="color:' + stockColor + ';font-weight:700">' + qty +
+          (min > 0 ? ' <span style="color:#64748b;font-weight:400">(mín: ' + min + ')</span>' : '') + '</td>' +
+          '<td style="color:#94a3b8">Estado</td><td>' + esc(estado) + '</td></tr>' +
+      '<tr><td style="color:#94a3b8">Categoría</td><td>' + esc(cat) + '</td>' +
+          '<td style="color:#94a3b8">Mant.</td><td>' + mant + '</td></tr>' +
+      '</tbody></table>';
+
+    if (prestActivos.length) {
+      html += '<div style="margin-top:6px;color:#fbbf24;font-size:10px">📤 Prestado a: ' +
+        prestActivos.map(function(p) {
+          return esc(p.profesorNombre || '—') + ' · ' + esc(p.aulaDestino || '—') + ' (' + p.cantidad + ' ud.)';
+        }).join(', ') + '</div>';
+    }
+
+    state.contextItem = item;
+    appendMsgHtml(html);
+  }
+
   function ctxExtra() {
     if (!state.inventario.length) return '';
     var inv = state.inventario;
     var aulas = [];
     inv.forEach(function(i){ if(i.aula && aulas.indexOf(i.aula)<0) aulas.push(i.aula); });
-    var cats = [];
-    inv.forEach(function(i){ if(i.cat && cats.indexOf(i.cat)<0) cats.push(i.cat); });
     var bajoMin = inv.filter(function(i){ return Number(i.min||i.stock_min)>0 && Number(i.qty??i.cantidad) < Number(i.min||i.stock_min); });
 
-    // Debug: mostrar estructura de items para verificar
-    console.log('[Volt DEBUG] Inventario cargado:', inv.length, 'items');
-    if (inv.length > 0) {
-      console.log('[Volt DEBUG] Estructura item 0:', inv[0]);
-    }
-
-    // Contexto MINIMALISTA: solo metadatos, NO la tabla completa
     return '\n\n📦 INVENTARIO DISPONIBLE:\n' +
       'Total: ' + inv.length + ' items | Aulas: ' + (aulas.length > 0 ? aulas.join(', ') : 'no cargadas') + ' | Bajo stock: ' + bajoMin.length + '\n' +
       'El usuario preguntará por materiales. Usa SIEMPRE los resultados de búsqueda que se proporcionan.';
@@ -2830,6 +2893,9 @@
       return;
     }
 
+    // ── CONTEXTO CONVERSACIONAL — actualizar aula/item del hilo ───────
+    resolverContextoConversacional(q);
+
     // ── PARSER CENTRAL DE INTENCIONES ──────────────────────────
     var intencion = detectarIntencion(q);
     if (intencion) {
@@ -2838,6 +2904,31 @@
           intencion.tipo === 'resumen_aula' || intencion.tipo === 'quien_tiene') {
         respuestaConsultaDirecta(intencion.tipo, q);
         return;
+      }
+      // Búsqueda/consulta de ficha — mostrar ficha completa directamente
+      if (intencion.tipo === 'buscar') {
+        var ctx = resolverContextoConversacional(q);
+        // Si es referencia al item anterior y ya lo tenemos en contexto
+        var itemBuscar = ctx.esReferencia && ctx.item ? ctx.item : null;
+        if (!itemBuscar) {
+          var candsBuscar = searchInventoryCandidates(q, 4);
+          // Si no hay candidatos, buscar en historial de mensajes
+          if (!candsBuscar.length) {
+            for (var mb = state.messages.length - 2; mb >= 0 && mb >= state.messages.length - 6; mb--) {
+              var pmb = state.messages[mb];
+              if (pmb && pmb.content) { candsBuscar = searchInventoryCandidates(pmb.content, 4); if (candsBuscar.length) break; }
+            }
+          }
+          if (candsBuscar.length === 1 || (candsBuscar.length > 1 && candsBuscar[0].score >= candsBuscar[1].score + 5)) {
+            itemBuscar = candsBuscar[0].item;
+          }
+        }
+        if (itemBuscar) { mostrarFichaItem(itemBuscar); return; }
+        // Varios candidatos — mostrar lista para elegir
+        if (searchInventoryCandidates(q, 4).length > 1) {
+          seleccionarItemYEjecutar(q, function(item) { mostrarFichaItem(item); }, 'Ver ficha');
+          return;
+        }
       }
       // Acciones que necesitan un ítem: buscar primero
       if (intencion.tipo === 'devolver') {
@@ -2962,12 +3053,30 @@
 
     // Búsqueda inteligente: detectar consultas de stock y filtrar localmente
     var contextExtra = ctxExtra();
+
+    // Añadir contexto conversacional al prompt de la IA
+    if (state.contextItem) {
+      var ci = state.contextItem;
+      contextExtra += '\n\nÍTEM EN CONTEXTO (mencionado anteriormente): ' +
+        (ci.item || ci.nombre || '') + ' | Aula: ' + (ci.aula || '—') +
+        ' | Stock: ' + (ci.qty != null ? ci.qty : '?') + ' | Ref: ' + (ci.ref || '—');
+    }
+    if (state.contextAula) {
+      contextExtra += '\n\nAULA EN CONTEXTO (mencionada anteriormente): ' + (state.contextAula.name || state.contextAula.id || '');
+    }
+
     var stockResults = checkStockQuery(q);
     if (stockResults) {
       contextExtra += stockResults;
     } else {
       var searchResults = searchInventory(q);
-      if (searchResults && searchResults.length > 0) {
+      // Si no hay resultados en query actual, buscar en historial reciente
+      if ((!searchResults || !searchResults.length) && state.contextItem) {
+        var qty2 = state.contextItem.qty != null ? state.contextItem.qty : '?';
+        contextExtra += '\n\n📦 ITEM DEL CONTEXTO: ' + (state.contextItem.item || state.contextItem.nombre || '') +
+          ' | Stock: ' + qty2 + ' | Aula: ' + (state.contextItem.aula || '—') +
+          '\nEl usuario está preguntando sobre este item que mencionó antes.';
+      } else if (searchResults && searchResults.length > 0) {
         contextExtra += '\n\n✅ RESULTADOS DE BÚSQUEDA para "' + q + '" (' + searchResults.length + ' encontrados):\n' +
           searchResults.join('\n') +
           '\n\nUSA ESTOS DATOS: Son resultados directos del inventario real.';
