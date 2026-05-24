@@ -459,8 +459,8 @@
     // FAB
     var fab = document.createElement('button');
     fab.id = 'agente-fab';
-    fab.title = 'Pregunta a ' + AGENTE_NOMBRE + ' (arrastra para mover)';
-    fab.innerHTML = '⚡ Pregunta a ' + AGENTE_NOMBRE;
+    fab.title = 'Habla con ' + AGENTE_NOMBRE + ' (arrastra para mover)';
+    fab.innerHTML = '🤖 Habla con ' + AGENTE_NOMBRE;
     document.body.appendChild(fab);
     el.fab = fab;
     makeFabDraggable(fab);
@@ -526,7 +526,7 @@
     var today = new Date().toISOString().split('T')[0];
     return [
       '<div class="ag-header">',
-        '<span style="font-size:18px">⚡</span>',
+        '<span style="font-size:18px">🤖</span>',
         '<div class="ag-header-title">',
           '<div class="ag-title">AGENTE INVENTARIO</div>',
           '<div class="ag-sub">IES Juan Bosco</div>',
@@ -622,7 +622,7 @@
   function closePanel() {
     state.open = false;
     el.panel.classList.remove('open');
-    el.fab.innerHTML = '⚡ Pregunta a ' + AGENTE_NOMBRE;
+    el.fab.innerHTML = '🤖 Habla con ' + AGENTE_NOMBRE;
   }
 
   // ── Tabs ───────────────────────────────────────────────────────────────────
