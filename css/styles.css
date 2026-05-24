@@ -626,6 +626,8 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .cqbox{text-align:right;flex-shrink:0}
 .cqbig{font-size:25px;font-weight:800;font-family:var(--mono);line-height:1}
 .cqmin{font-size:10px;color:var(--muted)}
+.cq-inline{display:none;font-weight:800;font-family:var(--mono);font-size:15px;margin-left:6px;white-space:nowrap;flex-shrink:0}
+.cq-min{font-size:9px;color:var(--muted);font-weight:400;margin-left:2px}
 .cpills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .cfg{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
 .cfl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
@@ -696,6 +698,8 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .card-head{display:flex;gap:10px;align-items:flex-start}
   .card-head .card-photo{width:72px!important;height:72px!important;aspect-ratio:1/1!important;margin-bottom:0!important;flex-shrink:0;object-position:center}
   .card-head .ch{flex:1;min-width:0;margin-bottom:0}
+  .card-head .cqbox{display:none}
+  .cq-inline{display:inline}
   .card-extra{display:none;border-top:none;margin-top:0;padding-top:0}
   .card-extra.open{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
   .card-expand-btn{display:block;width:100%;background:none;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:12px;padding:6px 0;cursor:pointer;text-align:center;margin-top:8px;font-family:inherit}
