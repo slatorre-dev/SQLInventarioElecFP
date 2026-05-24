@@ -751,42 +751,66 @@
     return words;
   }
 
+  function getItemName(item) {
+    return (item && (item.item || item.nombre || item.name || '')) || '';
+  }
+
+  function getItemRef(item) {
+    return (item && (item.ref || item.referencia || '')) || '';
+  }
+
+  function searchInventoryCandidates(query, maxResults) {
+    if (!state.inventario.length) return [];
+    var nQuery = normalize(query || '');
+    var keywords = extractKeywords(query);
+    if (!nQuery && !keywords.length) return [];
+
+    var candidatos = state.inventario.map(function(i) {
+      var name = normalize(getItemName(i));
+      var aula = normalize(i.aula || i.classroom || '');
+      var cat = normalize(i.cat || i.categoria || i.category || '');
+      var ref = normalize(getItemRef(i));
+      var score = 0;
+
+      if (nQuery && name) {
+        if (name === nQuery) score += 16;
+        else if (name.indexOf(nQuery) !== -1) score += 10;
+        else if (nQuery.indexOf(name) !== -1 && name.length > 3) score += 6;
+      }
+
+      keywords.forEach(function(kw) {
+        if (!kw) return;
+        if (name === kw) score += 14;
+        else if (name.indexOf(kw + ' ') === 0 || name.indexOf(kw) === 0) score += 8;
+        else if (name.indexOf(kw) !== -1) score += 5;
+
+        if (ref === kw) score += 10;
+        else if (ref && ref.indexOf(kw) !== -1) score += 6;
+
+        if (aula && aula.indexOf(kw) !== -1) score += 2;
+        if (cat && cat.indexOf(kw) !== -1) score += 1;
+      });
+
+      return { item: i, score: score };
+    }).filter(function(x) {
+      return x.score >= 6;
+    });
+
+    candidatos.sort(function(a, b) {
+      if (b.score !== a.score) return b.score - a.score;
+      return getItemName(a.item).localeCompare(getItemName(b.item));
+    });
+
+    return candidatos.slice(0, maxResults || 8);
+  }
+
   // Devuelve los objetos completos de items que coinciden (no strings)
   function searchInventoryItems(query) {
-    if (!state.inventario.length) return null;
-    var keywords = extractKeywords(query);
-    if (keywords.length === 0) return null;
-
-    var matches = state.inventario.filter(function(i) {
-      var texto = [
-        (i.nombre || i.name || i.item || ''),
-        (i.aula || i.classroom || ''),
-        (i.cat || i.categoria || i.category || ''),
-        (i.ref || i.referencia || '')
-      ].join(' ').toLowerCase();
-      return keywords.some(function(kw) { return texto.includes(kw); });
-    });
-
-    if (matches.length === 0) return null;
-
-    // Ordenar por relevancia — priorizar match exacto en nombre
-    matches.sort(function(a, b) {
-      var textoA = (a.item || a.nombre || a.name || '').toLowerCase();
-      var textoB = (b.item || b.nombre || b.name || '').toLowerCase();
-      // Match exacto de alguna keyword en el nombre vale doble
-      var scoreA = keywords.reduce(function(s, kw) { return s + (textoA.includes(kw) ? (textoA === kw ? 3 : 1) : 0); }, 0);
-      var scoreB = keywords.reduce(function(s, kw) { return s + (textoB.includes(kw) ? (textoB === kw ? 3 : 1) : 0); }, 0);
-      return scoreB - scoreA;
-    });
-
-    // Si el primer resultado tiene mucho más score que el segundo, devolver solo ese
-    if (matches.length > 1) {
-      var nombrePrimero = (matches[0].item || matches[0].nombre || matches[0].name || '').toLowerCase();
-      var exacto = keywords.some(function(kw) { return nombrePrimero === kw; });
-      if (exacto) return [matches[0]];
-    }
-
-    return matches;
+    var candidatos = searchInventoryCandidates(query, 8);
+    if (!candidatos.length) return null;
+    if (candidatos.length === 1) return [candidatos[0].item];
+    if (candidatos[0].score >= candidatos[1].score + 6) return [candidatos[0].item];
+    return candidatos.map(function(c) { return c.item; });
   }
 
   function searchInventory(query) {
@@ -2409,22 +2433,72 @@
     return false;
   }
 
+  function confirmarAccionCritica(actionLabel, item, onConfirm) {
+    var div = document.createElement('div');
+    var itemName = getItemName(item) || 'este ítem';
+    var qty = item.qty != null ? item.qty : (item.cantidad || 0);
+    div.className = 'ag-msg ag-msg-ai';
+    div.style.cssText = 'max-width:95%;background:#111827;border:1px solid #f59e0b';
+    div.innerHTML =
+      '<div style="margin-bottom:8px"><strong style="color:#fbbf24">Confirmación requerida</strong></div>' +
+      '<div style="font-size:12px;line-height:1.5;margin-bottom:8px">Acción: <strong>' + esc(actionLabel) + '</strong><br>' +
+      'Ítem: <strong>' + esc(itemName) + '</strong> · Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="ag-btn ag-btn-blue ag-confirm-yes" style="flex:1">Sí, continuar</button>' +
+        '<button class="ag-btn ag-confirm-no">Cancelar</button>' +
+      '</div>';
+    el.messages.appendChild(div);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    div.querySelector('.ag-confirm-no').addEventListener('click', function() {
+      div.remove();
+      appendMsg('ai', 'Acción: cancelada. Resultado: no se aplicaron cambios. Siguiente: puedes reformular con nombre exacto.');
+    });
+    div.querySelector('.ag-confirm-yes').addEventListener('click', function() {
+      div.remove();
+      onConfirm();
+    });
+  }
+
+  function necesitaConfirmacionPorAmbiguedad(q, candidatos) {
+    if (!candidatos || !candidatos.length) return false;
+    var n = normalize(q || '');
+    var kws = extractKeywords(q || '');
+    if (matchAny(n, ['este', 'esta', 'ese', 'esa', 'el de aqui', 'la de aqui', 'el de la pantalla', 'el que tengo'])) return true;
+    if (kws.length <= 1) return true;
+    if (candidatos.length > 1 && (candidatos[0].score - candidatos[1].score) < 5) return true;
+    return false;
+  }
+
   // ── Seleccionar ítem con confirmación si hay varios ───────────────
-  function seleccionarItemYEjecutar(q, callback) {
-    var encontrados = searchInventoryItems(q);
-    if (!encontrados || !encontrados.length) {
-      appendMsg('ai', '❌ No encontré ningún ítem con ese nombre. ¿Puedes concretar más?');
+  function seleccionarItemYEjecutar(q, callback, actionLabel) {
+    var candidatos = searchInventoryCandidates(q, 6);
+    if (!candidatos.length) {
+      appendMsg('ai', 'Acción: no ejecutada. Resultado: no encontré un ítem claro. Siguiente: indica nombre o referencia.');
       return;
     }
-    if (encontrados.length === 1) { callback(encontrados[0]); return; }
+
+    if (candidatos.length === 1 || candidatos[0].score >= candidatos[1].score + 6) {
+      var elegido = candidatos[0].item;
+      if (necesitaConfirmacionPorAmbiguedad(q, candidatos)) {
+        confirmarAccionCritica(actionLabel || 'Actualizar ítem', elegido, function() {
+          callback(elegido);
+        });
+        return;
+      }
+      callback(elegido);
+      return;
+    }
+
     var listMsg = document.createElement('div');
     listMsg.className = 'ag-msg ag-msg-ai';
-    listMsg.innerHTML = '<strong>¿A qué ítem te refieres?</strong><br><br>';
-    encontrados.slice(0, 6).forEach(function(item) {
+    listMsg.innerHTML = '<strong>Acción: pendiente por ambigüedad.</strong><br><small style="color:#94a3b8">Resultado: encontré varios ítems. Siguiente: elige uno.</small><br><br>';
+    candidatos.slice(0, 6).forEach(function(cand) {
+      var item = cand.item;
       var btn = document.createElement('button');
       btn.className = 'ag-quick-btn';
       btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
-      btn.innerHTML = '📦 ' + esc(item.item) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula||'—') + ' · ' + esc(item.est||'—') + ' · ' + (item.qty||0) + ' ud.)</small>';
+      btn.innerHTML = '📦 ' + esc(getItemName(item) || '(sin nombre)') + ' <small style="color:#64748b">(Aula: ' + esc(item.aula||'—') + ' · ' + esc(item.est||'—') + ' · ' + (item.qty||0) + ' ud. · score ' + cand.score + ')</small>';
       btn.addEventListener('click', (function(it) { return function() { listMsg.remove(); callback(it); }; })(item));
       listMsg.appendChild(btn);
     });
@@ -2433,7 +2507,9 @@
   }
 
   function mostrarAprendizajeIntencion(frase, detectada) {
+    if (detectada) return;
     if (!frase) return;
+    if ((frase || '').trim().length < 12) return;
     var div = document.createElement('div');
     div.className = 'ag-msg ag-msg-ai';
     div.style.cssText = 'max-width:95%;background:#0b1220;border:1px dashed #334155;padding:8px';
@@ -2610,7 +2686,6 @@
       if (intencion.tipo === 'stock_bajo' || intencion.tipo === 'lista_mantenimiento' ||
           intencion.tipo === 'resumen_aula' || intencion.tipo === 'quien_tiene') {
         respuestaConsultaDirecta(intencion.tipo, q);
-        mostrarAprendizajeIntencion(q, intencion.tipo);
         return;
       }
       // Acciones que necesitan un ítem: buscar primero
@@ -2626,36 +2701,31 @@
         var prestActivos = buscarPrestamosActivos(itemDev, personaDev);
         if (!prestActivos.length) prestActivos = buscarPrestamosActivos('', null);
         mostrarFormularioDevolucion(prestActivos, itemDev || null);
-        mostrarAprendizajeIntencion(q, 'devolver');
         return;
       }
       if (intencion.tipo === 'stock') {
         seleccionarItemYEjecutar(q, function(item) {
           mostrarFormularioStock(item, intencion.cantidad);
-        });
-        mostrarAprendizajeIntencion(q, 'stock');
+        }, 'Actualizar stock');
         return;
       }
       if (intencion.tipo === 'estado') {
         seleccionarItemYEjecutar(q, function(item) {
           mostrarFormularioEstado(item, intencion.estado);
-        });
-        mostrarAprendizajeIntencion(q, 'estado');
+        }, 'Cambiar estado');
         return;
       }
       if (intencion.tipo === 'mantenimiento') {
         seleccionarItemYEjecutar(q, function(item) {
           mostrarFormularioMantenimiento(item);
-        });
-        mostrarAprendizajeIntencion(q, 'mantenimiento');
+        }, 'Solicitar mantenimiento');
         return;
       }
       if (intencion.tipo === 'editar') {
         seleccionarItemYEjecutar(q, function(item) {
           appendMsg('ai', 'Abro la ficha de "' + esc(item.item || item.nombre || item.name || 'este item') + '" para editarla.');
           navigateToItem(item.id);
-        });
-        mostrarAprendizajeIntencion(q, 'editar');
+        }, 'Editar ficha');
         return;
       }
     }
@@ -2670,38 +2740,46 @@
         ? obtenerItemContextoApp() : null;
 
       // Buscar item en la pregunta actual; si no hay, buscar en mensajes anteriores
-      var encontrados = refActual ? [refActual] : searchInventoryItems(q);
+      var candidatosPrest = refActual ? [{ item: refActual, score: 99 }] : searchInventoryCandidates(q, 6);
+      var encontrados = candidatosPrest.map(function(c) { return c.item; });
       if (!encontrados || encontrados.length === 0) {
         // Recorrer historial de mensajes recientes buscando el item mencionado
         for (var mi = state.messages.length - 2; mi >= 0 && mi >= state.messages.length - 6; mi--) {
           var prevMsg = state.messages[mi];
           if (prevMsg && prevMsg.content) {
-            encontrados = searchInventoryItems(prevMsg.content);
+            candidatosPrest = searchInventoryCandidates(prevMsg.content, 6);
+            encontrados = candidatosPrest.map(function(c) { return c.item; });
             if (encontrados && encontrados.length > 0) break;
           }
         }
       }
       if (encontrados && encontrados.length > 0) {
-        if (encontrados.length === 1) {
-          mostrarFormularioPrestamo(encontrados[0], q);
-          mostrarAprendizajeIntencion(q, 'prestamo');
+        if (encontrados.length === 1 || (candidatosPrest.length > 1 && candidatosPrest[0].score >= candidatosPrest[1].score + 6)) {
+          var elegidoPrest = candidatosPrest.length ? candidatosPrest[0].item : encontrados[0];
+          if (necesitaConfirmacionPorAmbiguedad(q, candidatosPrest)) {
+            confirmarAccionCritica('Registrar préstamo', elegidoPrest, function() {
+              mostrarFormularioPrestamo(elegidoPrest, q);
+            });
+            return;
+          }
+          mostrarFormularioPrestamo(elegidoPrest, q);
           return;
         }
         // Si hay varios, pedir que elija
         var listaMsg = document.createElement('div');
         listaMsg.className = 'ag-msg ag-msg-ai';
-        listaMsg.innerHTML = '<strong>Encontré varios materiales. ¿Cuál quieres pedir?</strong><br><br>';
-        encontrados.slice(0, 5).forEach(function(item) {
+        listaMsg.innerHTML = '<strong>Acción: préstamo pendiente.</strong><br><small style="color:#94a3b8">Resultado: encontré varios candidatos. Siguiente: elige uno.</small><br><br>';
+        candidatosPrest.slice(0, 5).forEach(function(cand) {
+          var item = cand.item;
           var btn = document.createElement('button');
           btn.className = 'ag-quick-btn';
           btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
           var qty = item.qty != null ? item.qty : (item.cantidad || 0);
           var nombreBtn = item.item || item.nombre || item.name || '(sin nombre)';
-          btn.innerHTML = '📦 ' + esc(nombreBtn) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ')</small>';
+          btn.innerHTML = '📦 ' + esc(nombreBtn) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ', score ' + cand.score + ')</small>';
           btn.addEventListener('click', (function(it) { return function() {
             listaMsg.remove();
             mostrarFormularioPrestamo(it, q);
-            mostrarAprendizajeIntencion(q, 'prestamo');
           }; })(item));
           listaMsg.appendChild(btn);
         });
@@ -2710,8 +2788,7 @@
         return;
       }
       // No encontró item — pedir al usuario que lo especifique
-      appendMsg('ai', '¿Qué material quieres pedir prestado? Dime el nombre y lo busco en el inventario.');
-      mostrarAprendizajeIntencion(q, 'prestamo');
+      appendMsg('ai', 'Acción: préstamo no iniciado. Resultado: no encontré el material solicitado. Siguiente: dime nombre o referencia exacta.');
       state.loading = false;
       el.panel.querySelector('#ag-send').disabled = false;
       return;
