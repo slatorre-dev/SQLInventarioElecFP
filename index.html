@@ -44,7 +44,7 @@
   <div class="brand-wrap">
     <a class="brand" onclick="goHome()">
       <div class="brand-logo"><img src="favicon.svg" class="logo-img"></div>
-      <div class="brand-name" id="brandTitle" onclick="brandTitleClick()">Inventario Taller Electricidad/Electrónica FP</div>
+      <div class="brand-name" id="brandTitle" ondblclick="openRobotDance()">Inventario Taller Electricidad/Electrónica FP</div>
     </a>
     <span class="app-version" id="appVersion"></span>
     <button class="tbtn tbtn-reload" id="btnReload" onclick="loadData()" title="Recargar datos">🔄</button>
@@ -1447,17 +1447,6 @@
 <script defer src="js/agente-widget.js"></script>
 <script>
 (function(){
-  var _clicks=0,_timer=null;
-  window.brandTitleClick=function(){
-    _clicks++;
-    if(_timer) clearTimeout(_timer);
-    _timer=setTimeout(function(){_clicks=0;},700);
-    if(_clicks>=3){
-      _clicks=0;
-      clearTimeout(_timer);
-      openRobotDance();
-    }
-  };
   window.openRobotDance=function(){
     var m=document.getElementById('mRobotDance');
     if(!m) return;
