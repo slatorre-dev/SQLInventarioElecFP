@@ -1,6 +1,6 @@
 # Nota de Trabajo - SQLInventarioElecFP
 
-**Estado:** v354 | Mayo 2026
+**Estado:** v374 | Mayo 2026
 
 ---
 
@@ -59,7 +59,7 @@ migrations/             — SQL de migraciones D1
 
 ---
 
-## Agente Volt — Estado actual (v354)
+## Agente Volt — Estado actual (v374)
 
 ### Archivos
 - `js/agente-widget.js` — todo el widget (NLP, chat, voz, aprendizaje)
@@ -82,8 +82,17 @@ migrations/             — SQL de migraciones D1
 - `extraerUbicacionDeFrase(q)`: regex armario/estantería/vitrina + busca en `state.inventario`
 - Búsqueda de items usa `normalize()` en ambos lados (fix v354 — antes solo `.toLowerCase()`)
 
-### Voz
-- Botón `#ag-mic`, Web Speech API `es-ES`, auto-envía al resultado final
+### Voz (v365)
+- Botón `#ag-mic`, Web Speech API `es-ES`
+- `continuous:false` + auto-session restart — evita texto basura en Android
+- Pausa de 2s de silencio antes de enviar (silenceTimer)
+- `startSession()`: crea nueva instancia SpeechRecognition; `onend` reinicia si timer activo
+
+### Historial chat persistente (v366)
+- `HISTORY_KEY = 'volt_chat_history_v1'`, máx 40 mensajes en localStorage
+- `saveHistory()` llamado en `appendMsg()` y `appendMsgHtml()`
+- `restoreHistory()` en primer `renderChatReady()` con separador "— conversación anterior —"
+- `limpiarPantallaChat()` borra localStorage
 
 ---
 
@@ -94,13 +103,20 @@ migrations/             — SQL de migraciones D1
 
 ---
 
-## Sesión 24/05/2026 — Completado
+## Sesión 24/05/2026 — Completado (v352→v374)
 
 1. ✅ Backup D1 → `backup_20260524_1426.sql` (3.86 MB)
 2. ✅ Tabla `intent_learning` creada en D1
 3. ✅ Backend aprendizaje Volt: `functions/api/intent-learning.js` (GET/POST/DELETE/clear/bulk-import)
 4. ✅ Frontend Volt: usa backend D1 en lugar de localStorage, migración automática
 5. ✅ Fix búsqueda Volt: `normalize()` en comparación items (tildes/mayúsculas)
+6. ✅ Fix voz Volt: `continuous:false` + session restart + pausa 2s silencio
+7. ✅ Fix scroll panel móvil Volt: `min-height:0` + `100dvh`
+8. ✅ Historial chat persistente: localStorage `volt_chat_history_v1`, máx 40 msgs
+9. ✅ Foto desde cámara: botón "📷 Subir" en modal-item + Volt form con `capture="environment"`
+10. ✅ Fix login flicker: inline CSS `.page:not(.active){display:none}` en `<head>`
+11. ✅ Filtros activos como chips bajo barra de búsqueda (`renderActiveFilters()`)
+12. ✅ Badge préstamos vencidos en navbar (`#presVencBadge`, rojo, count)
 
 ## Sesión 23/05/2026 — Completado
 
@@ -116,6 +132,10 @@ migrations/             — SQL de migraciones D1
 ## Pendiente (Próximas sesiones)
 - FASE 1 seguridad: Bearer tokens, password hashing, rate-limiting
 - Crear branch `feature/security-refactor`
+- Swipe en cards móvil (préstamo/editar deslizando)
+- QR directo en cada card sin abrir ítem
+- Historial de cambios por ítem en modal edición
+- Aviso préstamos vencidos al hacer login (toast)
 
 ---
 
@@ -133,9 +153,16 @@ migrations/             — SQL de migraciones D1
 |---------|---------|-------|
 | v338 | Reconocimiento de voz (micrófono) | 23/05/2026 |
 | v339-v351 | (intermedias) | 23-24/05/2026 |
-| v352 | (base sesión 24/05) | 24/05/2026 |
+| v352 | Base sesión 24/05 | 24/05/2026 |
 | v353 | Backend aprendizaje Volt en D1 | 24/05/2026 |
-| v354 | Fix normalize tildes/mayúsculas en búsqueda Volt | 24/05/2026 |
+| v354 | Fix normalize tildes/mayúsculas búsqueda Volt | 24/05/2026 |
+| v355-v364 | Fixes intermedios voz/scroll | 24/05/2026 |
+| v365 | Fix voz: continuous:false + session restart + 2s pause | 24/05/2026 |
+| v366 | Historial chat persistente localStorage | 24/05/2026 |
+| v367-v368 | Foto cámara modal-item + Volt form | 24/05/2026 |
+| v372 | Fix login flicker inline CSS :not(.active) | 24/05/2026 |
+| v373 | Filter chips + fix display:none!important | 24/05/2026 |
+| v374 | Badge préstamos vencidos navbar | 24/05/2026 |
 
 ---
 
