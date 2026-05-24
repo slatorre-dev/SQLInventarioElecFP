@@ -671,6 +671,7 @@ function rCards(data,mc){
     const parentItem2 = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos2 = esContenedor2 ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
     const selected = bulkSelected.has(String(x.id));
+    const activeLoans = itemActiveLoans(x.id);
     return`<div class="icard${low?' low':''}${parentItem2?' child-item':''}${selected?' bulk-card-selected':''}${x.oculto==1?' item-oculto':''}">
       <label class="bulk-card-check" onclick="event.stopPropagation()" title="Seleccionar">
         <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
@@ -694,6 +695,7 @@ function rCards(data,mc){
         <div><div class="cfl">Aula</div><div class="cfv">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</div></div>
         <div><div class="cfl">Ubicación</div><div class="cfv">${x.loc||'—'}</div></div>
       </div>
+      ${activeLoans.length?`<div class="loan-chip">⌛ Prestado · ${activeLoans.length===1?escHtml(activeLoans[0].profesorNombre||'Prof.'):activeLoans.length+' personas'}</div>`:''}
       <button class="card-expand-btn" onclick="toggleCardExtra(this)">▼ Ver más</button>
       <div class="card-extra">
         <div class="cpills">
@@ -734,6 +736,35 @@ function rCards(data,mc){
       </div>
     </div>`;
   }).join('')}</div>`;
+  addCardSwipeListeners(mc);
+}
+
+function addCardSwipeListeners(container){
+  if(!('ontouchstart' in window)) return;
+  container.querySelectorAll('.icard').forEach(function(card){
+    var startX=0,startY=0,dx=0,swiping=false,overlay=null;
+    card.addEventListener('touchstart',function(e){
+      startX=e.touches[0].clientX;startY=e.touches[0].clientY;dx=0;swiping=false;
+    },{passive:true});
+    card.addEventListener('touchmove',function(e){
+      var cx=e.touches[0].clientX-startX,cy=e.touches[0].clientY-startY;
+      if(!swiping&&Math.abs(cx)<Math.abs(cy)+10) return;
+      swiping=true;dx=cx;
+      card.style.transition='none';
+      card.style.transform='translateX('+Math.sign(dx)*Math.min(Math.abs(dx),100)+'px)';
+      if(!overlay){overlay=document.createElement('div');overlay.className='swipe-overlay';card.appendChild(overlay);}
+      if(dx<-20){overlay.className='swipe-overlay swipe-left';overlay.textContent='⌛ Prestar';}
+      else if(dx>20){overlay.className='swipe-overlay swipe-right';overlay.textContent='📋 Ver';}
+      else{overlay.className='swipe-overlay';overlay.textContent='';}
+    },{passive:true});
+    card.addEventListener('touchend',function(){
+      if(!swiping) return;
+      card.style.transition='transform .2s ease';card.style.transform='';
+      if(overlay){overlay.remove();overlay=null;}
+      if(dx<-60){var b=card.querySelector('.btn-loan');if(b) setTimeout(function(){b.click();},150);}
+      else if(dx>60){var t=card.querySelector('.cname.item-title-link');if(t) setTimeout(function(){t.click();},150);}
+    });
+  });
 }
 
 function toggleCardExtra(btn){
@@ -1069,9 +1100,12 @@ function printInv(){
 // ═════════════════════════════════════════════════════════
 function toast(msg,type='ok'){
   const el=document.createElement('div');el.className=`toast ${type}`;
-  el.innerHTML=`<span>${type==='ok'?'✅':'❌'}</span><span>${msg}</span>`;
+  const icon=type==='ok'?'✅':type==='warn'?'⚠️':'❌';
+  el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
   document.getElementById('toasts').appendChild(el);
-  setTimeout(()=>{el.style.animation='ti .3s reverse forwards';setTimeout(()=>el.remove(),300)},3000);
+  const dur=type==='warn'?5000:3000;
+  setTimeout(()=>{el.style.animation='ti .3s reverse forwards';setTimeout(()=>el.remove(),300)},dur);
+  return el;
 }
 
 function initFabNuevoDraggable(){

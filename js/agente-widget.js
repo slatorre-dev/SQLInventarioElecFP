@@ -221,6 +221,7 @@
     .ag-dots { display: flex; gap: 4px; padding: 10px 14px; }
     .ag-dot { width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; animation: ag-bounce 1.2s ease-in-out infinite; }
     @keyframes ag-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    .ag-intent-chip { align-self: flex-start; background: rgba(148,163,184,.1); border: 1px solid rgba(148,163,184,.2); border-radius: 6px; padding: 2px 8px; font-size: 10px; color: #64748b; font-style: italic; margin: -2px 0 2px; max-width: 88%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ag-quick { display: flex; flex-direction: column; gap: 6px; padding: 0 14px 10px; }
     .ag-quick-btn { background: #1e293b; border: 1px solid #334155; border-radius: 7px; color: #94a3b8; padding: 7px 10px; cursor: pointer; font-size: 11px; text-align: left; font-family: inherit; transition: all .15s; }
     .ag-quick-btn:hover { border-color: #38bdf8; color: #e2e8f0; }
@@ -2956,6 +2957,14 @@
     if (r) { r.innerHTML = text; r.style.color = color || '#e2e8f0'; }
   }
 
+  function appendIntentChip(tipo, entidad) {
+    var chip = document.createElement('div');
+    chip.className = 'ag-intent-chip';
+    chip.textContent = '🎯 ' + tipo + (entidad ? ' · ' + entidad : '');
+    el.messages.appendChild(chip);
+    el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
   function sendChat(text) {
     var input = el.chatInput;
     // Si text es un evento (cuando viene de click), ignorarlo
@@ -2980,6 +2989,7 @@
     if (detectarIntencionAnadirItem(q)) {
       var nombreExtraido = extraerNombreItem(q);
       var cantidadExtraida = extraerCantidadDeFrase(q);
+      appendIntentChip('➕ añadir ítem', nombreExtraido);
       mostrarFormularioNuevoItem(nombreExtraido, q, cantidadExtraida);
       mostrarAprendizajeIntencion(q, 'anadir');
       return;
@@ -2990,7 +3000,11 @@
 
     // ── PARSER CENTRAL DE INTENCIONES ──────────────────────────
     var intencion = detectarIntencion(q);
+    var _voltIntentChipShown = false;
     if (intencion) {
+      var _emap={'prestamo':'préstamo','devolver':'devolución','stock':'stock','estado':'estado','mantenimiento':'mantenimiento','buscar':'búsqueda','resumen_aula':'resumen aula','quien_tiene':'quién tiene','stock_bajo':'stock bajo','lista_mantenimiento':'mantenimiento','editar':'editar'};
+      appendIntentChip(_emap[intencion.tipo]||intencion.tipo, intencion.tipo!=='stock_bajo'&&intencion.tipo!=='lista_mantenimiento'?extraerNombreItem(q):null);
+      _voltIntentChipShown = true;
       // Consultas directas sin ítem concreto
       if (intencion.tipo === 'stock_bajo' || intencion.tipo === 'lista_mantenimiento' ||
           intencion.tipo === 'resumen_aula' || intencion.tipo === 'quien_tiene') {
@@ -3066,6 +3080,7 @@
 
     // ── INTERCEPTAR ACCIÓN DE PRÉSTAMO ─────────────────────────
     if (detectarIntencionPrestamo(q)) {
+      if (!_voltIntentChipShown) appendIntentChip('préstamo', extraerNombreItem(q));
       // Detectar referencias al ítem actual de la app ("este", "esta", "el de aquí"...)
       var nPrest = normalize(q);
       var refActual = matchAny(nPrest, ['este','esta','el de aqui','la de aqui','el actual','la actual',
