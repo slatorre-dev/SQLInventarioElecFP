@@ -20,21 +20,33 @@
 
   // Obtener credenciales — usa SESSION global de la app (state.js)
   function getCreds() {
+    var s = null;
     if (typeof SESSION !== 'undefined' && SESSION && SESSION.usuario) {
-      return { u: SESSION.usuario, p: SESSION.password || '' };
+      s = SESSION;
+    } else {
+      try {
+        var saved = localStorage.getItem('inv_session');
+        if (saved) s = JSON.parse(saved);
+      } catch(e) {}
     }
-    try {
-      var saved = localStorage.getItem('inv_session');
-      if (saved) { var s = JSON.parse(saved); return { u: s.usuario, p: s.password || '' }; }
-    } catch(e) {}
-    return null;
+    if (!s || !s.usuario) return null;
+    // Preferir session_token (OAuth) sobre password (login clásico)
+    if (s.session_token) return { u: s.usuario, t: s.session_token };
+    return { u: s.usuario, p: s.password || '' };
+  }
+
+  function applyCredsToUrl(url, creds) {
+    if (!creds) return;
+    url.searchParams.set('u', creds.u);
+    if (creds.t) url.searchParams.set('t', creds.t);
+    else url.searchParams.set('p', creds.p || '');
   }
 
   // ── API helpers ────────────────────────────────────────────────────────────
   function apiGet(path, params) {
     var creds = getCreds();
     var url = new URL(API_BASE + path, window.location.origin);
-    if (creds) { url.searchParams.set('u', creds.u); url.searchParams.set('p', creds.p); }
+    applyCredsToUrl(url, creds);
     if (params) Object.keys(params).forEach(function(k){ url.searchParams.set(k, params[k]); });
     return fetch(url.toString()).then(function(r){ return r.json(); });
   }
@@ -42,7 +54,7 @@
   function apiPost(path, body) {
     var creds = getCreds();
     var url = new URL(API_BASE + path, window.location.origin);
-    if (creds) { url.searchParams.set('u', creds.u); url.searchParams.set('p', creds.p); }
+    applyCredsToUrl(url, creds);
     return fetch(url.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1650,7 +1662,8 @@
   function apiCreds() {
     var c = getCreds();
     if (!c) return '';
-    return '?u=' + encodeURIComponent(c.u) + '&p=' + encodeURIComponent(c.p);
+    if (c.t) return '?u=' + encodeURIComponent(c.u) + '&t=' + encodeURIComponent(c.t);
+    return '?u=' + encodeURIComponent(c.u) + '&p=' + encodeURIComponent(c.p || '');
   }
 
   // Carga aprendizajes desde backend; fallback a localStorage si falla
