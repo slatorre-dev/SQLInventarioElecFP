@@ -596,8 +596,14 @@ function fotoFileChanged(input) {
   if (!file) return;
   setMainPhotoFromFile(file).then(ok => {
     if (!ok) toast('No se pudo cargar la imagen', 'err');
-    input.value = ''; // reset para permitir seleccionar la misma foto otra vez
+    input.value = '';
   });
+}
+
+function fotoPreviewClick() {
+  const src = document.getElementById('f_foto')?.value;
+  if (src) viewPhotoModal();
+  else document.getElementById('f_foto_file')?.click();
 }
 
 function fillParentSelect(currentId){
