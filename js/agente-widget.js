@@ -63,9 +63,15 @@
     var systemMsg = 'Eres VOLT, agente de inventario FP. Busca SIEMPRE en los resultados antes de responder. ' +
       'Reporta stock EXACTO. Si no aparece, di "No en inventario". ' +
       'Cuando el usuario quiera un material, localízalo y confirma disponibilidad. ' +
-      'Si lo quiere pedir prestado, dile literalmente: "Para pedirlo prestado, escribe: pedir prestado [nombre]" — ' +
-      'NUNCA digas que se abrirá un formulario automáticamente, porque solo se abre con esa frase específica. ' +
-      'Si el usuario quiere crear/añadir un item, ayuda ofreciendo: "Di: quiero añadir [nombre del item]" para abrir el formulario. ' +
+      'ACCIONES DISPONIBLES (se activan automáticamente con frases naturales):\n' +
+      '- Pedir préstamo: "pedir prestado [ítem]", "me llevo el multímetro", "quiero coger el soldador"\n' +
+      '- Devolver: "devuelve el multímetro de Juan", "devolver préstamo"\n' +
+      '- Actualizar stock: "actualiza la cantidad de resistencias a 50", "quedan 20 condensadores"\n' +
+      '- Cambiar estado: "el polímetro 3 está en avería", "cambia estado a deteriorado"\n' +
+      '- Mantenimiento: "solicita mantenimiento para el soldador", "el osciloscopio necesita revisión"\n' +
+      '- Añadir ítem: "añade un polímetro en el aula 35 en el armario metálico" (autocompleta aula y ubicación)\n' +
+      '- Consultas: "¿stock bajo?", "¿quién tiene el osciloscopio?", "¿qué hay en el Aula 35?", "¿qué necesita mantenimiento?"\n' +
+      'Cuando detectes una de estas intenciones, INDÍCALO brevemente. No inventes datos. ' +
       'Sé conciso. Responde en español. Usa tablas markdown si es útil.' +
       (systemExtra || '');
 
@@ -989,7 +995,7 @@
     return resto.split(/[.,;:?!]/)[0].trim() || '';
   }
 
-  function mostrarFormularioNuevoItem(nombreInicial) {
+  function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:600px';
@@ -1047,6 +1053,8 @@
         '<div style="flex:1"><label class="ag-label">Aula *</label>' + selectAula + '</div>' +
         '<div style="flex:1"><label class="ag-label">Categoría *</label>' + selectCat + '</div>' +
       '</div>' +
+      '<label class="ag-label" style="margin-top:6px">Ubicación</label>' +
+      '<input class="ag-input-field ag-new-item-loc" placeholder="Ej: Armario metálico, Estantería A3...">' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
         '<div style="flex:1"><label class="ag-label">Ciclo</label>' + selectCiclo + '</div>' +
         '<div style="flex:1"><label class="ag-label">Módulo</label>' + selectMod + '</div>' +
@@ -1068,7 +1076,10 @@
     var nameInput = formDiv.querySelector('.ag-new-item-name');
     var cicloSelect = formDiv.querySelector('.ag-new-item-ciclo');
     var modSelect = formDiv.querySelector('.ag-new-item-mod');
-    
+
+    // Autocompletar campos desde la frase completa
+    if (fraseCompleta) autocompletarFormulario(formDiv, fraseCompleta);
+
     nameInput.focus();
 
     // Cargar módulos cuando se selecciona un ciclo
@@ -1122,6 +1133,7 @@
       var cat = formDiv.querySelector('.ag-new-item-cat').value || null;
       var ciclo = formDiv.querySelector('.ag-new-item-ciclo').value || null;
       var mod = formDiv.querySelector('.ag-new-item-mod').value || null;
+      var loc = formDiv.querySelector('.ag-new-item-loc').value.trim() || null;
       var obs = formDiv.querySelector('.ag-new-item-obs').value.trim();
       var resultEl = formDiv.querySelector('.ag-new-item-result');
 
@@ -1138,7 +1150,7 @@
         qty: qty,
         min: min,
         cat: cat,
-        loc: null,
+        loc: loc,
         tipo_material: tipo,
         proveedor: null,
         obs: obs || null,
@@ -1257,6 +1269,455 @@
     });
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  // PARSER CENTRAL DE INTENCIONES
+  // ══════════════════════════════════════════════════════════════════
+  function normalize(s) {
+    return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  }
+
+  function matchAny(q, list) {
+    return list.some(function(p) { return q.includes(p); });
+  }
+
+  function detectarIntencion(q) {
+    var n = normalize(q);
+
+    // DEVOLVER PRÉSTAMO
+    if (matchAny(n, ['devolver', 'devuelve', 'devolvemos', 'retornar', 'retorna', 'regresa', 'regresar',
+        'ya lo tengo', 'ya la tengo', 'lo devuelvo', 'la devuelvo', 'devolverlo', 'devolverla',
+        'entregar', 'entrega', 'ha vuelto', 'han vuelto', 'devolucion', 'devolución'])) {
+      return { tipo: 'devolver' };
+    }
+
+    // ACTUALIZAR STOCK / CANTIDAD
+    if (matchAny(n, ['actualiza', 'actualizar', 'cambia la cantidad', 'cambiar cantidad', 'pon la cantidad',
+        'modifica la cantidad', 'modificar cantidad', 'stock a ', 'cantidad a ', 'hay ahora',
+        'quedan ', 'tenemos ', 'unidades a ', 'ponlo a ', 'ponla a ', 'ajusta', 'ajustar stock',
+        'nueva cantidad', 'cambiar stock', 'modifica stock'])) {
+      var numMatch = n.match(/\b(\d+)\s*(unidades?|uds?|ud)?\b/);
+      return { tipo: 'stock', cantidad: numMatch ? parseInt(numMatch[1]) : null };
+    }
+
+    // CAMBIAR ESTADO
+    if (matchAny(n, ['cambia el estado', 'cambiar estado', 'marca como', 'marcar como', 'estado a',
+        'esta en averia', 'está en avería', 'esta deteriorado', 'está deteriorado',
+        'en buen estado', 'en buenas condiciones', 'averia', 'avería', 'deteriorado',
+        'estado bueno', 'buen estado', 'de baja', 'dar de baja'])) {
+      var estado = null;
+      if (matchAny(n, ['averia', 'avería', 'averiado', 'roto', 'no funciona'])) estado = 'Avería';
+      else if (matchAny(n, ['deteriorado', 'deteriorada', 'mal estado', 'desgastado'])) estado = 'Deteriorado';
+      else if (matchAny(n, ['bueno', 'buena', 'buen estado', 'bien', 'ok', 'funciona'])) estado = 'Bueno';
+      else if (matchAny(n, ['baja', 'dar de baja', 'desecho', 'inservible'])) estado = 'Baja';
+      return { tipo: 'estado', estado: estado };
+    }
+
+    // MARCAR MANTENIMIENTO
+    if (matchAny(n, ['mantenimiento', 'mantenimineto', 'reparar', 'reparacion', 'reparación',
+        'revisar', 'revision', 'revisión', 'solicita mantenimiento', 'pide mantenimiento',
+        'necesita revision', 'necesita reparacion', 'esta roto', 'está roto',
+        'averiar', 'hay que arreglarlo', 'hay que arreglarla', 'no funciona bien'])) {
+      return { tipo: 'mantenimiento' };
+    }
+
+    // CONSULTA: ¿QUIÉN TIENE X? / PRÉSTAMOS ACTIVOS
+    if (matchAny(n, ['quien tiene', 'quién tiene', 'quien lo tiene', 'quién lo tiene',
+        'prestado', 'prestados', 'donde esta prestado', 'quién se lo llevó', 'quien se lo llevo',
+        'quien tiene cogido', 'quién tiene cogido', 'a quien se lo preste', 'a quién'])) {
+      return { tipo: 'quien_tiene' };
+    }
+
+    // CONSULTA: RESUMEN DE AULA
+    if (matchAny(n, ['que hay en', 'qué hay en', 'que tiene el aula', 'que tiene la clase',
+        'resumen del aula', 'resumen de aula', 'inventario del aula', 'listar aula',
+        'mostrar aula', 'ver aula', 'items del aula', 'ítems del aula',
+        'que hay en el aula', 'qué hay en el aula'])) {
+      return { tipo: 'resumen_aula' };
+    }
+
+    // CONSULTA: STOCK BAJO
+    if (matchAny(n, ['stock bajo', 'poco stock', 'quedan pocos', 'quedan pocas', 'hay poco',
+        'hay poca', 'se acaba', 'se acaban', 'necesita reposicion', 'necesita reposición',
+        'reponer', 'reposicion', 'minimo', 'mínimo', 'por debajo del minimo'])) {
+      return { tipo: 'stock_bajo' };
+    }
+
+    // CONSULTA: MANTENIMIENTO PENDIENTE
+    if (matchAny(n, ['que necesita mantenimiento', 'qué necesita mantenimiento',
+        'mantenimientos pendientes', 'pendiente de mantenimiento', 'items con mantenimiento',
+        'que hay que reparar', 'qué hay que reparar', 'lista de reparaciones',
+        'en reparacion', 'en reparación', 'necesitan reparacion'])) {
+      return { tipo: 'lista_mantenimiento' };
+    }
+
+    return null;
+  }
+
+  // ── Extraer aula desde frase ──────────────────────────────────────
+  function extraerAulaDeFrase(q) {
+    var n = normalize(q);
+    // Buscar patrones: "aula 35", "aula35", "en el aula 35", "clase 35"
+    var m = n.match(/(?:aula|clase|taller|sala|lab)\s*(\w+)/i);
+    if (m) {
+      var candidato = m[1].toUpperCase();
+      var found = AULAS && AULAS.find(function(a) {
+        return normalize(a.name).includes(normalize(candidato)) ||
+               normalize(a.id).includes(normalize(candidato));
+      });
+      return found || null;
+    }
+    // Buscar directamente por nombre de aula en el listado
+    if (typeof AULAS !== 'undefined' && AULAS) {
+      var sorted = AULAS.slice().sort(function(a, b) { return b.name.length - a.name.length; });
+      for (var i = 0; i < sorted.length; i++) {
+        if (n.includes(normalize(sorted[i].name))) return sorted[i];
+      }
+    }
+    return null;
+  }
+
+  // ── Extraer ubicación desde frase ─────────────────────────────────
+  function extraerUbicacionDeFrase(q) {
+    var n = normalize(q);
+    var m = n.match(/(?:en el|en la|en|armario|estanteria|vitrina|cajón|cajon|caja|mesa|sobre)\s+([a-záéíóúüñ0-9\s_-]{2,30}?)(?:\s+del|\s+de la|\s+,|\s+y\s|\s*$)/i);
+    if (m) return m[1].trim();
+    // Buscar ubicaciones existentes en el inventario
+    if (state.inventario && state.inventario.length) {
+      var locs = {};
+      state.inventario.forEach(function(it) { if (it.loc) locs[normalize(it.loc)] = it.loc; });
+      var keys = Object.keys(locs).sort(function(a,b){ return b.length - a.length; });
+      for (var i = 0; i < keys.length; i++) {
+        if (n.includes(keys[i])) return locs[keys[i]];
+      }
+    }
+    return null;
+  }
+
+  // ── Autocompletar formulario nuevo ítem desde frase ───────────────
+  function autocompletarFormulario(formDiv, frase) {
+    var aula = extraerAulaDeFrase(frase);
+    if (aula) {
+      var sel = formDiv.querySelector('.ag-new-item-aula');
+      if (sel) sel.value = aula.id;
+    }
+    var loc = extraerUbicacionDeFrase(frase);
+    if (loc) {
+      var locInput = formDiv.querySelector('.ag-new-item-loc');
+      if (locInput) locInput.value = loc;
+    }
+    // Intentar preseleccionar ciclo si hay contexto actual
+    if (typeof cf !== 'undefined' && cf && cf.type === 'mod' && cf.ciclo) {
+      var cicloSel = formDiv.querySelector('.ag-new-item-ciclo');
+      if (cicloSel) { cicloSel.value = cf.ciclo.id; cicloSel.dispatchEvent(new Event('change')); }
+    }
+  }
+
+  // ── Buscar préstamos activos por nombre de ítem o persona ─────────
+  function buscarPrestamosActivos(q) {
+    var n = normalize(q);
+    var activos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) {
+      return p.estado === 'Activo';
+    });
+    if (!activos.length) return [];
+    return activos.filter(function(p) {
+      return normalize(p.itemNombre || '').includes(n) ||
+             normalize(p.profesorNombre || '').includes(n) ||
+             normalize(p.aulaDestino || '').includes(n);
+    });
+  }
+
+  // ── Formulario: DEVOLVER préstamo ─────────────────────────────────
+  function mostrarFormularioDevolucion(prestamosEncontrados, itemQuery) {
+    var formDiv = document.createElement('div');
+    formDiv.className = 'ag-msg ag-msg-ai';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #f59e0b';
+
+    if (!prestamosEncontrados.length) {
+      formDiv.innerHTML = '<div style="color:#fbbf24">⚠ No encontré préstamos activos' +
+        (itemQuery ? ' para "' + esc(itemQuery) + '"' : '') + '.</div>';
+      el.messages.appendChild(formDiv);
+      el.messages.scrollTop = el.messages.scrollHeight;
+      return;
+    }
+
+    var rows = prestamosEncontrados.slice(0, 8).map(function(p) {
+      return '<tr>' +
+        '<td><input type="checkbox" class="ag-dev-check" data-id="' + p.id + '" data-qty="' + (p.cantidad||1) + '" style="width:16px;height:16px"></td>' +
+        '<td>' + esc(p.itemNombre || '—') + '</td>' +
+        '<td>' + esc(p.profesorNombre || '—') + '</td>' +
+        '<td style="text-align:center">' + (p.cantidad||1) + '</td>' +
+        '<td style="color:#64748b">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    formDiv.innerHTML =
+      '<div style="margin-bottom:10px"><strong style="color:#fbbf24">↩ Devolver préstamo:</strong></div>' +
+      '<table class="ag-table" style="width:100%;margin-bottom:10px">' +
+        '<thead><tr><th></th><th>Ítem</th><th>Profesor</th><th>Cant.</th><th>Fecha</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="ag-btn ag-btn-blue ag-dev-submit" style="flex:1">✅ Confirmar devolución</button>' +
+        '<button class="ag-btn ag-dev-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-dev-result" style="margin-top:8px;font-size:11px"></div>';
+
+    el.messages.appendChild(formDiv);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    formDiv.querySelector('.ag-dev-cancel').addEventListener('click', function() { formDiv.remove(); });
+    formDiv.querySelector('.ag-dev-submit').addEventListener('click', function() {
+      var checks = formDiv.querySelectorAll('.ag-dev-check:checked');
+      if (!checks.length) { appendMsgInDiv(formDiv, '⚠ Marca al menos un préstamo', '#fbbf24'); return; }
+      var resultEl = formDiv.querySelector('.ag-dev-result');
+      resultEl.innerHTML = '⏳ Procesando...'; resultEl.style.color = '#94a3b8';
+      var promises = Array.from(checks).map(function(chk) {
+        return apiPost('/api/prestar', {
+          action: 'devolver',
+          prestamoId: Number(chk.dataset.id),
+          cantidadDevuelta: Number(chk.dataset.qty)
+        });
+      });
+      Promise.all(promises).then(function() {
+        resultEl.innerHTML = '✅ Devolución registrada';
+        resultEl.style.color = '#34d399';
+        formDiv.querySelector('.ag-dev-submit').disabled = true;
+        if (typeof loadData === 'function') setTimeout(loadData, 500);
+      }).catch(function(e) {
+        resultEl.innerHTML = '❌ Error: ' + e.message;
+        resultEl.style.color = '#ef4444';
+      });
+    });
+  }
+
+  // ── Formulario: ACTUALIZAR STOCK ──────────────────────────────────
+  function mostrarFormularioStock(item, cantidadSugerida) {
+    var formDiv = document.createElement('div');
+    formDiv.className = 'ag-msg ag-msg-ai';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #8b5cf6';
+    formDiv.innerHTML =
+      '<div style="margin-bottom:8px"><strong style="color:#a78bfa">📦 Actualizar stock:</strong> ' + esc(item.item) + '</div>' +
+      '<div style="color:#64748b;font-size:11px;margin-bottom:8px">Stock actual: <strong style="color:#e2e8f0">' + (item.qty||0) + '</strong> · Mínimo: ' + (item.min||0) + '</div>' +
+      '<label class="ag-label">Nueva cantidad *</label>' +
+      '<input class="ag-input-field ag-stock-qty" type="number" min="0" value="' + (cantidadSugerida !== null ? cantidadSugerida : item.qty||0) + '">' +
+      '<label class="ag-label" style="margin-top:6px">Motivo (opcional)</label>' +
+      '<input class="ag-input-field ag-stock-obs" placeholder="Ej: Reposición, inventario físico...">' +
+      '<div style="display:flex;gap:6px;margin-top:10px">' +
+        '<button class="ag-btn ag-btn-blue ag-stock-submit" style="flex:1">✅ Actualizar</button>' +
+        '<button class="ag-btn ag-stock-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-stock-result" style="margin-top:8px;font-size:11px"></div>';
+
+    el.messages.appendChild(formDiv);
+    el.messages.scrollTop = el.messages.scrollHeight;
+    formDiv.querySelector('.ag-stock-qty').focus();
+    formDiv.querySelector('.ag-stock-cancel').addEventListener('click', function() { formDiv.remove(); });
+    formDiv.querySelector('.ag-stock-submit').addEventListener('click', function() {
+      var nuevaQty = Number(formDiv.querySelector('.ag-stock-qty').value);
+      var resultEl = formDiv.querySelector('.ag-stock-result');
+      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = '#94a3b8';
+      var updated = Object.assign({}, item, { qty: nuevaQty });
+      apiPost('/api/item', { action: 'update', item: updated }).then(function(res) {
+        if (!res.ok) throw new Error(res.error);
+        var idx = items.findIndex(function(x) { return String(x.id) === String(item.id); });
+        if (idx >= 0) items[idx] = updated;
+        resultEl.innerHTML = '✅ Stock actualizado a ' + nuevaQty;
+        resultEl.style.color = '#34d399';
+        formDiv.querySelector('.ag-stock-submit').disabled = true;
+      }).catch(function(e) {
+        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
+      });
+    });
+  }
+
+  // ── Formulario: CAMBIAR ESTADO ────────────────────────────────────
+  function mostrarFormularioEstado(item, estadoSugerido) {
+    var formDiv = document.createElement('div');
+    formDiv.className = 'ag-msg ag-msg-ai';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #06b6d4';
+    var opts = ['Bueno','Deteriorado','Avería','Baja'].map(function(e) {
+      return '<option value="' + e + '"' + (e === (estadoSugerido || item.est) ? ' selected' : '') + '>' + e + '</option>';
+    }).join('');
+    formDiv.innerHTML =
+      '<div style="margin-bottom:8px"><strong style="color:#67e8f9">🔧 Cambiar estado:</strong> ' + esc(item.item) + '</div>' +
+      '<div style="color:#64748b;font-size:11px;margin-bottom:8px">Estado actual: <strong style="color:#e2e8f0">' + esc(item.est||'—') + '</strong></div>' +
+      '<label class="ag-label">Nuevo estado *</label>' +
+      '<select class="ag-input-field ag-estado-sel" style="padding:7px">' + opts + '</select>' +
+      '<label class="ag-label" style="margin-top:6px">Nota (opcional)</label>' +
+      '<input class="ag-input-field ag-estado-obs" placeholder="Ej: Cable roto, pantalla rayada...">' +
+      '<div style="display:flex;gap:6px;margin-top:10px">' +
+        '<button class="ag-btn ag-btn-blue ag-estado-submit" style="flex:1">✅ Cambiar estado</button>' +
+        '<button class="ag-btn ag-estado-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-estado-result" style="margin-top:8px;font-size:11px"></div>';
+
+    el.messages.appendChild(formDiv);
+    el.messages.scrollTop = el.messages.scrollHeight;
+    formDiv.querySelector('.ag-estado-cancel').addEventListener('click', function() { formDiv.remove(); });
+    formDiv.querySelector('.ag-estado-submit').addEventListener('click', function() {
+      var nuevoEst = formDiv.querySelector('.ag-estado-sel').value;
+      var obs = formDiv.querySelector('.ag-estado-obs').value.trim();
+      var resultEl = formDiv.querySelector('.ag-estado-result');
+      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = '#94a3b8';
+      var updated = Object.assign({}, item, { est: nuevoEst, obs: obs || item.obs });
+      apiPost('/api/item', { action: 'update', item: updated }).then(function(res) {
+        if (!res.ok) throw new Error(res.error);
+        var idx = items.findIndex(function(x) { return String(x.id) === String(item.id); });
+        if (idx >= 0) items[idx] = updated;
+        resultEl.innerHTML = '✅ Estado cambiado a ' + nuevoEst;
+        resultEl.style.color = '#34d399';
+        formDiv.querySelector('.ag-estado-submit').disabled = true;
+      }).catch(function(e) {
+        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
+      });
+    });
+  }
+
+  // ── Formulario: MARCAR MANTENIMIENTO ─────────────────────────────
+  function mostrarFormularioMantenimiento(item) {
+    var formDiv = document.createElement('div');
+    formDiv.className = 'ag-msg ag-msg-ai';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #f59e0b';
+    formDiv.innerHTML =
+      '<div style="margin-bottom:8px"><strong style="color:#fbbf24">🛠 Solicitar mantenimiento:</strong> ' + esc(item.item) + '</div>' +
+      '<label class="ag-label">Responsable (opcional)</label>' +
+      '<input class="ag-input-field ag-mant-resp" placeholder="Ej: Servicio técnico, Juan...">' +
+      '<label class="ag-label" style="margin-top:6px">Descripción del problema *</label>' +
+      '<textarea class="ag-input-field ag-mant-nota" style="height:60px;resize:vertical" placeholder="Ej: No enciende, cable pelado..."></textarea>' +
+      '<label class="ag-label" style="margin-top:6px">Fecha límite (opcional)</label>' +
+      '<input class="ag-input-field ag-mant-fecha" type="date">' +
+      '<div style="display:flex;gap:6px;margin-top:10px">' +
+        '<button class="ag-btn ag-btn-blue ag-mant-submit" style="flex:1">✅ Solicitar</button>' +
+        '<button class="ag-btn ag-mant-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-mant-result" style="margin-top:8px;font-size:11px"></div>';
+
+    el.messages.appendChild(formDiv);
+    el.messages.scrollTop = el.messages.scrollHeight;
+    formDiv.querySelector('.ag-mant-cancel').addEventListener('click', function() { formDiv.remove(); });
+    formDiv.querySelector('.ag-mant-submit').addEventListener('click', function() {
+      var nota = formDiv.querySelector('.ag-mant-nota').value.trim();
+      if (!nota) { formDiv.querySelector('.ag-mant-nota').style.borderColor = '#ef4444'; return; }
+      var resp = formDiv.querySelector('.ag-mant-resp').value.trim();
+      var fecha = formDiv.querySelector('.ag-mant-fecha').value;
+      var resultEl = formDiv.querySelector('.ag-mant-result');
+      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = '#94a3b8';
+      var updated = Object.assign({}, item, {
+        mant: '1', mantEstado: 'Pendiente',
+        mantNota: nota, mantResp: resp, mantFecha: fecha
+      });
+      apiPost('/api/item', { action: 'update', item: updated }).then(function(res) {
+        if (!res.ok) throw new Error(res.error);
+        var idx = items.findIndex(function(x) { return String(x.id) === String(item.id); });
+        if (idx >= 0) items[idx] = updated;
+        resultEl.innerHTML = '✅ Mantenimiento solicitado';
+        resultEl.style.color = '#34d399';
+        formDiv.querySelector('.ag-mant-submit').disabled = true;
+      }).catch(function(e) {
+        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
+      });
+    });
+  }
+
+  // ── Respuesta: CONSULTAS DIRECTAS (sin LLM) ───────────────────────
+  function respuestaConsultaDirecta(tipo, q) {
+    var n = normalize(q);
+
+    if (tipo === 'stock_bajo') {
+      var bajos = (items || []).filter(function(x) {
+        return x.min && Number(x.qty) < Number(x.min);
+      });
+      if (!bajos.length) { appendMsg('ai', '✅ No hay ítems con stock bajo en este momento.'); return true; }
+      var tabla = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Aula</th><th>Stock</th><th>Mín.</th></tr></thead><tbody>' +
+        bajos.slice(0,15).map(function(x) {
+          return '<tr><td>' + esc(x.item) + '</td><td>' + esc(x.aula||'—') + '</td>' +
+            '<td style="color:#ef4444;font-weight:700">' + x.qty + '</td><td>' + x.min + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      appendMsg('ai', '⚠ **' + bajos.length + ' ítems con stock bajo:**\n\n' + tabla); return true;
+    }
+
+    if (tipo === 'lista_mantenimiento') {
+      var mant = (items || []).filter(function(x) { return x.mant == 1 || x.mant === '1'; });
+      if (!mant.length) { appendMsg('ai', '✅ No hay ítems pendientes de mantenimiento.'); return true; }
+      var tabla2 = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Aula</th><th>Estado</th><th>Responsable</th></tr></thead><tbody>' +
+        mant.slice(0,15).map(function(x) {
+          return '<tr><td>' + esc(x.item) + '</td><td>' + esc(x.aula||'—') + '</td>' +
+            '<td>' + esc(x.mantEstado||'Pendiente') + '</td><td>' + esc(x.mantResp||'—') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      appendMsg('ai', '🛠 **' + mant.length + ' ítems con mantenimiento pendiente:**\n\n' + tabla2); return true;
+    }
+
+    if (tipo === 'resumen_aula') {
+      var aula = extraerAulaDeFrase(q);
+      var aulaItems = (items || []).filter(function(x) {
+        if (aula) return x.aula === aula.id;
+        return false;
+      });
+      if (!aula) { appendMsg('ai', '¿De qué aula quieres el resumen? Ej: "¿qué hay en el Aula 35?"'); return true; }
+      if (!aulaItems.length) { appendMsg('ai', 'No encontré ítems en ' + esc(aula.name) + '.'); return true; }
+      var bajos2 = aulaItems.filter(function(x) { return x.min && Number(x.qty) < Number(x.min); }).length;
+      var mant2 = aulaItems.filter(function(x) { return x.mant == 1 || x.mant === '1'; }).length;
+      var tabla3 = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Cant.</th><th>Estado</th><th>Ubicación</th></tr></thead><tbody>' +
+        aulaItems.slice(0,20).map(function(x) {
+          var low = x.min && Number(x.qty) < Number(x.min);
+          return '<tr><td>' + esc(x.item) + '</td>' +
+            '<td style="color:' + (low?'#ef4444':'#34d399') + ';font-weight:700">' + x.qty + '</td>' +
+            '<td>' + esc(x.est||'—') + '</td><td style="color:#64748b">' + esc(x.loc||'—') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      appendMsg('ai', '🏫 **Resumen ' + esc(aula.name) + '** — ' + aulaItems.length + ' ítems · ⚠ ' + bajos2 + ' stock bajo · 🛠 ' + mant2 + ' mantenimiento\n\n' + tabla3);
+      return true;
+    }
+
+    if (tipo === 'quien_tiene') {
+      // Extraer nombre del ítem de la pregunta
+      var activos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) { return p.estado === 'Activo'; });
+      if (!activos.length) { appendMsg('ai', 'No hay préstamos activos en este momento.'); return true; }
+      // Filtrar por lo que se menciona en la pregunta
+      var palabras = n.replace(/quien|quién|tiene|prestado|cogido|lleva|tiene|el|la|los|las|un|una/g,'').trim();
+      var filtrados = palabras.length > 2 ? activos.filter(function(p) {
+        return normalize(p.itemNombre||'').includes(palabras) || normalize(p.profesorNombre||'').includes(palabras);
+      }) : activos;
+      var tabla4 = '<table class="ag-table" style="width:100%"><thead><tr><th>Ítem</th><th>Profesor</th><th>Cant.</th><th>Desde</th><th>Prevista</th></tr></thead><tbody>' +
+        filtrados.slice(0,10).map(function(p) {
+          return '<tr><td>' + esc(p.itemNombre||'—') + '</td><td>' + esc(p.profesorNombre||'—') + '</td>' +
+            '<td>' + (p.cantidad||1) + '</td><td style="color:#64748b">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
+            '<td style="color:#f59e0b">' + (p.fechaPrevista||'—').slice(0,10) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      appendMsg('ai', '📋 **Préstamos activos' + (palabras.length > 2 ? ' para "' + esc(palabras) + '"' : '') + '** (' + filtrados.length + '):\n\n' + tabla4);
+      return true;
+    }
+
+    return false;
+  }
+
+  // ── Seleccionar ítem con confirmación si hay varios ───────────────
+  function seleccionarItemYEjecutar(q, callback) {
+    var encontrados = searchInventoryItems(q);
+    if (!encontrados || !encontrados.length) {
+      appendMsg('ai', '❌ No encontré ningún ítem con ese nombre. ¿Puedes concretar más?');
+      return;
+    }
+    if (encontrados.length === 1) { callback(encontrados[0]); return; }
+    var listMsg = document.createElement('div');
+    listMsg.className = 'ag-msg ag-msg-ai';
+    listMsg.innerHTML = '<strong>¿A qué ítem te refieres?</strong><br><br>';
+    encontrados.slice(0, 6).forEach(function(item) {
+      var btn = document.createElement('button');
+      btn.className = 'ag-quick-btn';
+      btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
+      btn.innerHTML = '📦 ' + esc(item.item) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula||'—') + ' · ' + esc(item.est||'—') + ' · ' + (item.qty||0) + ' ud.)</small>';
+      btn.addEventListener('click', (function(it) { return function() { listMsg.remove(); callback(it); }; })(item));
+      listMsg.appendChild(btn);
+    });
+    el.messages.appendChild(listMsg);
+    el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
+  function appendMsgInDiv(div, text, color) {
+    var r = div.querySelector('.ag-dev-result') || div.querySelector('.ag-stock-result') || div.querySelector('.ag-mant-result');
+    if (r) { r.innerHTML = text; r.style.color = color || '#e2e8f0'; }
+  }
+
   function sendChat(text) {
     var input = el.chatInput;
     // Si text es un evento (cuando viene de click), ignorarlo
@@ -1273,8 +1734,45 @@
     // ── INTERCEPTAR ACCIÓN DE AÑADIR ITEM ─────────────────────
     if (detectarIntencionAnadirItem(q)) {
       var nombreExtraido = extraerNombreItem(q);
-      mostrarFormularioNuevoItem(nombreExtraido);
+      mostrarFormularioNuevoItem(nombreExtraido, q); // pasa frase completa para autocompletar
       return;
+    }
+
+    // ── PARSER CENTRAL DE INTENCIONES ──────────────────────────
+    var intencion = detectarIntencion(q);
+    if (intencion) {
+      // Consultas directas sin ítem concreto
+      if (intencion.tipo === 'stock_bajo' || intencion.tipo === 'lista_mantenimiento' ||
+          intencion.tipo === 'resumen_aula' || intencion.tipo === 'quien_tiene') {
+        respuestaConsultaDirecta(intencion.tipo, q);
+        return;
+      }
+      // Acciones que necesitan un ítem: buscar primero
+      if (intencion.tipo === 'devolver') {
+        var termBusq = q.replace(/devuelve|devolver|devolverlo|devolverla|devolucion|devolución/gi,'').trim();
+        var prestActivos = buscarPrestamosActivos(termBusq || '');
+        if (!prestActivos.length) prestActivos = buscarPrestamosActivos(''); // si no encuentra, mostrar todos
+        mostrarFormularioDevolucion(prestActivos, termBusq || null);
+        return;
+      }
+      if (intencion.tipo === 'stock') {
+        seleccionarItemYEjecutar(q, function(item) {
+          mostrarFormularioStock(item, intencion.cantidad);
+        });
+        return;
+      }
+      if (intencion.tipo === 'estado') {
+        seleccionarItemYEjecutar(q, function(item) {
+          mostrarFormularioEstado(item, intencion.estado);
+        });
+        return;
+      }
+      if (intencion.tipo === 'mantenimiento') {
+        seleccionarItemYEjecutar(q, function(item) {
+          mostrarFormularioMantenimiento(item);
+        });
+        return;
+      }
     }
 
     // ── INTERCEPTAR ACCIÓN DE PRÉSTAMO ─────────────────────────
