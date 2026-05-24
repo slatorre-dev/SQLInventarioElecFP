@@ -748,7 +748,7 @@ function addCardSwipeListeners(container){
     },{passive:true});
     card.addEventListener('touchmove',function(e){
       var cx=e.touches[0].clientX-startX,cy=e.touches[0].clientY-startY;
-      if(!swiping&&Math.abs(cx)<Math.abs(cy)+10) return;
+      if(!swiping&&(Math.abs(cx)<30||Math.abs(cx)<Math.abs(cy)*1.5)) return;
       swiping=true;dx=cx;
       card.style.transition='none';
       card.style.transform='translateX('+Math.sign(dx)*Math.min(Math.abs(dx),100)+'px)';
