@@ -98,8 +98,58 @@ function setFilterTipo(value){
   renderInv();
 }
 
+function renderActiveFilters(){
+  const bar = document.getElementById('activeFiltersBar');
+  if(!bar) return;
+  const chips = [];
+
+  const q = document.getElementById('srch')?.value?.trim();
+  const fc = document.getElementById('fCat')?.value;
+  const ft = document.getElementById('fTipo')?.value;
+  const fe = document.getElementById('fEst')?.value;
+
+  if(q) chips.push({ label: `🔍 "${q}"`, clear: () => { document.getElementById('srch').value = ''; renderInv(); } });
+
+  if(fc) {
+    const cat = (typeof CATS !== 'undefined' ? CATS : []).find(c => c.name === fc);
+    chips.push({ label: (cat?.i || '🏷') + ' ' + fc, clear: () => { document.getElementById('fCat').value = ''; renderInv(); } });
+  }
+
+  if(ft) {
+    const label = ft === 'consumible' ? '📦 Consumible' : '🔧 Inventariable';
+    chips.push({ label, clear: () => { setFilterTipo(''); } });
+  }
+
+  if(fe) chips.push({ label: '⚡ ' + fe, clear: () => { document.getElementById('fEst').value = ''; renderInv(); } });
+
+  if(_subFilter === 'lowstock') chips.push({ label: '⚠️ Stock bajo', clear: () => { _subFilter = null; renderInv(); } });
+  if(_subFilter === 'maintenance') chips.push({ label: '🛠️ Mantenimiento', clear: () => { _subFilter = null; renderInv(); } });
+
+  if(!chips.length) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+
+  bar.style.display = 'flex';
+  bar.innerHTML = chips.map((c, i) =>
+    `<span class="filter-chip" data-idx="${i}">${c.label} <button class="filter-chip-x" data-idx="${i}" title="Quitar filtro">×</button></span>`
+  ).join('') +
+  (chips.length > 1 ? `<button class="filter-chip filter-chip-clear" id="clearAllFilters">✕ Limpiar todo</button>` : '');
+
+  bar.querySelectorAll('.filter-chip-x').forEach(btn => {
+    btn.addEventListener('click', () => chips[+btn.dataset.idx].clear());
+  });
+  const clearAll = bar.querySelector('#clearAllFilters');
+  if(clearAll) clearAll.addEventListener('click', () => {
+    document.getElementById('srch').value = '';
+    document.getElementById('fCat').value = '';
+    setFilterTipo('');
+    const fe2 = document.getElementById('fEst'); if(fe2) fe2.value = '';
+    _subFilter = null;
+    renderInv();
+  });
+}
+
 function renderInv(){
   updateViewBtns();
+  renderActiveFilters();
   const mc=document.getElementById('iContent');
   if(!itemsLoaded){
     document.getElementById('iCount').textContent='';

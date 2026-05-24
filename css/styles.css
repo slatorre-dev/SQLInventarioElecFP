@@ -436,6 +436,12 @@ body{
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;background:var(--white);padding:16px 18px;border-radius:14px;border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px;background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .bulk-count{font-size:12px;font-weight:800;color:var(--accent);background:var(--accent-l);border-radius:999px;padding:6px 10px;white-space:nowrap}
+#activeFiltersBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-12px 0 14px;padding:0 2px}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;background:var(--accent-l);color:var(--accent);border:1px solid #bfdbfe;border-radius:999px;padding:4px 10px 4px 10px;font-size:11px;font-weight:600;white-space:nowrap}
+.filter-chip-x{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px;opacity:.7}
+.filter-chip-x:hover{opacity:1}
+.filter-chip-clear{background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px}
+.filter-chip-clear:hover{border-color:var(--accent);color:var(--accent)}
 .bulkbar select,.bulkbar input{min-height:36px;padding:8px 10px;font-size:12px}
 .bulk-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:180px}
 .bulk-control input{min-width:210px}
