@@ -44,7 +44,7 @@
   <div class="brand-wrap">
     <a class="brand" onclick="goHome()">
       <div class="brand-logo"><img src="favicon.svg" class="logo-img"></div>
-      <div class="brand-name">Inventario Taller Electricidad/Electrónica FP</div>
+      <div class="brand-name" id="brandTitle" onclick="brandTitleClick()">Inventario Taller Electricidad/Electrónica FP</div>
     </a>
     <span class="app-version" id="appVersion"></span>
     <button class="tbtn tbtn-reload" id="btnReload" onclick="loadData()" title="Recargar datos">🔄</button>
@@ -1367,6 +1367,28 @@
   </div>
 </div>
 
+<!-- EASTER EGG: ROBOT BAILARÍN -->
+<div class="mbg" id="mRobotDance" onclick="if(event.target===this)closeRobotDance()" style="display:none;z-index:9999">
+  <div class="modal" style="max-width:380px;text-align:center;background:linear-gradient(135deg,#0f0f23 0%,#1a1a3e 50%,#0f0f23 100%);border:2px solid #7c3aed;overflow:hidden;padding:0">
+    <div style="background:linear-gradient(90deg,#7c3aed,#06b6d4,#10b981,#f59e0b,#ef4444,#7c3aed);background-size:300% 100%;animation:rainbowBar 2s linear infinite;height:4px"></div>
+    <div style="padding:24px 20px 20px">
+      <div style="font-size:13px;color:#a78bfa;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;animation:pulse 1s ease-in-out infinite">♪ ♫ ¡EASTER EGG! ♫ ♪</div>
+      <div id="robotDanceScene" style="font-size:52px;line-height:1;margin:0 auto 16px;position:relative;height:140px;display:flex;align-items:center;justify-content:center">
+        <div id="robotBody" style="position:relative;display:inline-block">
+          <div id="robotEmoji" style="font-size:72px;display:block;transform-origin:center bottom;animation:robotDance 0.5s ease-in-out infinite alternate">🤖</div>
+          <div id="robotNotes" style="position:absolute;top:-10px;right:-30px;font-size:20px;animation:floatNotes 1s ease-in-out infinite">🎵</div>
+          <div id="robotNotes2" style="position:absolute;top:10px;left:-30px;font-size:16px;animation:floatNotes 1s ease-in-out infinite 0.5s">🎶</div>
+        </div>
+      </div>
+      <div id="robotDanceFloor" style="font-size:11px;color:#4c1d95;letter-spacing:2px;margin-bottom:12px;animation:discoBlink 0.3s step-end infinite">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
+      <div style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:4px">¡El inventario tiene ritmo! 🕺</div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:20px">Taller de Electricidad/Electrónica FP</div>
+      <div id="danceStars" style="font-size:20px;margin-bottom:20px;animation:starSpin 3s linear infinite">⚡ ⭐ ⚡ ⭐ ⚡</div>
+      <button class="btn btn-p" onclick="closeRobotDance()" style="width:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border:none;color:#fff;font-weight:700">¡Para el baile!</button>
+    </div>
+  </div>
+</div>
+
 <!-- DEPARTMENT GAME -->
 <div class="mbg" id="mDeptGame" onclick="if(event.target===this)closeDeptGame()">
   <div class="modal dept-game-modal">
@@ -1423,5 +1445,50 @@
 <script defer src="js/auth.js"></script>
 <button id="fabNuevo" class="fab-nuevo print-no" style="display:none" title="Añadir ítem (arrastra para mover)">＋</button>
 <script defer src="js/agente-widget.js"></script>
+<script>
+(function(){
+  var _clicks=0,_timer=null;
+  window.brandTitleClick=function(){
+    _clicks++;
+    if(_timer) clearTimeout(_timer);
+    _timer=setTimeout(function(){_clicks=0;},700);
+    if(_clicks>=3){
+      _clicks=0;
+      clearTimeout(_timer);
+      openRobotDance();
+    }
+  };
+  window.openRobotDance=function(){
+    var m=document.getElementById('mRobotDance');
+    if(!m) return;
+    m.style.display='flex';
+    void m.offsetWidth;
+    m.classList.add('open');
+    startDiscoFloor();
+  };
+  window.closeRobotDance=function(){
+    var m=document.getElementById('mRobotDance');
+    if(!m) return;
+    m.classList.remove('open');
+    setTimeout(function(){m.style.display='none';},200);
+    stopDiscoFloor();
+  };
+  var _discoInt=null;
+  var discoColors=['#4c1d95','#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444'];
+  function startDiscoFloor(){
+    var el=document.getElementById('robotDanceFloor');
+    if(!el) return;
+    var i=0;
+    _discoInt=setInterval(function(){
+      el.style.color=discoColors[i%discoColors.length];
+      i++;
+    },120);
+  }
+  function stopDiscoFloor(){
+    if(_discoInt) clearInterval(_discoInt);
+    _discoInt=null;
+  }
+})();
+</script>
 </body>
 </html>
