@@ -1,8 +1,121 @@
-# SQLInventarioElecFP
+# Inventario Electrónica FP — IES El Bosco
 
-Inventario web del departamento de Electricidad y Electronica del IES El Bosco.
+Sistema web completo de gestión de inventario para el departamento de Electricidad/Electrónica. Accesible desde cualquier dispositivo (PC, móvil, tablet) sin instalación, funciona también sin conexión.
 
-Este repositorio contiene la migracion del proyecto original basado en Google Apps Script + Google Sheets hacia una arquitectura con Cloudflare Pages, Cloudflare Pages Functions y Cloudflare D1.
+---
+
+## Qué hace la aplicación
+
+### Acceso y usuarios
+
+- Login con usuario y contraseña, o con **Google (OAuth)**
+- Roles: **Consulta** (solo lectura), **Profesor** (préstamos y edición básica), **Jefe de Departamento** (acceso completo)
+- Gestión de usuarios: alta, baja, cambio de rol y asignación de módulos desde la propia app
+- Perfil personal: cambiar nombre, email y contraseña
+- Historial de todas las acciones con fecha y usuario responsable
+
+### Inventario principal
+
+- Más de **1.100 ítems** catalogados con: nombre, referencia, aula, ubicación exacta (armario, estantería…), categoría, ciclo formativo, módulo, tipo (consumible/inventariable), cantidad, mínimo de stock, estado, proveedor, fecha de revisión, foto y observaciones
+- Búsqueda en tiempo real insensible a mayúsculas y tildes, con matching en singular y plural
+- Filtros combinables: por aula, categoría, ciclo, estado, tipo de material y texto libre
+- Vista tabla o vista tarjetas, adaptadas a móvil
+- Paginación configurable (10, 25, 50 ítems)
+- Código QR por ítem: generado automáticamente, imprimible individualmente o en lote
+- Posibilidad de ocultar ítems (solo visibles para administradores)
+- Contenedores (prefijo SET- y CONT-): agrupan componentes en conjuntos o cajas físicas, con generación automática de unidades hijas
+
+### Selección en lote
+
+Selecciona varios ítems a la vez y aplica:
+- Cambio de aula, ubicación, categoría, ciclo/módulo o tipo de material
+- Añadir o reemplazar tags
+- Marcar para mantenimiento
+- Cambiar imagen en bloque
+- Exportar a CSV o imprimir listado
+- Eliminar con cuenta atrás de 5 segundos (doble confirmación)
+
+### Préstamos
+
+- Registrar préstamo: ítem, profesor, cantidad, aula destino y fecha de devolución prevista
+- Préstamo de caja completa: registra un préstamo por cada componente del conjunto en un solo paso
+- Devolución total o parcial
+- Estados: Activo, Parcial, Devuelto, Vencido
+- Vistas agrupadas: por profesor, por aula, por material
+- Gestión de profesores prestatarios (nombre, departamento, email, importables desde CSV)
+- Resaltado automático de préstamos vencidos
+
+### Fotos y documentos
+
+- Foto principal del ítem: subir desde archivo, hacer foto con la cámara del móvil directamente o arrastrar imagen
+- Compresión automática antes de guardar
+- Documentos adjuntos por ítem (PDF, imágenes, Word, Excel…) almacenados en Google Drive
+- Vista ampliada de foto con un toque
+
+### Agente Volt — IA por chat y voz
+
+Botón flotante que abre un panel de chat para gestionar el inventario en lenguaje natural:
+
+- **Buscar**: *"¿Dónde está la fusionadora de fibra?"* / *"¿Qué hay en el Aula 35?"*
+- **Añadir ítem**: *"Añade 4 osciloscopios en el aula 40, armario metálico, para el ciclo de telecomunicaciones"* → rellena el formulario automáticamente
+- **Préstamo**: *"Dame el multímetro"* / *"Me llevo el soldador"*
+- **Devolución**: *"Devuelvo el osciloscopio de Juan"*
+- **Stock**: *"Quedan 10 resistencias"* / *"¿Hay stock bajo?"*
+- **Estado**: *"El polímetro está en avería"* / *"Cambia estado a Bueno"*
+- **Mantenimiento**: *"El taladro necesita revisión"*
+- **Resumen de aula**: *"¿Qué hay en el Aula 14?"* / *"Préstamos activos"*
+- **Editar ficha**: *"Abre la ficha del osciloscopio"* → navega directamente al ítem
+- **Escanear QR**: abre cámara para identificar material por código
+- **Voz**: pulsa el micrófono y habla — espera 2 segundos de silencio antes de enviar, acumula frases largas
+- **Aprendizaje**: Volt aprende correcciones y preferencias del usuario, guardadas en la base de datos
+- **Historial de conversación persistente**: se recupera aunque se cierre el panel
+- Respuestas con IA (GPT-4o mini) en streaming
+
+### Auditoría y calidad de datos
+
+- Panel de auditoría: detecta ítems con campos incompletos (sin aula, sin categoría, sin foto, sin ubicación…)
+- Filtros por tipo de problema combinables
+- Acciones masivas desde el panel de auditoría
+- Historial completo de acciones: quién hizo qué y cuándo, filtrable por usuario, acción y tipo
+
+### Importación y exportación
+
+- Importar CSV: detección automática de columnas, validación previa y vista previa de 50 filas antes de confirmar
+- Importar backup JSON completo: restaura inventario, aulas, categorías, ciclos y profesores
+- Exportar CSV del inventario filtrado o completo
+- Exportar backup JSON: copia de seguridad completa
+- Imprimir listado configurable por columnas
+- Etiquetas QR en varios formatos (compacto 6/fila o con datos 5/fila)
+
+### Configuración del departamento
+
+Gestionable desde la app sin tocar código:
+- **Aulas**: añadir, eliminar, reordenar, importar desde CSV
+- **Categorías**: con icono emoji y color personalizable
+- **Tags/etiquetas**: vocabulario controlado de palabras clave
+- **Ciclos formativos y módulos**: alta, edición y eliminación con sus módulos
+- **Ubicaciones sugeridas**: lista de sitios frecuentes (armarios, estanterías…)
+- **Profesores prestatarios**: gestión del directorio de prestatarios
+
+### Documentación del departamento
+
+Accesos directos integrados a normativa, carpeta digital del curso, modelo de pedidos, sitio del departamento en SharePoint, Portal JCCM, TodoFP, BOE y DOCM.
+
+### Funciona sin conexión (PWA)
+
+- Instalable en el móvil o PC como app
+- Carga instantánea desde caché aunque no haya red
+- Actualización automática y silenciosa al volver la conexión
+
+---
+
+*Desarrollado para el Departamento de Electricidad/Electrónica — IES El Bosco*
+
+---
+
+## Documentación técnica
+
+Este repositorio contiene la migración del proyecto original basado en Google Apps Script + Google Sheets hacia una arquitectura con Cloudflare Pages, Cloudflare Pages Functions y Cloudflare D1.
 
 ## 1. Estado actual
 
