@@ -19,7 +19,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   /* CSS crítico inline — evita parpadeo del login antes de que cargue styles.css */
-  .page{display:none!important}
+  .page:not(.active){display:none}
   #loadOverlay{position:fixed;inset:0;background:#f4f6fb;display:flex;align-items:center;justify-content:center;z-index:9998}
   #loadOverlay.lo-hide{opacity:0;pointer-events:none;transition:opacity .45s ease}
   @media(prefers-color-scheme:dark){#loadOverlay{background:#0f172a}}
@@ -389,6 +389,7 @@
         <select id="fTipo" onchange="renderInv()" style="display:none"><option value="">Todos los tipos</option><option value="consumible">Consumibles</option><option value="inventariable">Inventariables</option></select>
       </div>
     </div>
+    <div id="activeFiltersBar" class="print-no"></div>
     <div class="bulkbar print-no" id="bulkBar" style="display:none">
       <div class="bulk-count" id="bulkCount">0 seleccionados</div>
       <select id="bulkAction" onchange="renderBulkActionControl()">

@@ -98,6 +98,45 @@ function setFilterTipo(value){
   renderInv();
 }
 
+function renderActiveFilters(){
+  const bar = document.getElementById('activeFiltersBar');
+  if(!bar) return;
+  const chips = [];
+  const q = document.getElementById('srch')?.value || '';
+  const fc = document.getElementById('fCat')?.value || '';
+  const ft = document.getElementById('fTipo')?.value || '';
+  const fe = document.getElementById('fEst')?.value || '';
+  if(q) chips.push({label: `"${q}"`, clear: ()=>{ document.getElementById('srch').value=''; renderInv(); }});
+  if(fc){
+    const sel = document.getElementById('fCat');
+    const txt = sel?.options[sel.selectedIndex]?.text || fc;
+    chips.push({label: txt, clear: ()=>{ document.getElementById('fCat').value=''; renderInv(); }});
+  }
+  if(ft) chips.push({label: ft==='consumible'?'Consumibles':'Inventariables', clear: ()=>{ setFilterTipo(''); }});
+  if(fe) chips.push({label: fe, clear: ()=>{ document.getElementById('fEst').value=''; renderInv(); }});
+  if(!chips.length){ bar.innerHTML=''; bar.style.display='none'; return; }
+  bar.style.display='flex';
+  bar.innerHTML = chips.map((c,i)=>
+    `<span class="filter-chip">${c.label}<button class="filter-chip-x" data-chip="${i}" title="Quitar filtro">×</button></span>`
+  ).join('') +
+  (chips.length>1 ? `<button class="filter-chip-clear" data-chip="all">✕ Limpiar todo</button>` : '');
+  bar.querySelectorAll('[data-chip]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const idx = btn.dataset.chip;
+      if(idx==='all'){
+        document.getElementById('srch').value='';
+        document.getElementById('fCat').value='';
+        setFilterTipo('');
+        if(document.getElementById('fEst')) document.getElementById('fEst').value='';
+        renderInv();
+      } else {
+        chips[Number(idx)].clear();
+      }
+    });
+  });
+}
+
 function renderInv(){
   updateViewBtns();
   const mc=document.getElementById('iContent');
@@ -107,6 +146,7 @@ function renderInv(){
     mc.innerHTML=`<div class="inv-loading-skeleton">${Array(6).fill(`<div class="skel-row"><div class="skel-cell skel" style="width:40%"></div><div class="skel-cell skel" style="width:20%"></div><div class="skel-cell skel" style="width:15%"></div><div class="skel-cell skel" style="width:15%"></div></div>`).join('')}</div>`;
     return;
   }
+  renderActiveFilters();
   const data=getFiltered();
   const low=data.filter(isLowStock).length;
   document.getElementById('iCount').textContent=`${data.length} ítem${data.length!==1?'s':''}`;

@@ -1983,3 +1983,50 @@ html, body {
   display: flex;
   justify-content: center;
 }
+
+/* ── Filtros activos como chips ── */
+#activeFiltersBar {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 12px 2px;
+  align-items: center;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 999px;
+  padding: 3px 10px 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dark .filter-chip { background: #1e3a5f; color: #93c5fd; }
+.filter-chip-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1e40af;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  opacity: 0.7;
+}
+.filter-chip-x:hover { opacity: 1; }
+.dark .filter-chip-x { color: #93c5fd; }
+.filter-chip-clear {
+  background: none;
+  border: 1px solid #94a3b8;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 11px;
+  padding: 2px 10px;
+  font-weight: 600;
+}
+.filter-chip-clear:hover { background: #f1f5f9; color: #334155; }
+.dark .filter-chip-clear { color: #94a3b8; border-color: #475569; }
+.dark .filter-chip-clear:hover { background: #1e293b; }
