@@ -1233,19 +1233,22 @@
     return patrones.some(function(p) { return q.includes(p); });
   }
 
+  // Palabras que indican cantidad (con tolerancia a typos frecuentes)
+  var CANT_WORDS = /unidades?|uniade[s]?|uniades?|ud\.?s?|uds?|piezas?|items?|equipos?|cables?|rollos?|ejemplares?/;
+
   // Extrae cantidad numérica de una frase: "añadir 4 soldadores" → 4
   function extraerCantidadDeFrase(query) {
     var q = normalize(query || '');
-    // Primero: "X unidades/ud/piezas..." en cualquier posición
-    var m = q.match(/\b(\d+)\s*(?:unidades?|ud\.?s?|uds?|piezas?|items?|equipos?|cables?|rollos?|ejemplares?)\b/);
+    // "X unidades/ud/piezas..." en cualquier posición (incluyendo typos)
+    var m = q.match(new RegExp('\\b(\\d+)\\s*(?:' + CANT_WORDS.source + ')\\b'));
     if (m) return parseInt(m[1], 10);
     // Número inmediatamente tras verbo: "añadir 4 micrófonos"
     m = q.match(/(?:anadir|agregar|crear|registrar|meter|poner|comprar|recibir|alta\s+de?)\s+(\d+)\b/);
     if (m) return parseInt(m[1], 10);
-    // Coma + número: "micrófono digital, 4 unidades" — captura número tras coma
+    // Coma + número: "micrófono, 4 unidades"
     m = q.match(/,\s*(\d+)\b/);
     if (m) return parseInt(m[1], 10);
-    // Número al inicio de frase: "4 soldadores"
+    // Número al inicio: "4 soldadores"
     m = q.match(/^(\d+)\s+\w/);
     if (m) return parseInt(m[1], 10);
     return null;
@@ -1267,11 +1270,13 @@
       var idx = resto.indexOf(verbos[i]);
       if (idx !== -1) { resto = resto.substring(idx + verbos[i].length).trim(); break; }
     }
-    // 2. Quitar artículos iniciales
+    // 2. Quitar número inicial con "unidades" (typos incluidos): "6 uniades del 555" → "del 555"
+    resto = resto.replace(/^\d+\s*(?:unidades?|uniade[s]?|uniades?|ud\.?s?|uds?|piezas?)\s*(?:del?|de la|de los)?\s*/i, '').trim();
+    // 3. Quitar artículos iniciales
     resto = resto.replace(/^(un|una|el|la|los|las|de)\s+/i, '').trim();
-    // 3. Cortar en cantidad + unidades: "micrófono, 4 unidades" → "micrófono"
-    resto = resto.replace(/,?\s*\d+\s*(?:unidades?|ud\.?s?|uds?|piezas?|items?|equipos?)\b.*/i, '').trim();
-    // 4. Cortar en preposiciones de lugar/contexto
+    // 4. Cortar en cantidad + unidades en cualquier posición: "micrófono, 4 unidades" → "micrófono"
+    resto = resto.replace(/,?\s*\d+\s*(?:unidades?|uniade[s]?|uniades?|ud\.?s?|uds?|piezas?|items?|equipos?)\b.*/i, '').trim();
+    // 5. Cortar en preposiciones de lugar/contexto
     var corte = resto.search(/\s+(?:en el|en la|en aula|en clase|en taller|en el aula|para el|para la|al aula)\b/i);
     if (corte > 0) resto = resto.substring(0, corte).trim();
     // 5. Cortar en puntuación
