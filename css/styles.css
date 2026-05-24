@@ -1211,9 +1211,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
   th:last-child,td:last-child{display:none!important}
 }
 
-html, body {
-  overflow-x: hidden;
-}
+html{overflow-x:clip}
+body{overflow-x:hidden}
 @media (max-width: 900px){
   .tw{
     display:none !important;
