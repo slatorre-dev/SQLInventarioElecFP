@@ -64,13 +64,23 @@
       'Reporta stock EXACTO. Si no aparece, di "No en inventario". ' +
       'Cuando el usuario quiera un material, localízalo y confirma disponibilidad. ' +
       'ACCIONES DISPONIBLES (se activan automáticamente con frases naturales):\n' +
-      '- Pedir préstamo: "pedir prestado [ítem]", "me llevo el multímetro", "quiero coger el soldador"\n' +
-      '- Devolver: "devuelve el multímetro de Juan", "devolver préstamo"\n' +
-      '- Actualizar stock: "actualiza la cantidad de resistencias a 50", "quedan 20 condensadores"\n' +
-      '- Cambiar estado: "el polímetro 3 está en avería", "cambia estado a deteriorado"\n' +
-      '- Mantenimiento: "solicita mantenimiento para el soldador", "el osciloscopio necesita revisión"\n' +
-      '- Añadir ítem: "añade un polímetro en el aula 35 en el armario metálico" (autocompleta aula y ubicación)\n' +
-      '- Consultas: "¿stock bajo?", "¿quién tiene el osciloscopio?", "¿qué hay en el Aula 35?", "¿qué necesita mantenimiento?"\n' +
+      '- PEDIR PRÉSTAMO: "pedir prestado X", "me llevo el multímetro", "dame el soldador", ' +
+      '"préstame el osciloscopio", "necesito el polímetro", "quiero coger la pistola de calor", ' +
+      '"me hace falta el crimpeador", "voy a usar el taladro", "me lo llevo prestado", ' +
+      '"apuntar el préstamo del multímetro"\n' +
+      '- DEVOLVER: "devuelve el multímetro de Juan", "ya lo traigo", "voy a devolver el soldador", ' +
+      '"cerrar el préstamo", "ya lo he traído de vuelta", "marcar como devuelto"\n' +
+      '- ACTUALIZAR STOCK: "quedan 20 condensadores", "actualiza la cantidad a 50", ' +
+      '"sube el stock a 10", "tenemos 5 más", "reducir stock a 3"\n' +
+      '- CAMBIAR ESTADO: "el polímetro está en avería", "cambia estado a deteriorado", ' +
+      '"ponlo como Bueno", "ya no funciona", "está estropeado", "catalogar como Baja"\n' +
+      '- MANTENIMIENTO: "solicita mantenimiento para el soldador", "hay que revisarlo", ' +
+      '"se ha roto el osciloscopio", "requiere reparación", "llevar al técnico"\n' +
+      '- AÑADIR ÍTEM: "añade un polímetro en el aula 35", "dar de alta una impresora", ' +
+      '"nuevo equipo en el taller", "inventariar un osciloscopio", "ha llegado nuevo material"\n' +
+      '- CONSULTAS: "¿stock bajo?", "¿quién tiene el osciloscopio?", "¿qué hay en el Aula 35?", ' +
+      '"¿qué necesita mantenimiento?", "¿está prestado?", "lista de préstamos activos", ' +
+      '"¿cuántos multímetros hay?", "resumen del aula 14"\n' +
       'Cuando detectes una de estas intenciones, INDÍCALO brevemente. No inventes datos. ' +
       'Sé conciso. Responde en español. Usa tablas markdown si es útil.' +
       (systemExtra || '');
@@ -542,14 +552,16 @@
           '</div>',
           '<div id="ag-quick" class="ag-quick" style="display:none">',
             '<div style="padding:14px;color:#64748b;font-size:11px;line-height:1.8;background:#0f172a;border-radius:8px;margin:0 14px 14px;border:1px solid #1e293b">',
-              '<strong style="color:#7dd3fc;display:block;margin-bottom:8px">💡 EJEMPLOS DE BÚSQUEDAS:</strong>',
+              '<strong style="color:#7dd3fc;display:block;margin-bottom:8px">💡 PUEDES DECIRME:</strong>',
               '<div style="margin-left:12px;color:#94a3b8">',
-                '<div style="margin-bottom:6px">🔍 "¿Dónde está la Fusionadora de fibra?"</div>',
-                '<div style="margin-bottom:6px">🔍 "¿Quién tiene el Osciloscopio?"</div>',
-                '<div style="margin-bottom:6px">🔍 "Necesito pedir prestado un Multímetro"</div>',
-                '<div style="margin-bottom:6px">📦 "Quiero añadir un Multimetro digital nuevo"</div>',
-                '<div style="margin-bottom:6px">📦 "¿Qué materiales están bajo stock mínimo?"</div>',
-                '<div>⚠️ "¿Qué ítems tienen campos incompletos?"</div>',
+                '<div style="margin-bottom:4px">🔍 "¿Dónde está la Fusionadora de fibra?"</div>',
+                '<div style="margin-bottom:4px">📋 "¿Quién tiene el Osciloscopio?" · "Préstamos activos"</div>',
+                '<div style="margin-bottom:4px">✅ "Dame el multímetro" · "Necesito el soldador" · "Me llevo el taladro"</div>',
+                '<div style="margin-bottom:4px">↩ "Devuelvo el osciloscopio" · "Ya lo he traído" · "Cerrar préstamo"</div>',
+                '<div style="margin-bottom:4px">📦 "Añade un polímetro en el Aula 35" · "Dar de alta nuevo equipo"</div>',
+                '<div style="margin-bottom:4px">📊 "Quedan 10 resistencias" · "Actualiza el stock a 25"</div>',
+                '<div style="margin-bottom:4px">🔧 "El soldador se ha roto" · "Solicitar mantenimiento"</div>',
+                '<div>⚠️ "¿Stock bajo?" · "¿Qué hay en el Aula 14?" · "¿Qué necesita reparación?"</div>',
               '</div>',
             '</div>',
           '</div>',
@@ -557,7 +569,7 @@
           '<div class="ag-input-row">',
             '<button id="ag-scan" class="ag-send" title="Escanear código QR / código de barras" style="background:#1e293b">📷</button>',
             '<button id="ag-mic" class="ag-send ag-mic-btn" title="Hablar por micrófono" style="background:#1e293b">🎤</button>',
-            '<input id="ag-chat-input" class="ag-input" placeholder="Ej: ¿Dónde está...? | ¿Quién tiene...? | Necesito pedir...">',
+            '<input id="ag-chat-input" class="ag-input" placeholder="Dame el multímetro · Devuelvo el soldador · ¿Qué hay en Aula 35?">',
             '<button id="ag-send" class="ag-send" disabled>➤</button>',
           '</div>',
         '</div>',
@@ -896,20 +908,38 @@
     var suggestions = [];
 
     // Detectar patrón de búsqueda
-    if (input.includes('dónde') || input.includes('donde')) {
+    if (input.includes('dónde') || input.includes('donde') || input.includes('busco') || input.includes('buscar')) {
       suggestions.push({ text: '🔍 Buscar por aula', q: '¿' + input + '?' });
     }
-    if (input.includes('quién') || input.includes('quien') || input.includes('tiene')) {
-      suggestions.push({ text: '📍 Ver histórico de préstamos', q: input });
+    if (input.includes('quién') || input.includes('quien') || input.includes('tiene') ||
+        input.includes('prestamos activos') || input.includes('préstamos activos')) {
+      suggestions.push({ text: '📍 Ver préstamos activos', q: input });
     }
-    if (input.includes('pedir') || input.includes('prestado')) {
-      suggestions.push({ text: '✅ Facilitar préstamo', q: input });
+    if (input.includes('pedir') || input.includes('prestado') || input.includes('dame') ||
+        input.includes('préstame') || input.includes('prestame') || input.includes('coger') ||
+        input.includes('llevarme') || input.includes('necesito') || input.includes('reservar')) {
+      suggestions.push({ text: '✅ Registrar préstamo', q: input });
     }
-    if (input.includes('añadir') || input.includes('anadir') || input.includes('crear') || input.includes('nuevo') || input.includes('agregar')) {
+    if (input.includes('devolver') || input.includes('devuelvo') || input.includes('retornar') ||
+        input.includes('traigo') || input.includes('entrego') || input.includes('cerrar prestamo')) {
+      suggestions.push({ text: '↩ Registrar devolución', q: input });
+    }
+    if (input.includes('añadir') || input.includes('anadir') || input.includes('crear') ||
+        input.includes('nuevo') || input.includes('agregar') || input.includes('dar de alta') ||
+        input.includes('alta') || input.includes('inventariar')) {
       suggestions.push({ text: '📦 Crear nuevo item', q: input });
     }
-    if (input.includes('stock') || input.includes('minimo') || input.includes('mínimo')) {
-      suggestions.push({ text: '📦 Ver tabla de stock', q: input });
+    if (input.includes('stock') || input.includes('minimo') || input.includes('mínimo') ||
+        input.includes('cantidad') || input.includes('unidades') || input.includes('reponer')) {
+      suggestions.push({ text: '📊 Ver/actualizar stock', q: input });
+    }
+    if (input.includes('mantenimiento') || input.includes('reparar') || input.includes('avería') ||
+        input.includes('averia') || input.includes('revisar') || input.includes('arreglar')) {
+      suggestions.push({ text: '🔧 Mantenimiento / estado', q: input });
+    }
+    if (input.includes('aula') || input.includes('clase') || input.includes('taller') ||
+        input.includes('laboratorio') || input.includes('sala')) {
+      suggestions.push({ text: '🏫 Ver resumen del aula', q: '¿Qué hay en el ' + input + '?' });
     }
     if (input.includes('auditar') || input.includes('completo') || input.includes('incompleto')) {
       suggestions.push({ text: '⚠️ Ejecutar auditoría', q: input });
@@ -957,7 +987,33 @@
       'abre el formulario', 'abrir formulario', 'abrir el formulario', 'rellenar formulario',
       'quiero el', 'quiero la', 'pedirla', 'pedirlo', 'pídela', 'pidela', 'pídelo', 'pidelo',
       'tramitar', 'tramítalo', 'tramitalo', 'gestionar préstamo', 'gestionar prestamo',
-      'solicitar', 'sí, por favor', 'si por favor', 'dale', 'venga', 'adelante'];
+      'solicitar', 'sí, por favor', 'si por favor', 'dale', 'venga', 'adelante',
+      // pedir / coger / llevar
+      'dame el', 'dame la', 'dame un', 'dame una', 'deme el', 'deme la', 'deme un', 'deme una',
+      'préstame', 'prestame', 'préstamelo', 'prestamelo', 'préstamela', 'prestamela',
+      'déjame', 'dejame', 'déjamelo', 'dejamelo', 'déjamela', 'dejamela',
+      'me hace falta', 'me hará falta', 'necesito usar', 'necesito coger',
+      'necesito el', 'necesito la', 'necesito un', 'necesito una',
+      'voy a coger', 'voy a llevarme', 'voy a usar', 'voy a tomar', 'voy a pedir',
+      'me lo llevo prestado', 'me la llevo prestada', 'coger prestado',
+      'puedo usar', 'puedo coger', 'puedo llevarme', 'puedo tomar',
+      'me lo cojo', 'me la cojo', 'cojo el', 'cojo la', 'cojo un', 'cojo una',
+      'me lo tomo', 'me la tomo', 'tomo el', 'tomo la',
+      'llevarme el', 'llevarme la', 'llevarme un', 'llevarme una',
+      'quiero cogerlo', 'quiero cogerla', 'quiero tomarlo', 'quiero tomarla',
+      'quiero llevármelo', 'quiero llevarmelo', 'quiero llevármela', 'quiero llevarmela',
+      'me interesa', 'me interesa ese', 'me interesa esa',
+      'me quedo con', 'me quedo ese', 'me quedo esa',
+      'ese quiero', 'esa quiero', 'lo pido', 'la pido', 'lo solicito', 'la solicito',
+      'ponlo a mi nombre', 'ponla a mi nombre', 'a mi nombre',
+      // registrar préstamo
+      'apuntar préstamo', 'apuntar prestamo', 'anotar préstamo', 'anotar prestamo',
+      'registrar préstamo', 'registrar prestamo', 'hacer el préstamo', 'hacer el prestamo',
+      'abrir préstamo', 'abrir prestamo', 'nuevo préstamo', 'nuevo prestamo',
+      'formalizar préstamo', 'formalizar prestamo',
+      // frases implícitas coloquiales
+      'me llevo prestado', 'me llevo prestada', 'en préstamo', 'en prestamo',
+      'para llevarse', 'para llevarme', 'quiero llevarlo', 'quiero llevarla'];
     if (patrones.some(function(p) { return q.includes(p); })) return true;
 
     // Si la última respuesta del agente mencionó abrir un formulario de préstamo,
@@ -980,7 +1036,26 @@
     var patrones = ['añadir', 'anadir', 'agregar', 'crear', 'nuevo item', 'nuevo ítem', 'nuevo material',
       'añadir item', 'anadir item', 'agregar item', 'crear item', 'registro nuevo', 'registrar nuevo',
       'incluir material', 'meter item', 'poner item', 'nuevo producto', 'alta item', 'alta material',
-      'incorporar', 'incluir nuevo', 'añadir material', 'anadir material', 'agregar material'];
+      'incorporar', 'incluir nuevo', 'añadir material', 'anadir material', 'agregar material',
+      // dar de alta
+      'dar de alta', 'darlo de alta', 'darla de alta', 'quiero dar de alta', 'quiero registrar',
+      'nueva alta', 'alta nuevo', 'alta nueva', 'alta de equipo', 'alta de instrumento',
+      // inventariar
+      'inventariar', 'inventariarlo', 'inventariarla', 'quiero inventariar', 'necesito inventariar',
+      // entrada al inventario
+      'entrada al inventario', 'entrada de material', 'entrada de item', 'entrada de ítem',
+      'meter al inventario', 'meter en el inventario', 'poner al inventario', 'poner en el inventario',
+      'añadir al inventario', 'agregar al inventario', 'anadir al inventario', 'incluir en el inventario',
+      'apuntar en el inventario', 'registrar en inventario',
+      // nueva adquisición
+      'nueva adquisicion', 'nueva adquisición', 'hemos adquirido', 'hemos comprado',
+      'acaba de llegar', 'acabamos de recibir', 'nos han traído', 'nos han traido',
+      'nos han dado', 'han llegado nuevos', 'han llegado nuevas', 'ha llegado nuevo', 'ha llegado nueva',
+      'llega nuevo', 'llega nueva', 'nuevo equipo', 'nuevo aparato', 'nuevo instrumento',
+      'nuevo dispositivo', 'nueva herramienta', 'nueva maquina', 'nueva máquina',
+      // quiero/necesito crear
+      'quiero crear', 'necesito crear', 'necesito añadir', 'necesito agregar', 'necesito anadir',
+      'quiero incluir', 'quiero dar entrada', 'dar entrada a'];
     return patrones.some(function(p) { return q.includes(p); });
   }
 
@@ -1297,7 +1372,16 @@
     // DEVOLVER PRÉSTAMO
     if (matchAny(n, ['devolver', 'devuelve', 'devolvemos', 'retornar', 'retorna', 'regresa', 'regresar',
         'ya lo tengo', 'ya la tengo', 'lo devuelvo', 'la devuelvo', 'devolverlo', 'devolverla',
-        'entregar', 'entrega', 'ha vuelto', 'han vuelto', 'devolucion', 'devolución'])) {
+        'entregar', 'entrega', 'ha vuelto', 'han vuelto', 'devolucion',
+        'quiero devolver', 'voy a devolver', 'ya lo devuelvo', 'ya la devuelvo',
+        'lo traigo', 'la traigo', 'ya lo traje', 'ya la traje', 'ya lo he traido', 'ya la he traido',
+        'lo he devuelto', 'la he devuelto', 'he devuelto', 'hemos devuelto',
+        'ya esta de vuelta', 'ya ha llegado', 'ya esta aqui',
+        'cerrar prestamo', 'finalizar prestamo', 'terminar prestamo', 'completar prestamo',
+        'marcar como devuelto', 'marcar devuelto', 'dar por devuelto', 'dar por devuelta',
+        'se devolvio', 'se ha devuelto', 'lo han devuelto', 'la han devuelto',
+        'se entrego', 'se ha entregado', 'han entregado',
+        'fin del prestamo', 'cierre de prestamo', 'proceso de devolucion'])) {
       return { tipo: 'devolver' };
     }
 
@@ -1305,59 +1389,102 @@
     if (matchAny(n, ['actualiza', 'actualizar', 'cambia la cantidad', 'cambiar cantidad', 'pon la cantidad',
         'modifica la cantidad', 'modificar cantidad', 'stock a ', 'cantidad a ', 'hay ahora',
         'quedan ', 'tenemos ', 'unidades a ', 'ponlo a ', 'ponla a ', 'ajusta', 'ajustar stock',
-        'nueva cantidad', 'cambiar stock', 'modifica stock'])) {
+        'nueva cantidad', 'cambiar stock', 'modifica stock',
+        'subir stock', 'bajar stock', 'reducir stock', 'aumentar stock',
+        'actualiza el stock', 'actualiza las unidades', 'actualiza la cantidad',
+        'actualizar el stock', 'actualizar las unidades', 'actualizar la cantidad',
+        'pon stock', 'pon el stock', 'mete la cantidad', 'mete el stock',
+        'cambia el numero', 'cambia las unidades', 'modificar las unidades',
+        'sube el stock', 'baja el stock', 'sube la cantidad', 'baja la cantidad',
+        'incrementar stock', 'decrementar stock', 'reponer stock', 'añadir al stock',
+        'quitar del stock', 'sumar al stock', 'restar del stock'])) {
       var numMatch = n.match(/\b(\d+)\s*(unidades?|uds?|ud)?\b/);
       return { tipo: 'stock', cantidad: numMatch ? parseInt(numMatch[1]) : null };
     }
 
     // CAMBIAR ESTADO
     if (matchAny(n, ['cambia el estado', 'cambiar estado', 'marca como', 'marcar como', 'estado a',
-        'esta en averia', 'está en avería', 'esta deteriorado', 'está deteriorado',
-        'en buen estado', 'en buenas condiciones', 'averia', 'avería', 'deteriorado',
-        'estado bueno', 'buen estado', 'de baja', 'dar de baja'])) {
+        'esta en averia', 'esta deteriorado', 'en buen estado', 'en buenas condiciones',
+        'averia', 'deteriorado', 'estado bueno', 'buen estado', 'de baja', 'dar de baja',
+        'poner como', 'catalogar como', 'clasificar como', 'registrar como',
+        'marcarlo como', 'marcarla como', 'cambiar su estado', 'cambiar el estado a',
+        'se ha estropeado', 'ya no funciona', 'esta estropeado', 'esta estropeada',
+        'funciona mal', 'esta en mal estado', 'se ha deteriorado', 'esta fallando',
+        'no arranca', 'no enciende', 'no prende', 'no va', 'no va bien',
+        'poner en baja', 'poner a baja', 'darlo de baja', 'darla de baja', 'mandar a baja'])) {
       var estado = null;
-      if (matchAny(n, ['averia', 'avería', 'averiado', 'roto', 'no funciona'])) estado = 'Avería';
-      else if (matchAny(n, ['deteriorado', 'deteriorada', 'mal estado', 'desgastado'])) estado = 'Deteriorado';
-      else if (matchAny(n, ['bueno', 'buena', 'buen estado', 'bien', 'ok', 'funciona'])) estado = 'Bueno';
-      else if (matchAny(n, ['baja', 'dar de baja', 'desecho', 'inservible'])) estado = 'Baja';
+      if (matchAny(n, ['averia', 'averiado', 'averiada', 'no funciona', 'estropeado', 'estropeada',
+          'funciona mal', 'esta fallando', 'no arranca', 'no enciende', 'no prende', 'no va'])) estado = 'Avería';
+      else if (matchAny(n, ['deteriorado', 'deteriorada', 'mal estado', 'desgastado', 'se ha deteriorado'])) estado = 'Deteriorado';
+      else if (matchAny(n, ['bueno', 'buena', 'buen estado', 'bien', 'ok', 'funciona', 'perfecto', 'perfecta'])) estado = 'Bueno';
+      else if (matchAny(n, ['baja', 'dar de baja', 'darlo de baja', 'darla de baja', 'desecho', 'inservible', 'poner en baja'])) estado = 'Baja';
       return { tipo: 'estado', estado: estado };
     }
 
     // MARCAR MANTENIMIENTO
-    if (matchAny(n, ['mantenimiento', 'mantenimineto', 'reparar', 'reparacion', 'reparación',
-        'revisar', 'revision', 'revisión', 'solicita mantenimiento', 'pide mantenimiento',
-        'necesita revision', 'necesita reparacion', 'esta roto', 'está roto',
-        'averiar', 'hay que arreglarlo', 'hay que arreglarla', 'no funciona bien'])) {
+    if (matchAny(n, ['mantenimiento', 'mantenimineto', 'reparar', 'reparacion',
+        'revisar', 'revision', 'solicita mantenimiento', 'pide mantenimiento',
+        'necesita revision', 'necesita reparacion', 'esta roto',
+        'averiar', 'hay que arreglarlo', 'hay que arreglarla', 'no funciona bien',
+        'se ha roto', 'hay que revisarlo', 'hay que revisarla', 'hay que arreglar',
+        'hace falta revisarlo', 'hace falta revisarla', 'hace falta arreglarlo',
+        'necesita ser revisado', 'necesita ser reparado', 'necesita arreglo',
+        'pedir revision', 'pedir reparacion', 'solicitar revision', 'solicitar reparacion',
+        'marcar para reparar', 'marcar para mantenimiento', 'marcar para revision',
+        'llevar al tecnico', 'hay que llevarlo al tecnico', 'requiere mantenimiento',
+        'requiere revision', 'requiere reparacion', 'requiere atencion',
+        'notificar mantenimiento', 'aviso de mantenimiento', 'tiene un fallo',
+        'reportar averia', 'reportar fallo', 'reportar problema',
+        'poner en mantenimiento', 'enviar a mantenimiento', 'necesita repararse'])) {
       return { tipo: 'mantenimiento' };
     }
 
     // CONSULTA: ¿QUIÉN TIENE X? / PRÉSTAMOS ACTIVOS
-    if (matchAny(n, ['quien tiene', 'quién tiene', 'quien lo tiene', 'quién lo tiene',
-        'prestado', 'prestados', 'donde esta prestado', 'quién se lo llevó', 'quien se lo llevo',
-        'quien tiene cogido', 'quién tiene cogido', 'a quien se lo preste', 'a quién'])) {
+    if (matchAny(n, ['quien tiene', 'quien lo tiene', 'donde esta prestado', 'quien se lo llevo',
+        'quien tiene cogido', 'a quien se lo preste', 'prestamos activos', 'prestamos pendientes',
+        'quien lo tiene ahora', 'quien se lo llevo', 'que profesor tiene', 'que profesora tiene',
+        'a quien esta prestado', 'a quien se lo di', 'quien tiene el prestamo',
+        'prestamos de', 'que hay prestado', 'listar prestamos', 'ver prestamos', 'mostrar prestamos',
+        'historial de prestamos', 'que esta prestado', 'quien tiene algo prestado'])) {
       return { tipo: 'quien_tiene' };
     }
 
     // CONSULTA: RESUMEN DE AULA
-    if (matchAny(n, ['que hay en', 'qué hay en', 'que tiene el aula', 'que tiene la clase',
+    if (matchAny(n, ['que hay en', 'que tiene el aula', 'que tiene la clase',
         'resumen del aula', 'resumen de aula', 'inventario del aula', 'listar aula',
-        'mostrar aula', 'ver aula', 'items del aula', 'ítems del aula',
-        'que hay en el aula', 'qué hay en el aula'])) {
+        'mostrar aula', 'ver aula', 'items del aula', 'que hay en el aula',
+        'que materiales hay en', 'que equipos hay en', 'que items hay en',
+        'que instrumentos hay en', 'que tenemos en el aula', 'que tenemos en la clase',
+        'dame el listado del aula', 'dame el listado de', 'listado del aula', 'listado de la clase',
+        'dame un resumen de', 'dame el resumen de', 'ver todo lo que hay en',
+        'mostrar todo lo de', 'contenido del aula', 'contenido de la clase',
+        'que esta en el aula', 'que esta en la clase', 'ver inventario del aula'])) {
       return { tipo: 'resumen_aula' };
     }
 
     // CONSULTA: STOCK BAJO
     if (matchAny(n, ['stock bajo', 'poco stock', 'quedan pocos', 'quedan pocas', 'hay poco',
-        'hay poca', 'se acaba', 'se acaban', 'necesita reposicion', 'necesita reposición',
-        'reponer', 'reposicion', 'minimo', 'mínimo', 'por debajo del minimo'])) {
+        'hay poca', 'se acaba', 'se acaban', 'necesita reposicion',
+        'reponer', 'reposicion', 'minimo', 'por debajo del minimo',
+        'quedan muy pocos', 'quedan muy pocas', 'hay muy poco', 'hay muy poca',
+        'casi sin stock', 'sin stock', 'stock critico', 'stock insuficiente',
+        'punto de pedido', 'necesitar reponer', 'que hay que comprar', 'que falta comprar',
+        'lista de compra', 'que necesitamos reponer', 'que hay que reponer',
+        'agotados', 'agotadas', 'se acabo', 'se han acabado',
+        'falta stock', 'falta material', 'hace falta reponer'])) {
       return { tipo: 'stock_bajo' };
     }
 
     // CONSULTA: MANTENIMIENTO PENDIENTE
-    if (matchAny(n, ['que necesita mantenimiento', 'qué necesita mantenimiento',
-        'mantenimientos pendientes', 'pendiente de mantenimiento', 'items con mantenimiento',
-        'que hay que reparar', 'qué hay que reparar', 'lista de reparaciones',
-        'en reparacion', 'en reparación', 'necesitan reparacion'])) {
+    if (matchAny(n, ['que necesita mantenimiento', 'mantenimientos pendientes',
+        'pendiente de mantenimiento', 'items con mantenimiento', 'que hay que reparar',
+        'lista de reparaciones', 'en reparacion', 'necesitan reparacion',
+        'mostrar mantenimientos', 'ver mantenimientos', 'listar mantenimientos',
+        'lista de mantenimiento', 'pendientes de reparar', 'pendientes de revision',
+        'que esta para reparar', 'que esta roto', 'que esta averiado', 'que no funciona',
+        'items en mantenimiento', 'items pendientes de mantenimiento',
+        'por reparar', 'en cola de reparacion', 'que tienen fallo',
+        'que tiene un fallo', 'que hay roto', 'que hay averiado'])) {
       return { tipo: 'lista_mantenimiento' };
     }
 
