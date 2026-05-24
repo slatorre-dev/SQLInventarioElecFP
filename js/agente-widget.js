@@ -3211,39 +3211,65 @@
     }
     _recognition = new SpeechRecognition();
     _recognition.lang = 'es-ES';
-    _recognition.continuous = false;
+    _recognition.continuous = true;   // no corta al hacer pausa
     _recognition.interimResults = true;
 
     micBtn.classList.add('listening');
     micBtn.textContent = '⏹';
-    el.chatInput.placeholder = '🎤 Escuchando...';
+    el.chatInput.placeholder = '🎤 Escuchando... (pausa de 2s para enviar)';
+
+    var silenceTimer = null;
+    var fullTranscript = '';
+
+    function stopMicAndSend(transcript) {
+      clearTimeout(silenceTimer);
+      if (_recognition) { try { _recognition.stop(); } catch(e) {} }
+      _recognition = null;
+      micBtn.classList.remove('listening');
+      micBtn.textContent = '🎤';
+      el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
+      if (transcript && transcript.trim()) {
+        setTimeout(function() { sendChat(transcript.trim()); }, 200);
+      }
+    }
 
     _recognition.onresult = function(e) {
-      var transcript = Array.from(e.results).map(function(r){ return r[0].transcript; }).join('');
-      el.chatInput.value = transcript;
-      // Si el resultado es final, enviar automáticamente
-      if (e.results[e.results.length - 1].isFinal) {
-        micBtn.classList.remove('listening');
-        micBtn.textContent = '🎤';
-        el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
-        _recognition = null;
-        setTimeout(function() { sendChat(transcript); }, 300);
+      // Acumular todo el transcript (resultados finales + interim)
+      var interim = '';
+      fullTranscript = '';
+      for (var i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) fullTranscript += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
       }
+      el.chatInput.value = fullTranscript + interim;
+
+      // Reiniciar timer de silencio — envía 2s después de la última palabra
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(function() {
+        var text = fullTranscript || interim;
+        stopMicAndSend(text);
+      }, 2000);
     };
 
     _recognition.onerror = function(e) {
+      clearTimeout(silenceTimer);
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
       _recognition = null;
-      if (e.error !== 'aborted') appendMsg('ai', '⚠ Error de micrófono: ' + e.error);
+      if (e.error !== 'aborted' && e.error !== 'no-speech') appendMsg('ai', '⚠ Error de micrófono: ' + e.error);
     };
 
     _recognition.onend = function() {
+      // Si termina por pausa del browser con texto acumulado, enviar
+      if (_recognition === null) return; // ya lo gestionó stopMicAndSend
+      clearTimeout(silenceTimer);
+      var text = fullTranscript || el.chatInput.value.trim();
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
       _recognition = null;
+      if (text) setTimeout(function() { sendChat(text); }, 200);
     };
 
     _recognition.start();
