@@ -740,16 +740,39 @@
     'y', 'o', 'pero', 'si', 'no', 'lo', 'le', 'les', 'sobre', 'como', 'cómo'];
 
   function extractKeywords(query) {
-    var q = (query || '').toLowerCase()
-      .replace(/[¿?¡!.,;:()]/g, ' ')  // quitar puntuación
+    var q = normalize(query || '')
+      .replace(/[¿?¡!.,;:()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    var words = q.split(' ').filter(function(w) {
+    return q.split(' ').filter(function(w) {
       return w.length >= 3 && STOP_WORDS.indexOf(w) === -1;
     });
+  }
 
-    return words;
+  // Variantes singular/plural de una palabra normalizada
+  function singularPlural(w) {
+    var forms = [w];
+    if (w.endsWith('es') && w.length > 4) forms.push(w.slice(0, -2)); // ordenadores → ordenador
+    if (w.endsWith('s') && w.length > 3)  forms.push(w.slice(0, -1)); // cables → cable
+    if (!w.endsWith('s')) {
+      forms.push(w + 's');    // cable → cables
+      forms.push(w + 'es');   // ordenador → ordenadores
+    }
+    return forms.filter(function(f, i, a) { return a.indexOf(f) === i; });
+  }
+
+  // Expande keywords con singular/plural + raíz parcial (≥4 chars, 75% longitud)
+  function expandKeywords(words) {
+    var out = [];
+    words.forEach(function(w) {
+      singularPlural(w).forEach(function(f) { if (out.indexOf(f) === -1) out.push(f); });
+      if (w.length >= 4) {
+        var raiz = w.slice(0, Math.max(4, Math.floor(w.length * 0.75)));
+        if (out.indexOf(raiz) === -1) out.push(raiz);
+      }
+    });
+    return out;
   }
 
   function getItemName(item) {
@@ -764,6 +787,7 @@
     if (!state.inventario.length) return [];
     var nQuery = normalize(query || '');
     var keywords = extractKeywords(query);
+    var kwExp = expandKeywords(keywords);
     if (!nQuery && !keywords.length) return [];
 
     var candidatos = state.inventario.map(function(i) {
@@ -779,17 +803,20 @@
         else if (nQuery.indexOf(name) !== -1 && name.length > 3) score += 6;
       }
 
-      keywords.forEach(function(kw) {
+      kwExp.forEach(function(kw) {
         if (!kw) return;
-        if (name === kw) score += 14;
-        else if (name.indexOf(kw + ' ') === 0 || name.indexOf(kw) === 0) score += 8;
-        else if (name.indexOf(kw) !== -1) score += 5;
+        // Forma exacta puntúa más que variante expandida
+        var isExact = keywords.indexOf(kw) !== -1;
+        var mul = isExact ? 1 : 0.6;
+        if (name === kw) score += Math.round(14 * mul);
+        else if (name.indexOf(kw + ' ') === 0 || name.indexOf(kw) === 0) score += Math.round(8 * mul);
+        else if (name.indexOf(kw) !== -1) score += Math.round(5 * mul);
 
-        if (ref === kw) score += 10;
-        else if (ref && ref.indexOf(kw) !== -1) score += 6;
+        if (ref === kw) score += Math.round(10 * mul);
+        else if (ref && ref.indexOf(kw) !== -1) score += Math.round(6 * mul);
 
-        if (aula && aula.indexOf(kw) !== -1) score += 2;
-        if (cat && cat.indexOf(kw) !== -1) score += 1;
+        if (aula && aula.indexOf(kw) !== -1) score += Math.round(2 * mul);
+        if (cat && cat.indexOf(kw) !== -1) score += Math.round(1 * mul);
       });
 
       return { item: i, score: score };
@@ -822,7 +849,8 @@
 
     if (keywords.length === 0) return null;
 
-    // Buscar items que contengan AL MENOS UNA palabra clave
+    // Buscar items que contengan AL MENOS UNA keyword (con variantes singular/plural y parcial)
+    var kwExpanded = expandKeywords(keywords);
     var matches = state.inventario.filter(function(i) {
       var texto = normalize([
         (i.nombre || i.name || i.item || ''),
@@ -831,7 +859,7 @@
         (i.ref || i.referencia || '')
       ].join(' '));
 
-      return keywords.some(function(kw) { return texto.includes(kw); });
+      return kwExpanded.some(function(kw) { return texto.includes(kw); });
     });
 
     console.log('[Volt DEBUG] Matches encontrados:', matches.length);
