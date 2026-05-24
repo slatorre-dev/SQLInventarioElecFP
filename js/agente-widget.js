@@ -197,11 +197,15 @@
     .ag-tab.active { background: #1e293b; border-bottom-color: #38bdf8; color: #7dd3fc; }
 
     .ag-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
-    .ag-panel { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 14px; gap: 10px; min-height: 0; }
+    .ag-panel { display: none; flex-direction: column; overflow-y: auto; padding: 14px; gap: 10px; min-height: 0; flex: 1; }
     .ag-panel.active { display: flex; }
 
-    /* Chat */
+    /* Chat — estructura fija: mensajes crece, resto fijo abajo */
+    #ag-tab-chat { overflow: hidden; padding: 0; gap: 0; }
     .ag-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px; min-height: 0; }
+    #ag-quick { flex-shrink: 0; }
+    #ag-suggestions { flex-shrink: 0; }
+    .ag-input-row { flex-shrink: 0; padding: 10px 14px; border-top: 1px solid #1e293b; display: flex; gap: 8px; }
     .ag-msg { max-width: 88%; padding: 9px 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
     .ag-msg-user { background: #0369a1; color: #f1f5f9; align-self: flex-end; border-bottom-right-radius: 2px; }
     .ag-msg-ai { background: #1e293b; color: #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
@@ -218,7 +222,6 @@
     .ag-quick { display: flex; flex-direction: column; gap: 6px; padding: 0 14px 10px; }
     .ag-quick-btn { background: #1e293b; border: 1px solid #334155; border-radius: 7px; color: #94a3b8; padding: 7px 10px; cursor: pointer; font-size: 11px; text-align: left; font-family: inherit; transition: all .15s; }
     .ag-quick-btn:hover { border-color: #38bdf8; color: #e2e8f0; }
-    .ag-input-row { padding: 10px 14px; border-top: 1px solid #1e293b; display: flex; gap: 8px; flex-shrink: 0; }
     .ag-input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 7px; color: #f1f5f9; padding: 8px 10px; font-size: 12px; outline: none; font-family: inherit; }
     .ag-send { background: #0369a1; border: none; border-radius: 7px; color: white; padding: 8px 12px; cursor: pointer; font-size: 14px; }
     .ag-send:disabled { background: #1e293b; cursor: not-allowed; }
@@ -1372,7 +1375,7 @@
   function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta, cantidadInicial) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:min(600px,55vh)';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow:visible;';
 
     var aulaOptions = [];
     var cicloOptions = [];
