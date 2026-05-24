@@ -170,6 +170,10 @@
     @media (max-width: 480px) {
       #agente-panel { width: 100vw; top: 0; bottom: 0; height: 100dvh; max-height: 100dvh; }
     }
+    @media (max-width: 640px) {
+      #agente-fab .fab-txt { display: none; }
+      #agente-fab { padding: 0 13px; }
+    }
 
     .ag-header {
       background: #0a1628; border-bottom: 1px solid #1e293b;
@@ -492,7 +496,7 @@
     var fab = document.createElement('button');
     fab.id = 'agente-fab';
     fab.title = 'Habla con ' + AGENTE_NOMBRE + ' (arrastra para mover)';
-    fab.innerHTML = '🤖 Habla con ' + AGENTE_NOMBRE;
+    fab.innerHTML = '🤖<span class="fab-txt"> Habla con ' + AGENTE_NOMBRE + '</span>';
     document.body.appendChild(fab);
     el.fab = fab;
     makeFabDraggable(fab);
