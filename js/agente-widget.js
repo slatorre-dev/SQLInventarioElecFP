@@ -156,7 +156,7 @@
 
     #agente-panel {
       position: fixed; top: 0; right: 0; z-index: 99999;
-      width: 420px; height: 100vh; max-height: 100vh;
+      width: 420px; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh;
       background: #070d1a; border-left: 1px solid #1e293b;
       display: flex; flex-direction: column;
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -166,7 +166,7 @@
     #agente-panel.open { transform: translateY(0); }
 
     @media (max-width: 480px) {
-      #agente-panel { width: 100vw; }
+      #agente-panel { width: 100vw; top: 0; bottom: 0; height: 100dvh; max-height: 100dvh; }
     }
 
     .ag-header {
@@ -196,12 +196,12 @@
     }
     .ag-tab.active { background: #1e293b; border-bottom-color: #38bdf8; color: #7dd3fc; }
 
-    .ag-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-    .ag-panel { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 14px; gap: 10px; }
+    .ag-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+    .ag-panel { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 14px; gap: 10px; min-height: 0; }
     .ag-panel.active { display: flex; }
 
     /* Chat */
-    .ag-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+    .ag-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px; min-height: 0; }
     .ag-msg { max-width: 88%; padding: 9px 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
     .ag-msg-user { background: #0369a1; color: #f1f5f9; align-self: flex-end; border-bottom-right-radius: 2px; }
     .ag-msg-ai { background: #1e293b; color: #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
@@ -1372,7 +1372,7 @@
   function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta, cantidadInicial) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:600px';
+    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:min(600px,55vh)';
 
     var aulaOptions = [];
     var cicloOptions = [];
