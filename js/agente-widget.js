@@ -1446,8 +1446,11 @@
         '<div style="flex:1"><label class="ag-label">Ciclo</label>' + selectCiclo + '</div>' +
         '<div style="flex:1"><label class="ag-label">Módulo</label>' + selectMod + '</div>' +
       '</div>' +
-      '<label class="ag-label" style="margin-top:6px">Foto (opcional)</label>' +
-      '<input class="ag-input-field ag-new-item-foto" type="file" accept="image/*" style="padding:4px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">' +
+        '<label class="ag-label" style="margin:0">Foto (opcional)</label>' +
+        '<button type="button" class="ag-btn ag-new-item-foto-btn" style="padding:4px 10px;font-size:11px">📷 Seleccionar</button>' +
+        '<input class="ag-new-item-foto" type="file" accept="image/*" capture="environment" style="display:none">' +
+      '</div>' +
       '<div class="ag-new-item-foto-preview" style="margin-top:4px;max-height:100px;border-radius:4px;overflow:hidden"></div>' +
       '<label class="ag-label" style="margin-top:6px">Observaciones</label>' +
       '<textarea class="ag-input-field ag-new-item-obs" style="height:50px;resize:vertical" placeholder="Notas adicionales..."></textarea>' +
@@ -1499,6 +1502,10 @@
     var fotoInput = formDiv.querySelector('.ag-new-item-foto');
     var fotoPreview = formDiv.querySelector('.ag-new-item-foto-preview');
     var fotoData = null;
+
+    formDiv.querySelector('.ag-new-item-foto-btn').addEventListener('click', function() {
+      fotoInput.click();
+    });
 
     fotoInput.addEventListener('change', function(e) {
       var file = e.target.files[0];
