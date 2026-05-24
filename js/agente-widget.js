@@ -1233,6 +1233,21 @@
     return patrones.some(function(p) { return q.includes(p); });
   }
 
+  // Extrae cantidad numérica de una frase: "añadir 4 soldadores" → 4
+  function extraerCantidadDeFrase(query) {
+    var q = normalize(query || '');
+    // "X unidades", "X ud", "X uds", "cantidad X", número suelto antes/después del nombre
+    var m = q.match(/\b(\d+)\s*(?:unidades?|ud\.?s?|uds?|piezas?|items?|equipos?|cables?|rollos?)\b/);
+    if (m) return parseInt(m[1], 10);
+    // "añadir 4 ...", "crear 7 ...", número tras verbo
+    m = q.match(/(?:anadir|añadir|agregar|crear|registrar|meter|poner|comprar|recibir|alta(?:\s+de)?)\s+(\d+)\b/);
+    if (m) return parseInt(m[1], 10);
+    // número al inicio: "4 soldadores"
+    m = q.match(/^(\d+)\s+\w/);
+    if (m) return parseInt(m[1], 10);
+    return null;
+  }
+
   function extraerNombreItem(query) {
     var q = normalize(query || '');
     // 1. Quitar el verbo de acción (primera aparición)
@@ -1316,7 +1331,7 @@
       '<div style="margin-top:5px;color:#64748b">Puedes crearlo igualmente si es un material distinto.</div>';
   }
 
-  function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta) {
+  function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta, cantidadInicial) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow-y:auto;max-height:600px';
@@ -1422,6 +1437,10 @@
 
     // Autocompletar DESPUÉS de registrar el listener de ciclo, para que el dispatchEvent('change') llene los módulos
     if (fraseCompleta) autocompletarFormulario(formDiv, fraseCompleta);
+    if (cantidadInicial && cantidadInicial > 0) {
+      var qtyInput = formDiv.querySelector('.ag-new-item-qty');
+      if (qtyInput) qtyInput.value = cantidadInicial;
+    }
 
     formDiv.querySelector('.ag-new-item-cancel').addEventListener('click', function() {
       formDiv.remove();
@@ -2901,7 +2920,8 @@
     // ── INTERCEPTAR ACCIÓN DE AÑADIR ITEM ─────────────────────
     if (detectarIntencionAnadirItem(q)) {
       var nombreExtraido = extraerNombreItem(q);
-      mostrarFormularioNuevoItem(nombreExtraido, q); // pasa frase completa para autocompletar
+      var cantidadExtraida = extraerCantidadDeFrase(q);
+      mostrarFormularioNuevoItem(nombreExtraido, q, cantidadExtraida);
       mostrarAprendizajeIntencion(q, 'anadir');
       return;
     }
