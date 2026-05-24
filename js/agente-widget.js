@@ -217,7 +217,8 @@
     .ag-table-wrap { overflow-x: auto; }
     .ag-table { border-collapse: collapse; font-size: 11px; width: 100%; }
     .ag-table th { background: #1e293b; color: #94a3b8; padding: 5px 8px; text-align: left; white-space: nowrap; }
-    .ag-table td { padding: 4px 8px; color: #e2e8f0; border-bottom: 1px solid #1e293b; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+    .ag-table td { padding: 4px 8px; color: #e2e8f0; border-bottom: 1px solid #1e293b; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    .ag-table td:nth-child(2) { max-width: 260px; } /* columna descripción más ancha */
     .ag-table tr:nth-child(even) td { background: #111827; }
 
     /* Controles */
