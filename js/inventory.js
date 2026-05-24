@@ -1035,3 +1035,66 @@ function toast(msg,type='ok'){
   document.getElementById('toasts').appendChild(el);
   setTimeout(()=>{el.style.animation='ti .3s reverse forwards';setTimeout(()=>el.remove(),300)},3000);
 }
+
+function initFabNuevoDraggable(){
+  const fab=document.getElementById('fabNuevo');
+  if(!fab) return;
+  const POS_KEY='fab_nuevo_pos';
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(POS_KEY)||'null');}catch(e){}
+
+  function applyPos(top,left){
+    const W=fab.offsetWidth||44,H=fab.offsetHeight||44;
+    top=Math.max(4,Math.min(top,window.innerHeight-H-4));
+    left=Math.max(4,Math.min(left,window.innerWidth-W-4));
+    fab.style.top=top+'px';
+    fab.style.left=left+'px';
+    fab.style.bottom='auto';
+    fab.style.right='auto';
+  }
+
+  if(saved&&typeof saved.top==='number'&&typeof saved.left==='number') applyPos(saved.top,saved.left);
+
+  let dragging=false,moved=false,startX=0,startY=0,startLeft=0,startTop=0;
+
+  function onDown(e){
+    if(e.button&&e.button!==0) return;
+    const pt=e.touches?e.touches[0]:e;
+    dragging=true; moved=false;
+    startX=pt.clientX; startY=pt.clientY;
+    const r=fab.getBoundingClientRect();
+    startLeft=r.left; startTop=r.top;
+    fab.style.transition='none';
+    if(e.cancelable) e.preventDefault();
+  }
+
+  function onMove(e){
+    if(!dragging) return;
+    const pt=e.touches?e.touches[0]:e;
+    const dx=pt.clientX-startX,dy=pt.clientY-startY;
+    if(Math.abs(dx)>4||Math.abs(dy)>4) moved=true;
+    if(moved) applyPos(startTop+dy,startLeft+dx);
+  }
+
+  function onUp(){
+    if(!dragging) return;
+    dragging=false;
+    fab.style.transition='';
+    if(moved){
+      const r=fab.getBoundingClientRect();
+      try{localStorage.setItem(POS_KEY,JSON.stringify({top:r.top,left:r.left}));}catch(e){}
+    } else {
+      openModal();
+    }
+  }
+
+  fab.addEventListener('mousedown',onDown);
+  fab.addEventListener('touchstart',onDown,{passive:false});
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('mouseup',onUp);
+  document.addEventListener('touchend',onUp);
+  window.addEventListener('resize',()=>{if(fab.offsetWidth>0){const r=fab.getBoundingClientRect();applyPos(r.top,r.left);}});
+}
+
+document.addEventListener('DOMContentLoaded',initFabNuevoDraggable);
