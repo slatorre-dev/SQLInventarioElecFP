@@ -1981,13 +1981,49 @@
     var n = normalize(q);
     if (typeof CICLOS === 'undefined' || !CICLOS || !CICLOS.length) return null;
     var CICLO_KW = {
-      'gm_telecom':  ['telecom', 'telecomunicacion', 'telecomunicaciones', 'instalaciones de telecom', ' it ', ' it,', ' it.', ' it$', 'inst telecom', 'gm telecom'],
-      'gm_electric': ['iea', 'electricas automaticas', 'electrica automatica', 'instalacion electrica',
-                      'automatica', 'automaticas', 'gm electric', 'inst electr'],
-      'gs_mantelec': ['mantelec', 'mantenimiento electronico', ' me ', ' me,', ' me.', 'gs mantelec'],
-      'gs_sea':      [' sea ', ' sea,', ' sea.', 'electrotecnico', 'electrotecnica', 'automatizado',
-                      'sistemas electrotecnicos', 'gs sea'],
-      'departamento':['departamento', 'dpto', 'depto'],
+      'gm_telecom':  [
+        'telecom', 'telecomunicacion', 'telecomunicaciones',
+        'instalaciones de telecom', 'inst telecom', 'gm telecom',
+        'infraestructura comun', 'infraestructuras comunes',
+        'domotica', 'domótica', 'megafonia', 'megafonía', 'sonorizacion', 'sonorización',
+        'cctv', 'seguridad electronica', 'radiocomunicacion', 'radiocomunicaciones',
+        'equipos microinformaticos', 'redes de datos', 'red de datos', 'telefonia',
+        ' it ', ' it,', ' it.',
+      ],
+      'gm_electric': [
+        'iea', 'electricas automaticas', 'electrica automatica',
+        'instalacion electrica', 'instalaciones electricas', 'inst electr',
+        'automatismos', 'automatismos industriales',
+        'electrotecnia', 'distribucion electrica', 'instalaciones de distribucion',
+        'solar fotovoltaica', 'fotovoltaica', 'maquinas electricas',
+        'instalaciones interiores', 'instalaciones domoticas',
+        'gm electric',
+      ],
+      'gs_mantelec': [
+        'mantelec', 'mantenimiento electronico', 'mant electronico',
+        'gs mantelec', ' me ', ' me,', ' me.',
+        'circuitos analogicos', 'electronica analogica',
+        'equipos microprogramables', 'microprogramable',
+        'mantenimiento radiocomunicaciones', 'mant radiocomunicaciones',
+        'mantenimiento voz y datos', 'mant voz datos',
+        'electronica industrial', 'equipo de audio', 'equipo de video',
+        'montaje electronico', 'infraestructura mant',
+      ],
+      'gs_sea': [
+        ' sea ', ' sea,', ' sea.',
+        'electrotecnico', 'electrotecnica', 'electrotecnicos',
+        'sistemas electrotecnicos', 'sistemas electrotecnicos y automatizados',
+        'automatizado', 'automatizados', 'gs sea',
+        'ict', 'procesos ict',
+        'tecnicas instalaciones electricas', 'tecnicas en instalaciones',
+        'documentacion tecnica electrica', 'documentacion electrica',
+        'sistemas y circuitos electricos', 'circuitos electricos',
+        'inst domoticas y automaticas', 'domoticas y automaticas',
+        'redes electricas', 'centros de transformacion', 'centro de transformacion',
+        'configuracion inst domoticas', 'configuracion inst electricas',
+        'gestion del montaje',
+      ],
+      'departamento': ['departamento', 'dpto', 'depto', 'material general', 'uso general'],
     };
     for (var id in CICLO_KW) {
       var kws = CICLO_KW[id];
