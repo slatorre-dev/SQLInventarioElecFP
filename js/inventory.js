@@ -650,10 +650,6 @@ function rCards(data,mc){
           <div class="cqbox"><div class="cqbig" style="color:${low?'var(--red)':'var(--green)'}">${x.qty}</div><div class="cqmin">mín. ${x.min}</div></div>
         </div>
       </div>
-      ${(x.est||mant)?`<div class="cpills">
-        ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:''}
-        ${mant?`<span class="cpill maintenance-pill">🛠️ ${mantStatus}</span>`:''}
-      </div>`:''}
       <div class="cfg">
         <div><div class="cfl">Aula</div><div class="cfv">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</div></div>
         <div><div class="cfl">Ubicación</div><div class="cfv">${x.loc||'—'}</div></div>
@@ -661,6 +657,8 @@ function rCards(data,mc){
       <button class="card-expand-btn" onclick="toggleCardExtra(this)">▼ Ver más</button>
       <div class="card-extra">
         <div class="cpills">
+          ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:''}
+          ${mant?`<span class="cpill maintenance-pill">🛠️ ${mantStatus}</span>`:''}
           ${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};font-size:11px">${cat.i} ${x.cat}</span>`:''}
           <span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:11px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>
           ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${mod.ciclo.icon||'📚'} ${mod.name}</span>`:''}
