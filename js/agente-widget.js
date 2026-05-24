@@ -1532,22 +1532,167 @@
     return null;
   }
 
+  // ── Detectar ciclo desde frase ────────────────────────────────────
+  function extraerCicloDeFrase(q) {
+    var n = normalize(q);
+    if (typeof CICLOS === 'undefined' || !CICLOS || !CICLOS.length) return null;
+    var CICLO_KW = {
+      'gm_telecom':  ['telecom', 'telecomunicacion', ' it ', ' it,', ' it.', ' it$', 'inst telecom', 'gm telecom'],
+      'gm_electric': ['iea', 'electricas automaticas', 'electrica automatica', 'instalacion electrica',
+                      'automatica', 'automaticas', 'gm electric', 'inst electr'],
+      'gs_mantelec': ['mantelec', 'mantenimiento electronico', ' me ', ' me,', ' me.', 'gs mantelec'],
+      'gs_sea':      [' sea ', ' sea,', ' sea.', 'electrotecnico', 'electrotecnica', 'automatizado',
+                      'sistemas electrotecnicos', 'gs sea'],
+      'departamento':['departamento', 'dpto', 'depto'],
+    };
+    for (var id in CICLO_KW) {
+      var kws = CICLO_KW[id];
+      if (kws.some(function(k) { return n.includes(k) || n.endsWith(k.trim()) || n.startsWith(k.trim()); })) {
+        return CICLOS.find(function(c) { return c.id === id; }) || null;
+      }
+    }
+    // Buscar por alias exacto (IT, IEA, ME, SEA) como palabra completa
+    var sorted = CICLOS.slice().sort(function(a, b) { return (b.name||'').length - (a.name||'').length; });
+    for (var i = 0; i < sorted.length; i++) {
+      var c = sorted[i];
+      var alias = normalize(c.alias || '');
+      if (alias && new RegExp('\\b' + alias + '\\b').test(n)) return c;
+      if (c.name && n.includes(normalize(c.name))) return c;
+    }
+    return null;
+  }
+
+  // ── Detectar módulo desde frase ───────────────────────────────────
+  var MOD_STOP = ['de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'y', 'para', 'en', 'con', 'por'];
+  function extraerModuloDeFrase(q, cicloFiltro) {
+    var n = normalize(q);
+    if (typeof CICLOS === 'undefined' || !CICLOS || !CICLOS.length) return null;
+    var ciclosABuscar = cicloFiltro ? [cicloFiltro] : CICLOS;
+    var mejorMatch = null;
+    var mejorScore = 0;
+    ciclosABuscar.forEach(function(ciclo) {
+      (ciclo.modulos || []).forEach(function(mod) {
+        var modN = normalize(mod.name);
+        var words = modN.split(/\s+/).filter(function(w) {
+          return w.length > 3 && MOD_STOP.indexOf(w) === -1;
+        });
+        var score = words.reduce(function(s, w) { return s + (n.includes(w) ? w.length : 0); }, 0);
+        if (score > mejorScore) { mejorScore = score; mejorMatch = { mod: mod, ciclo: ciclo }; }
+      });
+    });
+    return mejorScore >= 6 ? mejorMatch : null; // umbral: al menos ~2 palabras largas
+  }
+
+  // ── Sugerir categoría por nombre de ítem ─────────────────────────
+  function sugerirCategoria(nombreItem) {
+    var n = normalize(nombreItem || '');
+    if (!n) return null;
+    var CAT_KW = {
+      'Equipos de medida':         ['multimetro', 'polimetro', 'osciloscopio', 'tester', 'voltimetro',
+                                    'amperimetro', 'calibrador', 'generador de', 'fuente de alimentacion',
+                                    'fuente alimentacion', 'luxometro', 'pinza amperimetrica', 'sonda',
+                                    'vatimetro', 'frecuencimetro', 'analizador', 'medidor', 'otdr'],
+      'Herramientas':              ['soldador', 'estacion de soldadura', 'estacion soldadura', 'desoldador',
+                                    'destornillador', 'alicates', 'alicate', 'tenaza', 'llave inglesa',
+                                    'llave allen', 'sierra', 'cutter', 'pistola de calor', 'pistola calor',
+                                    'crimpeador', 'pelacables', 'pelahilos', 'taladro', 'estaño', 'flux',
+                                    'pasta soldadura', 'estacion trabajo'],
+      'Componentes electrónicos':  ['resistencia', 'condensador', 'capacitor', 'transistor', 'diodo',
+                                    'tiristor', 'triac', 'mosfet', 'integrado', 'circuito integrado',
+                                    'amplificador operacional', 'opamp', 'microcontrolador', 'cristal',
+                                    'inductor', 'bobina', 'pulsador', 'potenciometro', 'encoder'],
+      'Consumibles':               ['cable ', 'cables', 'hilo', 'conector', 'conectores', 'tornillo',
+                                    'tuerca', 'brida', 'cinta aislante', 'termoretractil', 'etiqueta',
+                                    'toner', 'tinta', 'papel'],
+      'Material eléctrico':        ['magnetotermico', 'diferencial', 'contactor', 'guardamotor', 'cuadro',
+                                    'regleta', 'borne', 'fusible', 'enchufe', 'toma de corriente',
+                                    'panel solar', 'modulo solar', 'inversor', 'bateria', 'acumulador',
+                                    'aerogenerador', 'cablecanal', 'tubo corrugado', 'tubo rigido'],
+      'Redes':                     ['switch', 'router', 'hub', 'access point', 'patch panel', 'roseta',
+                                    'cable ethernet', 'cable utp', 'cable ftp', 'latiguillo', 'rj45',
+                                    'fibra optica', 'fusionadora', 'splitter', 'modem', 'antena',
+                                    'pigtail', 'bandeja de fibra'],
+      'Robótica y automatización': ['arduino', 'raspberry', 'esp32', 'esp8266', 'plc', 'hmi', 'variador',
+                                    'servo', 'servomotor', 'stepper', 'robot', 'automata', 'sensor',
+                                    'actuador', 'scada', 'microbit'],
+      'Informática':               ['ordenador', 'portatil', 'laptop', 'monitor', 'teclado', 'raton',
+                                    'impresora', 'disco duro', 'ssd', 'pendrive', 'tablet', 'webcam',
+                                    'proyector', 'altavoz', 'auricular'],
+    };
+    var cats = typeof CATS !== 'undefined' ? Object.keys(CATS) : [];
+    var mejorCat = null;
+    var mejorScore = 0;
+    for (var cat in CAT_KW) {
+      if (cats.length && cats.indexOf(cat) === -1) continue;
+      var kws = CAT_KW[cat];
+      var score = kws.reduce(function(s, kw) { return s + (n.includes(kw) ? kw.length : 0); }, 0);
+      if (score > mejorScore) { mejorScore = score; mejorCat = cat; }
+    }
+    return mejorScore > 0 ? mejorCat : null;
+  }
+
   // ── Autocompletar formulario nuevo ítem desde frase ───────────────
   function autocompletarFormulario(formDiv, frase) {
+    var msgs = [];
+
+    // Aula
     var aula = extraerAulaDeFrase(frase);
     if (aula) {
-      var sel = formDiv.querySelector('.ag-new-item-aula');
-      if (sel) sel.value = aula.id;
+      var aulaEl = formDiv.querySelector('.ag-new-item-aula');
+      if (aulaEl) { aulaEl.value = aula.id; msgs.push('🏫 ' + aula.name); }
     }
+
+    // Ubicación
     var loc = extraerUbicacionDeFrase(frase);
     if (loc) {
       var locInput = formDiv.querySelector('.ag-new-item-loc');
-      if (locInput) locInput.value = loc;
+      if (locInput) { locInput.value = loc; msgs.push('📍 ' + loc); }
     }
-    // Intentar preseleccionar ciclo si hay contexto actual
-    if (typeof cf !== 'undefined' && cf && cf.type === 'mod' && cf.ciclo) {
+
+    // Ciclo: primero desde la frase, luego contexto actual de la app
+    var cicloDetectado = extraerCicloDeFrase(frase);
+    if (!cicloDetectado && typeof cf !== 'undefined' && cf && cf.type === 'mod' && cf.ciclo) {
+      cicloDetectado = cf.ciclo;
+    }
+
+    // Módulo: primero buscar en el ciclo detectado, si no en todos
+    var modDetectado = cicloDetectado
+      ? extraerModuloDeFrase(frase, cicloDetectado)
+      : extraerModuloDeFrase(frase, null);
+
+    // Si el módulo viene de otro ciclo (búsqueda libre), usar ese ciclo
+    if (modDetectado && !cicloDetectado) cicloDetectado = modDetectado.ciclo;
+
+    if (cicloDetectado) {
       var cicloSel = formDiv.querySelector('.ag-new-item-ciclo');
-      if (cicloSel) { cicloSel.value = cf.ciclo.id; cicloSel.dispatchEvent(new Event('change')); }
+      if (cicloSel) {
+        cicloSel.value = cicloDetectado.id;
+        cicloSel.dispatchEvent(new Event('change')); // carga los módulos síncronamente
+        msgs.push('📚 ' + (cicloDetectado.alias || cicloDetectado.name));
+      }
+    }
+
+    if (modDetectado) {
+      var modSel = formDiv.querySelector('.ag-new-item-mod');
+      if (modSel) { modSel.value = modDetectado.mod.cod; msgs.push('📖 ' + modDetectado.mod.name); }
+    }
+
+    // Categoría sugerida: primero por nombre del item, si no por la frase completa
+    var nombreInput = formDiv.querySelector('.ag-new-item-name');
+    var catSugerida = sugerirCategoria((nombreInput && nombreInput.value) || frase);
+    if (catSugerida) {
+      var catSel = formDiv.querySelector('.ag-new-item-cat');
+      if (catSel) { catSel.value = catSugerida; msgs.push('🏷️ ' + catSugerida); }
+    }
+
+    // Mostrar resumen de lo autocompletado
+    if (msgs.length > 0) {
+      var resultEl = formDiv.querySelector('.ag-new-item-result');
+      if (resultEl) {
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = '<span style="color:#64748b">✨ Volt completó: </span>' +
+          msgs.map(function(m) { return '<span style="color:#34d399;margin-right:6px">' + esc(m) + '</span>'; }).join('');
+      }
     }
   }
 
