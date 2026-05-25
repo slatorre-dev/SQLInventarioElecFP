@@ -49,6 +49,13 @@ function removeAulaRow(idx){
   renderAulasList();
 }
 
+function _slugAulaId(name){
+  return name.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'')
+    .replace(/_+/g,'_').replace(/^_|_$/g,'').slice(0,30) || ('aula_'+Date.now());
+}
+
 async function saveAulas(){
   // Validación: nombres no vacíos
   for(const a of aulasEditing){
@@ -56,6 +63,17 @@ async function saveAulas(){
   }
   // Asegurar que cada aula tiene un th asignado
   aulasEditing.forEach((a,i)=>{ if(!a.th) a.th = TH_OPTIONS[i%TH_OPTIONS.length]; a.orden = i; });
+
+  // Convertir IDs de timestamp en slugs legibles para aulas recién creadas
+  const existingIds = new Set(AULAS.map(a=>a.id));
+  aulasEditing.forEach(a=>{
+    if(/^aula_\d{13}$/.test(a.id) && !existingIds.has(a.id)){
+      let slug = _slugAulaId(a.name);
+      let candidate = slug, n = 2;
+      while(aulasEditing.some(b=>b!==a && b.id===candidate)) candidate = slug+'_'+n++;
+      a.id = candidate;
+    }
+  });
 
   try {
     const res = await apiPost({action:'aulasSync', aulas:aulasEditing});
