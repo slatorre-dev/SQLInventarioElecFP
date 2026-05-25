@@ -13,6 +13,18 @@ function isVencido(pres){
   return prev < hoy;
 }
 
+function esAdminOJefe(){
+  const rol = (SESSION?.rol || '').toLowerCase().trim();
+  return ['jefe departamento','jefe de departamento','administrador','admin','superadmin','super admin'].includes(rol);
+}
+
+function getVencidosParaUsuario(){
+  const activos = getPrestamosActivos().filter(isVencido);
+  if(esAdminOJefe()) return activos;
+  const miNombre = (SESSION?.nombre || '').toLowerCase().trim();
+  return activos.filter(p=>(p.profesorNombre||'').toLowerCase().trim()===miNombre);
+}
+
 function getVencidos(){
   return getPrestamosActivos().filter(isVencido);
 }
@@ -20,7 +32,7 @@ function getVencidos(){
 function updatePresVencBadge(){
   const badge = document.getElementById('presVencBadge');
   if(!badge) return;
-  const n = getVencidos().length;
+  const n = getVencidosParaUsuario().length;
   if(n > 0){
     badge.textContent = n > 99 ? '99+' : n;
     badge.style.display = 'inline-block';
