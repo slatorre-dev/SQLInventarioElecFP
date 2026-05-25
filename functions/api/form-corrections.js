@@ -25,7 +25,7 @@ export async function onRequest({ request, env, data }) {
   // GET /api/form-corrections
   if (method === 'GET' && !sub) {
     const rows = await env.DB.prepare(
-      'SELECT id, frase_norm, aula_id, ciclo_id, mod_cod, cat_id, updated_at FROM form_corrections WHERE user_id=? ORDER BY updated_at DESC LIMIT 200'
+      'SELECT id, frase_norm, aula_id, ciclo_id, mod_cod, cat_id, nombre_item, updated_at FROM form_corrections WHERE user_id=? ORDER BY updated_at DESC LIMIT 200'
     ).bind(user.usuario).all();
     return Response.json({ ok: true, items: rows.results.map(r => ({
       id: r.id,
@@ -34,6 +34,7 @@ export async function onRequest({ request, env, data }) {
       cicloId: r.ciclo_id,
       modCod: r.mod_cod,
       catId: r.cat_id,
+      nombreItem: r.nombre_item,
       updatedAt: r.updated_at,
     }))});
   }
@@ -48,10 +49,11 @@ export async function onRequest({ request, env, data }) {
     const fraseNorm = normalizePhrase(fraseRaw);
     if (!fraseNorm) return jsonErr('frase vacía tras normalizar');
 
-    const aulaId  = (body.aulaId  || null);
-    const cicloId = (body.cicloId || null);
-    const modCod  = (body.modCod  || null);
-    const catId   = (body.catId   || null);
+    const aulaId     = (body.aulaId     || null);
+    const cicloId    = (body.cicloId    || null);
+    const modCod     = (body.modCod     || null);
+    const catId      = (body.catId      || null);
+    const nombreItem = (body.nombreItem || null);
 
     // Comprobar límite por usuario
     const count = await env.DB.prepare(
@@ -73,13 +75,13 @@ export async function onRequest({ request, env, data }) {
 
     if (existing) {
       await env.DB.prepare(
-        'UPDATE form_corrections SET aula_id=?, ciclo_id=?, mod_cod=?, cat_id=?, updated_at=? WHERE id=?'
-      ).bind(aulaId, cicloId, modCod, catId, now, existing.id).run();
+        'UPDATE form_corrections SET aula_id=?, ciclo_id=?, mod_cod=?, cat_id=?, nombre_item=?, updated_at=? WHERE id=?'
+      ).bind(aulaId, cicloId, modCod, catId, nombreItem, now, existing.id).run();
       return Response.json({ ok: true, action: 'updated' });
     } else {
       await env.DB.prepare(
-        'INSERT INTO form_corrections (user_id, frase_norm, aula_id, ciclo_id, mod_cod, cat_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)'
-      ).bind(user.usuario, fraseNorm, aulaId, cicloId, modCod, catId, now, now).run();
+        'INSERT INTO form_corrections (user_id, frase_norm, aula_id, ciclo_id, mod_cod, cat_id, nombre_item, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
+      ).bind(user.usuario, fraseNorm, aulaId, cicloId, modCod, catId, nombreItem, now, now).run();
       return Response.json({ ok: true, action: 'created' });
     }
   }

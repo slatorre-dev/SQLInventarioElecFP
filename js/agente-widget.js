@@ -1771,6 +1771,7 @@
           formDiv.querySelector('.ag-new-item-submit').disabled = true;
           formDiv.querySelector('.ag-new-item-submit').textContent = '✅ Guardado';
           detectarYGuardarCorreccion(formDiv, fraseCompleta);
+          guardarAprendizaje(fraseCompleta, 'anadir');
           if (typeof items !== 'undefined' && Array.isArray(items)) {
             items.push(res.item);
             state.inventario = items;
@@ -1909,6 +1910,7 @@
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-loan-submit').disabled = true;
         formDiv.querySelector('.ag-loan-submit').textContent = '✅ Guardado';
+        guardarAprendizaje(queryOriginal, 'prestamo');
       }).catch(function(e) {
         resultEl.innerHTML = '❌ Error: ' + e.message;
         resultEl.style.color = '#ef4444';
@@ -2093,7 +2095,7 @@
       .then(function(data) {
         if (data.ok && Array.isArray(data.items)) {
           state.formCorrections = data.items.map(function(x) {
-            return { fraseN: x.fraseNorm, aulaId: x.aulaId, cicloId: x.cicloId, modCod: x.modCod, catId: x.catId };
+            return { fraseN: x.fraseNorm, aulaId: x.aulaId, cicloId: x.cicloId, modCod: x.modCod, catId: x.catId, nombreItem: x.nombreItem || null };
           });
           FORM_CORRECTIONS_LOADED = true;
           // Sincronizar a localStorage como caché offline
@@ -2128,7 +2130,7 @@
       fetch('/api/form-corrections' + creds, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fraseNorm: entry.fraseN, aulaId: entry.aulaId, cicloId: entry.cicloId, modCod: entry.modCod, catId: entry.catId })
+        body: JSON.stringify({ fraseNorm: entry.fraseN, aulaId: entry.aulaId, cicloId: entry.cicloId, modCod: entry.modCod, catId: entry.catId, nombreItem: entry.nombreItem || null })
       }).catch(function() {});
     }
   }
@@ -2147,22 +2149,26 @@
   function detectarYGuardarCorreccion(formDiv, frase) {
     var sug = formDiv._voltSugerencias;
     if (!sug || !frase) return;
-    var aulaFinal  = (formDiv.querySelector('.ag-new-item-aula')  || {}).value || null;
-    var cicloFinal = (formDiv.querySelector('.ag-new-item-ciclo') || {}).value || null;
-    var modFinal   = (formDiv.querySelector('.ag-new-item-mod')   || {}).value || null;
-    var catFinal   = (formDiv.querySelector('.ag-new-item-cat')   || {}).value || null;
+    var aulaFinal    = (formDiv.querySelector('.ag-new-item-aula')  || {}).value || null;
+    var cicloFinal   = (formDiv.querySelector('.ag-new-item-ciclo') || {}).value || null;
+    var modFinal     = (formDiv.querySelector('.ag-new-item-mod')   || {}).value || null;
+    var catFinal     = (formDiv.querySelector('.ag-new-item-cat')   || {}).value || null;
+    var nombreFinal  = (formDiv.querySelector('.ag-new-item-name')  || {}).value || null;
+    if (nombreFinal) nombreFinal = nombreFinal.trim() || null;
     var cambios = [];
-    if (aulaFinal  !== sug.aulaId)  cambios.push('aula');
-    if (cicloFinal !== sug.cicloId) cambios.push('ciclo');
-    if (modFinal   !== sug.modCod)  cambios.push('módulo');
-    if (catFinal   !== sug.catId)   cambios.push('categoría');
+    if (aulaFinal   !== sug.aulaId)    cambios.push('aula');
+    if (cicloFinal  !== sug.cicloId)   cambios.push('ciclo');
+    if (modFinal    !== sug.modCod)    cambios.push('módulo');
+    if (catFinal    !== sug.catId)     cambios.push('categoría');
+    if (nombreFinal !== sug.nombreItem) cambios.push('nombre');
     if (!cambios.length) return;
     guardarCorreccionFormulario({
-      fraseN:  normalize(normalizarEntradaUsuario(frase)),
-      aulaId:  aulaFinal,
-      cicloId: cicloFinal,
-      modCod:  modFinal,
-      catId:   catFinal,
+      fraseN:     normalize(normalizarEntradaUsuario(frase)),
+      aulaId:     aulaFinal,
+      cicloId:    cicloFinal,
+      modCod:     modFinal,
+      catId:      catFinal,
+      nombreItem: nombreFinal,
       ts: Date.now()
     });
     var chip = document.createElement('div');
@@ -2703,8 +2709,15 @@
       if (modSel) { modSel.value = modDetectado.mod.cod; msgs.push('📖 ' + modDetectado.mod.name); }
     }
 
-    // Categoría: corrección aprendida tiene prioridad
+    // Nombre: si la corrección tiene nombre y difiere del actual, aplicar
     var nombreInput = formDiv.querySelector('.ag-new-item-name');
+    if (correccion && correccion.nombreItem && nombreInput && correccion.nombreItem !== nombreInput.value.trim()) {
+      nombreInput.value = correccion.nombreItem;
+      msgs.push('📝 ' + correccion.nombreItem + ' (aprendido)');
+      actualizarAvisoSimilares(formDiv);
+    }
+
+    // Categoría: corrección aprendida tiene prioridad
     var catSugerida = sugerirCategoria((nombreInput && nombreInput.value) || frase);
     if (correccion && correccion.catId && !catSugerida) catSugerida = correccion.catId;
     if (catSugerida) {
@@ -2723,11 +2736,13 @@
     }
 
     // Guardar lo que Volt rellenó para detectar correcciones al enviar
+    var _niName = formDiv.querySelector('.ag-new-item-name');
     formDiv._voltSugerencias = {
-      aulaId:  aulaEl ? aulaEl.value || null : null,
-      cicloId: (formDiv.querySelector('.ag-new-item-ciclo') || {}).value || null,
-      modCod:  (formDiv.querySelector('.ag-new-item-mod')   || {}).value || null,
-      catId:   (formDiv.querySelector('.ag-new-item-cat')   || {}).value || null
+      aulaId:     aulaEl ? aulaEl.value || null : null,
+      cicloId:    (formDiv.querySelector('.ag-new-item-ciclo') || {}).value || null,
+      modCod:     (formDiv.querySelector('.ag-new-item-mod')   || {}).value || null,
+      catId:      (formDiv.querySelector('.ag-new-item-cat')   || {}).value || null,
+      nombreItem: _niName ? _niName.value.trim() || null : null
     };
   }
 
@@ -2827,7 +2842,7 @@
   }
 
   // ── Formulario: DEVOLVER préstamo ─────────────────────────────────
-  function mostrarFormularioDevolucion(prestamosEncontrados, itemQuery) {
+  function mostrarFormularioDevolucion(prestamosEncontrados, itemQuery, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #f59e0b';
@@ -2882,6 +2897,7 @@
         resultEl.innerHTML = '✅ Devolución registrada';
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-dev-submit').disabled = true;
+        guardarAprendizaje(queryOriginal, 'devolver');
         if (typeof loadData === 'function') setTimeout(loadData, 500);
       }).catch(function(e) {
         resultEl.innerHTML = '❌ Error: ' + e.message;
@@ -2891,7 +2907,7 @@
   }
 
   // ── Formulario: ACTUALIZAR STOCK ──────────────────────────────────
-  function mostrarFormularioStock(item, cantidadSugerida) {
+  function mostrarFormularioStock(item, cantidadSugerida, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #8b5cf6';
@@ -2925,6 +2941,7 @@
         resultEl.innerHTML = '✅ Stock actualizado a ' + nuevaQty;
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-stock-submit').disabled = true;
+        guardarAprendizaje(queryOriginal, 'stock');
       }).catch(function(e) {
         resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
       });
@@ -2932,7 +2949,7 @@
   }
 
   // ── Formulario: CAMBIAR ESTADO ────────────────────────────────────
-  function mostrarFormularioEstado(item, estadoSugerido) {
+  function mostrarFormularioEstado(item, estadoSugerido, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #06b6d4';
@@ -2969,6 +2986,7 @@
         resultEl.innerHTML = '✅ Estado cambiado a ' + nuevoEst;
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-estado-submit').disabled = true;
+        guardarAprendizaje(queryOriginal, 'estado');
       }).catch(function(e) {
         resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
       });
@@ -2976,7 +2994,7 @@
   }
 
   // ── Formulario: MARCAR MANTENIMIENTO ─────────────────────────────
-  function mostrarFormularioMantenimiento(item) {
+  function mostrarFormularioMantenimiento(item, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
     formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #f59e0b';
@@ -3016,6 +3034,7 @@
         resultEl.innerHTML = '✅ Mantenimiento solicitado';
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-mant-submit').disabled = true;
+        guardarAprendizaje(queryOriginal, 'mantenimiento');
       }).catch(function(e) {
         resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
       });
@@ -3414,24 +3433,24 @@
         if (personaDevMatch) { personaDev = personaDevMatch[1].trim(); itemDev = termBusq.replace(personaDevMatch[0],'').trim(); }
         var prestActivos = buscarPrestamosActivos(itemDev, personaDev);
         if (!prestActivos.length) prestActivos = buscarPrestamosActivos('', null);
-        mostrarFormularioDevolucion(prestActivos, itemDev || null);
+        mostrarFormularioDevolucion(prestActivos, itemDev || null, q);
         return;
       }
       if (intencion.tipo === 'stock') {
         seleccionarItemYEjecutar(q, function(item) {
-          mostrarFormularioStock(item, intencion.cantidad);
+          mostrarFormularioStock(item, intencion.cantidad, q);
         }, 'Actualizar stock');
         return;
       }
       if (intencion.tipo === 'estado') {
         seleccionarItemYEjecutar(q, function(item) {
-          mostrarFormularioEstado(item, intencion.estado);
+          mostrarFormularioEstado(item, intencion.estado, q);
         }, 'Cambiar estado');
         return;
       }
       if (intencion.tipo === 'mantenimiento') {
         seleccionarItemYEjecutar(q, function(item) {
-          mostrarFormularioMantenimiento(item);
+          mostrarFormularioMantenimiento(item, q);
         }, 'Solicitar mantenimiento');
         return;
       }

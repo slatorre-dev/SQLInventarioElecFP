@@ -1,5 +1,5 @@
 const VALID_INTENTS = [
-  'prestamo', 'devolver', 'stock', 'estado', 'mantenimiento',
+  'anadir', 'prestamo', 'devolver', 'stock', 'estado', 'mantenimiento',
   'buscar', 'resumen_aula', 'quien_tiene', 'stock_bajo', 'lista_mantenimiento'
 ];
 const MAX_PER_USER = 300;
