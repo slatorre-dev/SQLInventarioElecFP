@@ -1630,7 +1630,7 @@
 
       var newItem = {
         item: nombre,
-        ref: null,
+        ref: (typeof _autoRef === 'function') ? _autoRef(nombre) : null,
         aula: aula,
         qty: qty,
         min: min,
