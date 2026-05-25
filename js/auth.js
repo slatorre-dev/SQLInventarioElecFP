@@ -118,6 +118,83 @@ async function handleGoogleSignIn(response) {
   }
 }
 
+// ─── CIERRE DE SESIÓN POR INACTIVIDAD ────────────────────
+const INACTIVITY_DEFAULT_MIN = 5;
+const INACTIVITY_WARN_SEC = 10;
+let _inactivityTimer = null;
+let _inactivityWarnTimer = null;
+let _inactivityCountdown = null;
+
+function getInactivityMinutes(){
+  const v = parseInt(localStorage.getItem('inv_inactivity_min'));
+  return (!isNaN(v) && v > 0) ? v : INACTIVITY_DEFAULT_MIN;
+}
+
+function setInactivityMinutes(min){
+  if(min > 0) localStorage.setItem('inv_inactivity_min', String(min));
+}
+
+function _resetInactivityTimer(){
+  if(!SESSION) return;
+  clearTimeout(_inactivityTimer);
+  clearTimeout(_inactivityWarnTimer);
+  const warnModal = document.getElementById('mInactivityWarn');
+  if(warnModal && warnModal.classList.contains('open')) _hideInactivityWarn();
+  const ms = getInactivityMinutes() * 60 * 1000;
+  _inactivityTimer = setTimeout(_showInactivityWarn, ms - INACTIVITY_WARN_SEC * 1000);
+}
+
+function _showInactivityWarn(){
+  const modal = document.getElementById('mInactivityWarn');
+  if(!modal || !SESSION) return;
+  modal.classList.add('open');
+  let secs = INACTIVITY_WARN_SEC;
+  document.getElementById('inactivityCountdown').textContent = secs;
+  clearInterval(_inactivityCountdown);
+  _inactivityCountdown = setInterval(()=>{
+    secs--;
+    const el = document.getElementById('inactivityCountdown');
+    if(el) el.textContent = secs;
+    if(secs <= 0){
+      clearInterval(_inactivityCountdown);
+      _hideInactivityWarn();
+      _doAutoLogout();
+    }
+  }, 1000);
+}
+
+function _hideInactivityWarn(){
+  const modal = document.getElementById('mInactivityWarn');
+  if(modal) modal.classList.remove('open');
+  clearInterval(_inactivityCountdown);
+}
+
+function stayConnected(){
+  _hideInactivityWarn();
+  _resetInactivityTimer();
+}
+
+function _doAutoLogout(){
+  localStorage.removeItem('inv_session');
+  SESSION = null;
+  items = [];
+  cf = null;
+  currentCiclo = null;
+  document.getElementById('userChip').style.display = 'none';
+  document.getElementById('btnN').style.display = 'none';
+  document.getElementById('btnE').style.display = 'none';
+  document.getElementById('bc').innerHTML = '';
+  setConn('', 'Sin sesión');
+  show('pLogin');
+}
+
+function _startInactivityWatch(){
+  ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(ev=>{
+    document.addEventListener(ev, _resetInactivityTimer, {passive:true});
+  });
+  _resetInactivityTimer();
+}
+
 function logout(){
   if(!confirm('¿Cerrar sesión?')) return;
   localStorage.removeItem('inv_session');
@@ -205,6 +282,7 @@ async function loadData(){
     document.getElementById('btnPed').style.display='flex';
     if(typeof applyRoleUI === 'function') applyRoleUI();
     updatePedBadge();
+    _startInactivityWatch();
     _hideOverlay();
     bar.className = 'is-done';
     setTimeout(()=>{bar.className='';bar.style.width='0';}, 500);

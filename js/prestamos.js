@@ -698,9 +698,19 @@ function _rolBadgeClass(rol){
   return 'lect';
 }
 
+function saveInactivitySetting(){
+  const v = parseInt(document.getElementById('inactivityMinInput').value);
+  if(isNaN(v) || v < 1){ toast('Introduce un valor válido (mínimo 1 minuto)','err'); return; }
+  if(typeof setInactivityMinutes === 'function') setInactivityMinutes(v);
+  if(typeof _resetInactivityTimer === 'function') _resetInactivityTimer();
+  toast(`Cierre automático: ${v} minuto${v!==1?'s':''}`, 'ok');
+}
+
 async function openUsuariosModal(){
   if(!requirePerm('users.manage')) return;
   document.getElementById('usuariosList').innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center">Cargando...</p>';
+  const inactEl = document.getElementById('inactivityMinInput');
+  if(inactEl) inactEl.value = (typeof getInactivityMinutes === 'function') ? getInactivityMinutes() : 5;
   document.getElementById('mUsuarios').classList.add('open');
   try {
     const res = await apiPost({ action: 'getUsers' });
