@@ -318,6 +318,9 @@
     loading: false,
     dataLoaded: false,
     inventario: [],
+    inventarioIndex: [],
+    inventarioIndexSource: null,
+    inventarioIndexLen: 0,
     messages: [],
     contextItem: null,  // último ítem en contexto (para "este", "esta", etc.)
     contextAula: null,  // última aula mencionada en la conversación
@@ -352,6 +355,7 @@
     // Intento 1: Datos ya en memoria de la app
     if (typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) {
       state.inventario = items;
+      rebuildInventoryIndex(true);
       state.dataLoaded = true;
       updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
       renderCurrentTab();
@@ -365,6 +369,7 @@
       if (typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) {
         clearInterval(waitForItems);
         state.inventario = items;
+        rebuildInventoryIndex(true);
         state.dataLoaded = true;
         updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
         renderCurrentTab();
@@ -389,6 +394,7 @@
     fetch('/api/list?u=' + u + '&p=' + p).then(function(r){ return r.json(); })
       .then(function(listData) {
         state.inventario = Array.isArray(listData) ? listData : decompressItems(listData);
+        rebuildInventoryIndex(true);
         state.dataLoaded = true;
         state.loading = false;
         updateStatusBadge('green', '● ' + state.inventario.length + ' ítems');
@@ -825,7 +831,7 @@
 
   function extractKeywords(query) {
     // Convertir números en palabras antes de parsear
-    var q = textToNumber(normalize(query || ''))
+    var q = normalize(normalizarEntradaUsuario(query || ''))
       .replace(/[¿?¡!.,;:()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -869,19 +875,89 @@
     return (item && (item.ref || item.referencia || '')) || '';
   }
 
+  function cleanLookupText(value) {
+    return normalize(value || '')
+      .replace(/[^a-z0-9áéíóúüñ\s_-]/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function compactLookupText(value) {
+    return cleanLookupText(value).replace(/[^a-z0-9]/g, '');
+  }
+
+  function uniqueWords(words) {
+    var seen = {};
+    return words.filter(function(w) {
+      if (!w || seen[w]) return false;
+      seen[w] = true;
+      return true;
+    });
+  }
+
+  function rebuildInventoryIndex(force) {
+    var inv = state.inventario || [];
+    if (!force && state.inventarioIndexSource === inv && state.inventarioIndexLen === inv.length) {
+      return state.inventarioIndex;
+    }
+
+    state.inventarioIndex = inv.map(function(item) {
+      var name = cleanLookupText(getItemName(item));
+      var ref = cleanLookupText(getItemRef(item));
+      var aula = cleanLookupText(item.aula || item.classroom || '');
+      var cat = cleanLookupText(item.cat || item.categoria || item.category || '');
+      var loc = cleanLookupText(item.loc || item.ubicacion || '');
+      var tags = cleanLookupText(item.tags || '');
+      var code = cleanLookupText(item.code || '');
+      var id = String(item.id || '');
+      var text = [name, ref, aula, cat, loc, tags, code, id].join(' ').replace(/\s+/g, ' ').trim();
+      var tokens = uniqueWords(text.split(/\s+/).filter(function(w) { return w.length >= 2; }));
+      return {
+        item: item,
+        name: name,
+        ref: ref,
+        aula: aula,
+        cat: cat,
+        loc: loc,
+        tags: tags,
+        code: code,
+        id: id,
+        compactRef: compactLookupText(ref),
+        compactCode: compactLookupText(code),
+        compactId: compactLookupText(id),
+        text: text,
+        tokens: tokens
+      };
+    });
+    state.inventarioIndexSource = inv;
+    state.inventarioIndexLen = inv.length;
+    return state.inventarioIndex;
+  }
+
   function searchInventoryCandidates(query, maxResults) {
     if (!state.inventario.length) return [];
-    var nQuery = normalize(query || '');
-    var keywords = extractKeywords(query);
+    var index = rebuildInventoryIndex(false);
+    var preparedQuery = normalizarEntradaUsuario(query || '');
+    var nQuery = cleanLookupText(preparedQuery);
+    var compactQuery = compactLookupText(preparedQuery);
+    var keywords = extractKeywords(preparedQuery);
     var kwExp = expandKeywords(keywords);
     if (!nQuery && !keywords.length) return [];
 
-    var candidatos = state.inventario.map(function(i) {
-      var name = normalize(getItemName(i));
-      var aula = normalize(i.aula || i.classroom || '');
-      var cat = normalize(i.cat || i.categoria || i.category || '');
-      var ref = normalize(getItemRef(i));
+    var candidatos = index.map(function(row) {
+      var i = row.item;
+      var name = row.name;
+      var aula = row.aula;
+      var cat = row.cat;
+      var ref = row.ref;
       var score = 0;
+
+      if (compactQuery) {
+        if (row.compactId && row.compactId === compactQuery) score += 32;
+        if (row.compactCode && row.compactCode === compactQuery) score += 30;
+        if (row.compactRef && row.compactRef === compactQuery) score += 28;
+        else if (row.compactRef && row.compactRef.indexOf(compactQuery) !== -1 && compactQuery.length >= 3) score += 12;
+      }
 
       if (nQuery && name) {
         if (name === nQuery) score += 16;
@@ -910,6 +986,8 @@
 
         if (aula && aula.indexOf(kw) !== -1) score += Math.round(2 * mul);
         if (cat && cat.indexOf(kw) !== -1) score += Math.round(1 * mul);
+        if (row.loc && row.loc.indexOf(kw) !== -1) score += Math.round(1 * mul);
+        if (row.tags && row.tags.indexOf(kw) !== -1) score += Math.round(2 * mul);
       });
 
       return { item: i, score: score };
@@ -944,16 +1022,9 @@
 
     // Buscar items que contengan AL MENOS UNA keyword (con variantes singular/plural y parcial)
     var kwExpanded = expandKeywords(keywords);
-    var matches = state.inventario.filter(function(i) {
-      var texto = normalize([
-        (i.nombre || i.name || i.item || ''),
-        (i.aula || i.classroom || ''),
-        (i.cat || i.categoria || i.category || ''),
-        (i.ref || i.referencia || '')
-      ].join(' '));
-
-      return kwExpanded.some(function(kw) { return texto.includes(kw); });
-    });
+    var matches = rebuildInventoryIndex(false).filter(function(row) {
+      return kwExpanded.some(function(kw) { return row.text.includes(kw); });
+    }).map(function(row) { return row.item; });
 
     console.log('[Volt DEBUG] Matches encontrados:', matches.length);
 
@@ -986,7 +1057,7 @@
 
   // ── Detección de consultas de stock ───────────────────────────────────────
   function checkStockQuery(query) {
-    var q = (query || '').toLowerCase();
+    var q = normalizarEntradaUsuario(query || '').toLowerCase();
     var menciona_stock_bajo = /stock\s+(bajo|minimo|mínimo|critic)|bajo\s+(de\s+)?stock|bajo\s+mín|escasea|agot|sin\s+stock|stock\s+cero|critico/.test(q);
     var menciona_listado_aula = /(items?|materiales?|que\s+hay|qué\s+hay)\s+.*(aula|en\s+el)/.test(q);
 
@@ -1126,7 +1197,7 @@
 
   // ── Sugerencias inteligentes mientras escribe ────────────────────────────────
   function updateSuggestions() {
-    var input = el.chatInput.value.trim().toLowerCase();
+    var input = normalizarEntradaUsuario(el.chatInput.value.trim()).toLowerCase();
     var sugDiv = el.panel.querySelector('#ag-suggestions');
     if (!input || input.length < 2) { sugDiv.style.display = 'none'; return; }
 
@@ -1182,15 +1253,13 @@
 
     // Si no hay sugerencias específicas, mostrar materiales que coincidan
     if (!suggestions.length && state.inventario.length) {
-      var matching = state.inventario.filter(function(i) {
-        var nombre = normalize(i.nombre || '');
-        return nombre.includes(normalize(input)) && nombre.length > 0;
-      }).slice(0, 3);
+      var matching = searchInventoryCandidates(input, 3).map(function(row) { return row.item; });
 
       matching.forEach(function(item) {
+        var itemName = getItemName(item);
         suggestions.push({
-          text: '🔗 ' + item.nombre + ' (' + (item.aula || '—') + ')',
-          q: '¿Dónde está ' + item.nombre + '?'
+          text: '🔗 ' + itemName + ' (' + (item.aula || '—') + ')',
+          q: '¿Dónde está ' + itemName + '?'
         });
       });
     }
@@ -1213,7 +1282,7 @@
 
   // ── Detectar intención de préstamo ────────────────────────────────────────
   function detectarIntencionPrestamo(query) {
-    var q = normalize(query || '');  // normalize() quita tildes → un solo patrón por palabra
+    var q = normalize(normalizarEntradaUsuario(query || ''));  // normalize() quita tildes → un solo patrón por palabra
     var scored = scoreIntentions(q);
     if (scored && scored.tipo === 'prestamo') return true;
     var patrones = ['pedir prestado', 'pedirlo prestado', 'pedirla prestada', 'prestamo',
@@ -1272,7 +1341,7 @@
   }
 
   function detectarIntencionAnadirItem(query) {
-    var q = (query || '').toLowerCase().trim();
+    var q = normalizarEntradaUsuario(query || '').toLowerCase().trim();
     var n = normalize(q);
     var scored = scoreIntentions(n);
     if (scored && scored.tipo !== 'anadir' && scored.score >= 7) return false;
@@ -1341,9 +1410,47 @@
     });
   }
 
+  // Correcciones frecuentes de Web Speech y dictado en taller.
+  var VOICE_CORRECTIONS = [
+    [/\bvolt[,.]?\s+/gi, ''],
+    [/\bbol[dt][,.]?\s+/gi, ''],
+    [/\bpol[ií]\s+metro\b/gi, 'polimetro'],
+    [/\bpoli\s+metro\b/gi, 'polimetro'],
+    [/\bmulti\s+metro\b/gi, 'multimetro'],
+    [/\btester\b/gi, 'multimetro'],
+    [/\boscilo\s+scopio\b/gi, 'osciloscopio'],
+    [/\bostiloscopio\b/gi, 'osciloscopio'],
+    [/\boscilos?copio\b/gi, 'osciloscopio'],
+    [/\bproto\s+board\b/gi, 'protoboard'],
+    [/\bproto\s+bord\b/gi, 'protoboard'],
+    [/\bfuente\s+de\s+tensi[oó]n\b/gi, 'fuente de alimentacion'],
+    [/\bfuente\s+alimentaci[oó]n\b/gi, 'fuente de alimentacion'],
+    [/\bestaci[oó]n\s+soldadura\b/gi, 'estacion de soldadura'],
+    [/\bcaut[ií]n\b/gi, 'soldador'],
+    [/\bclase\s+(\d+)\b/gi, 'aula $1'],
+    [/\bde\s+volver\b/gi, 'devolver'],
+    [/\bde\s+vuelvo\b/gi, 'devuelvo'],
+    [/\bpr[eé]sta\s*me\b/gi, 'prestame'],
+    [/\bestoc\b/gi, 'stock'],
+    [/\bestoque\b/gi, 'stock']
+  ];
+
+  function normalizarEntradaUsuario(text) {
+    var q = String(text || '').trim();
+    if (!q) return '';
+    q = q.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+    q = textToNumber(q);
+    VOICE_CORRECTIONS.forEach(function(rule) {
+      q = q.replace(rule[0], rule[1]);
+    });
+    q = q.replace(/\baula\s+(\d+)\b/gi, 'Aula $1');
+    q = q.replace(/\s+/g, ' ').trim();
+    return q;
+  }
+
   // Extrae cantidad numérica de una frase: "añadir 4 soldadores" → 4
   function extraerCantidadDeFrase(query) {
-    var q = textToNumber(normalize(query || ''));
+    var q = normalize(normalizarEntradaUsuario(query || ''));
     // "X unidades/ud/piezas..." en cualquier posición (incluyendo typos)
     var m = q.match(new RegExp('\\b(\\d+)\\s*(?:' + CANT_WORDS.source + ')\\b'));
     if (m) return parseInt(m[1], 10);
@@ -1363,7 +1470,7 @@
   }
 
   function extraerNombreItem(query) {
-    var q = textToNumber(normalize(query || ''));
+    var q = normalize(normalizarEntradaUsuario(query || ''));
     // 1. Quitar el verbo de acción (primera aparición)
     var verbos = ['quiero anadir', 'quiero agregar', 'quiero crear', 'quiero añadir',
       'anade un', 'anade una', 'anade el', 'anade la', 'anade',
@@ -1659,7 +1766,12 @@
           resultEl.style.color = '#34d399';
           formDiv.querySelector('.ag-new-item-submit').disabled = true;
           formDiv.querySelector('.ag-new-item-submit').textContent = '✅ Guardado';
-          if (typeof loadData === 'function') {
+          if (typeof items !== 'undefined' && Array.isArray(items)) {
+            items.push(res.item);
+            state.inventario = items;
+            rebuildInventoryIndex(true);
+          } else if (typeof loadData === 'function') {
+            state.dataLoaded = false;
             setTimeout(function() { loadData(); }, 500);
           }
         } else {
@@ -1976,6 +2088,15 @@
         ['ponlo a mi nombre', 9], ['ponla a mi nombre', 9], ['registrar prestamo', 10],
         ['apuntar prestamo', 10], ['anotar prestamo', 10]
       ]) },
+      { tipo: 'buscar', score: scorePatterns(n, [
+        ['donde esta', 10], ['donde esta el', 10], ['donde esta la', 10],
+        ['donde encuentro', 9], ['donde hay', 8], ['buscar', 8], ['busca', 8],
+        ['busco', 8], ['localiza', 9], ['localizar', 9], ['encuentra', 8],
+        ['ver ficha', 8], ['abre ficha', 8], ['abre la ficha', 8], ['abre el item', 8],
+        ['informacion de', 7], ['info de', 7], ['datos de', 7], ['que stock tiene', 7],
+        ['cuantos hay de', 8], ['cuantas hay de', 8], ['cuantos ', 6], ['cuantas ', 6],
+        ['stock de', 7], ['ubicacion de', 8]
+      ]) },
       { tipo: 'devolver', score: scorePatterns(n, [
         ['devolver', 10], ['devuelvo', 10], ['devuelve', 9], ['devolucion', 10],
         ['retornar', 8], ['entrego', 8], ['entregar', 8], ['lo traigo', 9],
@@ -2032,9 +2153,12 @@
     ];
 
     // Penalizaciones para evitar falsos positivos por palabras usadas como contexto
-    if (scores[0].score > 0 && matchAny(n, ['prestamo', 'devolucion', 'devolver', 'stock bajo'])) scores[0].score -= 8;
-    if (scores[5].score > 0 && matchAny(n, ['ciclo de mantenimiento', 'modulo de mantenimiento'])) scores[5].score -= 7;
-    if (scores[3].score > 0 && scores[8].score >= scores[3].score) scores[3].score -= 4;
+    var scoreByTipo = {};
+    scores.forEach(function(row) { scoreByTipo[row.tipo] = row; });
+    if (scoreByTipo.anadir.score > 0 && matchAny(n, ['prestamo', 'devolucion', 'devolver', 'stock bajo'])) scoreByTipo.anadir.score -= 8;
+    if (scoreByTipo.mantenimiento.score > 0 && matchAny(n, ['ciclo de mantenimiento', 'modulo de mantenimiento'])) scoreByTipo.mantenimiento.score -= 7;
+    if (scoreByTipo.stock.score > 0 && scoreByTipo.stock_bajo.score >= scoreByTipo.stock.score) scoreByTipo.stock.score -= 4;
+    if (scoreByTipo.buscar.score > 0 && matchAny(n, ['actualiza', 'actualizar', 'cambia', 'cambiar', 'devolver', 'devuelvo', 'prestamo', 'prestame', 'dame'])) scoreByTipo.buscar.score -= 5;
 
     if (!LEARN_LOADED && !state.learnedIntents.length) _cargarAprendizajesLocal();
     state.learnedIntents.forEach(function(ex) {
@@ -2045,11 +2169,14 @@
     });
 
     scores.sort(function(a, b) { return b.score - a.score; });
+    scores[0].secondScore = scores[1] ? scores[1].score : 0;
+    scores[0].confidence = Math.max(0, Math.min(1, scores[0].score / Math.max(12, scores[0].score + scores[0].secondScore)));
+    scores[0].ambiguous = scores[0].score < 12 && (scores[0].score - scores[0].secondScore) < 3;
     return scores[0].score >= 7 ? scores[0] : null;
   }
 
   function detectarIntencion(q) {
-    var n = normalize(q);
+    var n = normalize(normalizarEntradaUsuario(q));
     var scored = scoreIntentions(n);
     if (scored && scored.tipo !== 'anadir' && scored.tipo !== 'prestamo') {
       if (scored.tipo === 'stock') {
@@ -2066,6 +2193,11 @@
         return { tipo: 'estado', estado: estadoScored };
       }
       return { tipo: scored.tipo };
+    }
+
+    if (/\b(cuantos|cuantas)\b.*\bhay\b/.test(n) ||
+        matchAny(n, ['donde esta', 'donde estan', 'donde encuentro', 'localiza ', 'busca ', 'busco '])) {
+      return { tipo: 'buscar' };
     }
 
     // DEVOLVER PRÉSTAMO
@@ -2221,7 +2353,7 @@
 
   // ── Extraer aula desde frase ──────────────────────────────────────
   function extraerAulaDeFrase(q) {
-    var n = normalize(q);
+    var n = normalize(normalizarEntradaUsuario(q));
     // Buscar patrones: "aula 35", "aula35", "en el aula 35", "clase 35"
     var m = n.match(/(?:aula|clase|taller|sala|lab)\s*(\w+)/i);
     if (m) {
@@ -2650,6 +2782,7 @@
         if (!res.ok) throw new Error(res.error);
         var idx = items.findIndex(function(x) { return String(x.id) === String(item.id); });
         if (idx >= 0) items[idx] = updated;
+        rebuildInventoryIndex(true);
         resultEl.innerHTML = '✅ Stock actualizado a ' + nuevaQty;
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-stock-submit').disabled = true;
@@ -2693,6 +2826,7 @@
         if (!res.ok) throw new Error(res.error);
         var idx = items.findIndex(function(x) { return String(x.id) === String(item.id); });
         if (idx >= 0) items[idx] = updated;
+        rebuildInventoryIndex(true);
         resultEl.innerHTML = '✅ Estado cambiado a ' + nuevoEst;
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-estado-submit').disabled = true;
@@ -2739,6 +2873,7 @@
         if (!res.ok) throw new Error(res.error);
         var idx = items.findIndex(function(x) { return String(x.id) === String(item.id); });
         if (idx >= 0) items[idx] = updated;
+        rebuildInventoryIndex(true);
         resultEl.innerHTML = '✅ Mantenimiento solicitado';
         resultEl.style.color = '#34d399';
         formDiv.querySelector('.ag-mant-submit').disabled = true;
@@ -3060,7 +3195,8 @@
     var input = el.chatInput;
     // Si text es un evento (cuando viene de click), ignorarlo
     var queryText = (typeof text === 'string') ? text : '';
-    var q = queryText || input.value.trim();
+    var qRaw = queryText || input.value.trim();
+    var q = normalizarEntradaUsuario(qRaw);
     if (!q || state.loading) return;
     input.value = '';
     el.panel.querySelector('#ag-quick').style.display = 'none';
@@ -3350,6 +3486,7 @@
 
   // ── Reconocimiento de voz ─────────────────────────────────────────────────
   var _recognition = null;
+  var _manualMicStop = false;
   function startMic() {
     var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -3359,17 +3496,21 @@
     var micBtn = el.panel.querySelector('#ag-mic');
     // Si ya está escuchando, parar y enviar lo acumulado
     if (_recognition) {
+      var pendingVoiceText = normalizarEntradaUsuario(el.chatInput.value.trim());
+      _manualMicStop = true;
       _recognition.stop();
       _recognition = null;
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
+      if (pendingVoiceText) setTimeout(function() { sendChat(pendingVoiceText); }, 100);
       return;
     }
     // Transcript acumulado entre sesiones de reconocimiento
     var accumulatedText = '';
     var silenceTimer = null;
     var userStopped = false;
+    _manualMicStop = false;
 
     micBtn.classList.add('listening');
     micBtn.textContent = '⏹';
@@ -3391,7 +3532,7 @@
       if (_recognition) { try { _recognition.stop(); } catch(e) {} }
       _recognition = null;
       resetMicUI();
-      var text = accumulatedText.trim();
+      var text = normalizarEntradaUsuario(accumulatedText.trim());
       if (text) setTimeout(function() { sendChat(text); }, 200);
     }
 
@@ -3411,7 +3552,7 @@
           else interim += e.results[i][0].transcript;
         }
         sessionCommitted = finalNow;
-        el.chatInput.value = (accumulatedText + finalNow + interim).trim();
+        el.chatInput.value = normalizarEntradaUsuario((accumulatedText + finalNow + interim).trim());
         clearTimeout(silenceTimer);
         silenceTimer = setTimeout(function() {
           silenceTimer = null;
@@ -3433,6 +3574,15 @@
       };
 
       r.onend = function() {
+        if (_manualMicStop) {
+          _manualMicStop = false;
+          userStopped = true;
+          _voiceSent = true;
+          clearTimeout(silenceTimer);
+          silenceTimer = null;
+          _recognition = null;
+          return;
+        }
         if (userStopped || _voiceSent) return;
         // Acumular lo que haya en el input (texto reconocido esta sesión)
         var currentText = el.chatInput.value.trim();
