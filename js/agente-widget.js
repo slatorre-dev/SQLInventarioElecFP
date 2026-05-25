@@ -1347,8 +1347,8 @@
     // "X unidades/ud/piezas..." en cualquier posición (incluyendo typos)
     var m = q.match(new RegExp('\\b(\\d+)\\s*(?:' + CANT_WORDS.source + ')\\b'));
     if (m) return parseInt(m[1], 10);
-    // Número inmediatamente tras verbo: "añadir 4 micrófonos"
-    m = q.match(/(?:anadir|agregar|crear|registrar|meter|poner|comprar|recibir|alta\s+de?)\s+(\d+)\b/);
+    // Número inmediatamente tras verbo (infinitivo o imperativo): "añadir 4 micrófonos", "añade 4 router"
+    m = q.match(/(?:anadir|anade|agregar|agrega|crear|crea|registrar|registra|meter|mete|poner|pon|comprar|recibir|alta\s+de?)\s+(\d+)\b/);
     if (m) return parseInt(m[1], 10);
     // Coma + número: "micrófono, 4 unidades"
     m = q.match(/,\s*(\d+)\b/);
@@ -1356,6 +1356,9 @@
     // Número al inicio: "4 soldadores"
     m = q.match(/^(\d+)\s+\w/);
     if (m) return parseInt(m[1], 10);
+    // Número suelto al final (sin unidades): "router 3"
+    m = q.match(/\s+(\d+)$/);
+    if (m && parseInt(m[1], 10) <= 50) return parseInt(m[1], 10);
     return null;
   }
 
@@ -1377,10 +1380,14 @@
     }
     // 2. Quitar número inicial con "unidades" (typos incluidos): "6 uniades del 555" → "del 555"
     resto = resto.replace(/^\d+\s*(?:unidades?|uniade[s]?|uniades?|ud\.?s?|uds?|piezas?)\s*(?:del?|de la|de los)?\s*/i, '').trim();
+    // 2b. Quitar número inicial sin unidades: "3 routers" → "routers", "5 router" → "router"
+    resto = resto.replace(/^\d+\s+/, '').trim();
     // 3. Quitar artículos iniciales
     resto = resto.replace(/^(un|una|el|la|los|las|de)\s+/i, '').trim();
     // 4. Cortar en cantidad + unidades en cualquier posición: "micrófono, 4 unidades" → "micrófono"
     resto = resto.replace(/,?\s*\d+\s*(?:unidades?|uniade[s]?|uniades?|ud\.?s?|uds?|piezas?|items?|equipos?)\b.*/i, '').trim();
+    // 4b. Quitar número suelto al final si es plausible como cantidad (≤50): "router 3" → "router"
+    resto = resto.replace(/\s+(\d+)$/, function(m, n) { return parseInt(n, 10) <= 50 ? '' : m; }).trim();
     // 5. Cortar en preposiciones de lugar/contexto
     var corte = resto.search(/\s+(?:en el|en la|en aula|en clase|en taller|en el aula|para el|para la|al aula)\b/i);
     if (corte > 0) resto = resto.substring(0, corte).trim();
