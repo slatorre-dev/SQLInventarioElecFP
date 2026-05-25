@@ -235,8 +235,8 @@ async function loadData(){
     prestamos = res.prestamos || [];
     itemsLoaded = true;
     if(typeof updatePresVencBadge === 'function') updatePresVencBadge();
-    if(typeof getVencidosParaUsuario==='function'&&typeof toast==='function'){
-      const venc=getVencidosParaUsuario();
+    if(typeof getVencidos==='function'&&typeof toast==='function'){
+      const venc=getVencidos();
       if(venc.length>0){
         const t=toast('⚠ '+venc.length+' préstamo'+(venc.length!==1?'s':'')+' vencido'+(venc.length!==1?'s':'')+' · Ver','warn');
         if(t){t.style.cursor='pointer';t.onclick=()=>{window.location.hash='prestamos';};}
