@@ -1068,11 +1068,11 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .home-hero p{font-size:13px}
   .home-body,.sub-body,.ciclo-body{padding:14px}
   .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .ccard{padding:13px 10px;border-radius:11px}
-  .ccard-icon{font-size:26px;margin-bottom:6px}
+  .ccard{padding:8px 10px;border-radius:11px}
+  .ccard-icon{font-size:22px;margin-bottom:3px}
   .ccard-title{font-size:12px}
-  .ccard-desc{font-size:10px;line-height:1.25}
-  .ccard-count{top:6px;right:6px;font-size:9px;padding:2px 6px}
+  .ccard-desc{font-size:10px;line-height:1.25;margin-bottom:2px}
+  .ccard-count{top:5px;right:5px;font-size:9px;padding:2px 5px}
   .mod-grid{grid-template-columns:1fr;gap:8px}
   .mod-card{padding:11px 12px}
 
