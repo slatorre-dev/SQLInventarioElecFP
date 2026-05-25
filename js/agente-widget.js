@@ -165,9 +165,9 @@
       display: flex; flex-direction: column;
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
       transform: translateY(-100vh); transition: transform .3s cubic-bezier(.4,0,.2,1);
-      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+      box-shadow: none; pointer-events: none;
     }
-    #agente-panel.open { transform: translateY(0); }
+    #agente-panel.open { transform: translateY(0); box-shadow: 0 8px 40px rgba(0,0,0,.6); pointer-events: auto; }
 
     @media (max-width: 480px) {
       #agente-panel { width: 100vw; top: 0; bottom: 0; height: 100dvh; max-height: 100dvh; }
