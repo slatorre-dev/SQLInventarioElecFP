@@ -212,6 +212,16 @@ async function loadData(){
     else if(cf) openSub(); else if(currentCiclo) openCiclo(currentCiclo.id); else goHome();
   }catch(err){
     console.error(err);
+    if(err.message && err.message.includes('401')){
+      localStorage.removeItem('inv_session');
+      SESSION = null;
+      document.getElementById('userChip').style.display = 'none';
+      _hideOverlay();
+      show('pLogin');
+      setConn('err','Sesión expirada');
+      bar.className = '';
+      return;
+    }
     setConn('err','Error de conexión');
     show('pH');
     document.getElementById('hStats').innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ei">⚠️</div><div class="et">No se pudo conectar.<br><small>${err.message}</small></div></div>`;
