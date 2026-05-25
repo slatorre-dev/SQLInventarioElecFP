@@ -1104,7 +1104,7 @@ function toast(msg,type='ok'){
   const icon=type==='ok'?'✅':type==='warn'?'⚠️':'❌';
   el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
   document.getElementById('toasts').appendChild(el);
-  const dur=type==='warn'?5000:3000;
+  const dur=type==='warn'?2500:3000;
   setTimeout(()=>{el.style.animation='ti .3s reverse forwards';setTimeout(()=>el.remove(),300)},dur);
   return el;
 }
