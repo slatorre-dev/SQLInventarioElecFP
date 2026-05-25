@@ -715,6 +715,11 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   }
 }
 
+/* En tablet táctil (≥640px) sí mostramos la vista tabla */
+@media (hover:none) and (min-width:640px), (pointer:coarse) and (min-width:640px){
+  .tw{display:block!important}
+}
+
 @media (hover:none), (pointer:coarse){
   #loadOverlay{transition:opacity .32s ease!important}
   .lo-logo{
