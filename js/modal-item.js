@@ -951,7 +951,18 @@ async function saveItem(){
     }
     modalHasChanges = false;
     closeM(true);
-    if(cf) openSub(); else renderHome();
+    if(cf){
+      if(eid){
+        // Edición: re-render sin resetear filtros ni página
+        const all = getBase();
+        renderInv();
+        renderSubStats(all, all.filter(isLowStock).length);
+      } else {
+        openSub();
+      }
+    } else {
+      renderHome();
+    }
   } catch(err) { toast('Error: '+err.message,'err'); }
   finally { btn.disabled=false; btn.textContent='💾 Guardar'; }
 }
