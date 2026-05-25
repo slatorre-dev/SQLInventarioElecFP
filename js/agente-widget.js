@@ -764,6 +764,27 @@
 
   // ── Búsqueda inteligente en inventario ─────────────────────────────────────
   // Palabras vacías a ignorar (stop words en español)
+  // Sinónimos del taller — se expanden antes de buscar
+  var SINONIMOS = {
+    'polimetro': ['multimetro', 'tester', 'poli', 'avometro'],
+    'multimetro': ['polimetro', 'tester', 'poli', 'avometro'],
+    'osciloscopio': ['osci', 'oscilos', 'osciloscopi'],
+    'fuente de alimentacion': ['fuente alimentacion', 'fuente de tension', 'fuente tension', 'fuente', 'psu'],
+    'soldador': ['cautín', 'cautin', 'estacion de soldadura', 'estacion soldadura'],
+    'protoboard': ['placa de pruebas', 'breadboard', 'proto'],
+    'condensador': ['capacitor', 'condensadores', 'conden'],
+    'resistencia': ['resistor', 'resistencias'],
+    'transistor': ['bjt', 'mosfet', 'transistores'],
+    'cable': ['cables', 'latigillo', 'latiguillo', 'jumper'],
+    'pinza': ['pinzas', 'amperimetro de pinza', 'pinza amperimetrica'],
+    'generador de funciones': ['generador de señales', 'generador señales', 'gen funciones'],
+    'ordenador': ['pc', 'computador', 'ordenadores'],
+    'pantalla': ['monitor', 'display', 'pantallas'],
+    'tablet': ['tableta', 'ipad'],
+    'raspberry': ['raspberry pi', 'raspi'],
+    'arduino': ['arduino uno', 'arduino mega', 'arduino nano'],
+  };
+
   var STOP_WORDS = ['donde', 'dónde', 'esta', 'está', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas',
     'de', 'del', 'al', 'a', 'en', 'con', 'por', 'para', 'que', 'qué', 'cual', 'cuál',
     'tiene', 'tienes', 'hay', 'cuanto', 'cuánto', 'cuanta', 'cuánta', 'cuantos', 'cuántos',
@@ -778,15 +799,39 @@
     'cantidad', 'stock', 'unidades', 'existencias', 'me', 'te', 'se', 'su', 'sus', 'mi', 'tu', 'es', 'son',
     'y', 'o', 'pero', 'si', 'no', 'lo', 'le', 'les', 'sobre', 'como', 'cómo'];
 
+  function applySinonimos(words) {
+    var extra = [];
+    // Busca sinónimos tanto por palabra suelta como por frases de 2-3 palabras
+    var phrase = words.join(' ');
+    Object.keys(SINONIMOS).forEach(function(canonical) {
+      var aliases = SINONIMOS[canonical];
+      // Si la consulta contiene un alias, añadir la forma canónica
+      aliases.forEach(function(alias) {
+        if (phrase.indexOf(alias) !== -1 && extra.indexOf(canonical) === -1) {
+          canonical.split(' ').forEach(function(w) { if (extra.indexOf(w) === -1) extra.push(w); });
+        }
+      });
+      // Si la consulta contiene la forma canónica, añadir alias
+      if (phrase.indexOf(canonical) !== -1) {
+        aliases.forEach(function(alias) {
+          alias.split(' ').forEach(function(w) { if (w.length >= 3 && extra.indexOf(w) === -1) extra.push(w); });
+        });
+      }
+    });
+    return words.concat(extra.filter(function(w) { return words.indexOf(w) === -1; }));
+  }
+
   function extractKeywords(query) {
-    var q = normalize(query || '')
+    // Convertir números en palabras antes de parsear
+    var q = textToNumber(normalize(query || ''))
       .replace(/[¿?¡!.,;:()]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
-    return q.split(' ').filter(function(w) {
+    var words = q.split(' ').filter(function(w) {
       return w.length >= 3 && STOP_WORDS.indexOf(w) === -1;
     });
+    return applySinonimos(words);
   }
 
   // Variantes singular/plural de una palabra normalizada
@@ -840,6 +885,13 @@
         if (name === nQuery) score += 16;
         else if (name.indexOf(nQuery) !== -1) score += 10;
         else if (nQuery.indexOf(name) !== -1 && name.length > 3) score += 6;
+        else if (nQuery.length >= 4) {
+          // Fuzzy: prefijo común de al menos 4 chars
+          var minLen = Math.min(nQuery.length, name.length);
+          var common = 0;
+          for (var ci = 0; ci < minLen; ci++) { if (nQuery[ci] === name[ci]) common++; else break; }
+          if (common >= 4) score += Math.round(4 * common / nQuery.length);
+        }
       }
 
       kwExp.forEach(function(kw) {
@@ -1607,10 +1659,11 @@
     var qty = item.qty != null ? item.qty : (item.cantidad || 0);
     var nombreItem = item.item || item.nombre || item.name || '(sin nombre)';
 
+    var min = Number(item.min || item.stock_min || 0);
     formDiv.innerHTML =
       '<div style="margin-bottom:10px"><strong style="color:#7dd3fc">📋 Solicitar préstamo:</strong><br>' +
       '<span style="color:#e2e8f0">' + esc(nombreItem) + '</span><br>' +
-      '<small style="color:#64748b">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + '</small></div>' +
+      '<small style="color:#64748b">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + (min > 0 ? ' · Mín: ' + min : '') + '</small></div>' +
       '<label class="ag-label">Profesor/a que lo solicita *</label>' +
       '<input class="ag-input-field ag-loan-prof" placeholder="Ej: Juan García">' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
@@ -1619,6 +1672,7 @@
         '<div style="width:80px"><label class="ag-label">Cantidad</label>' +
         '<input class="ag-input-field ag-loan-qty" type="number" min="1" max="' + qty + '" value="1"></div>' +
       '</div>' +
+      '<div class="ag-loan-stock-warn" style="display:none;margin-top:6px;padding:5px 8px;border-radius:6px;background:#7c2d12;color:#fca5a5;font-size:11px"></div>' +
       '<label class="ag-label" style="margin-top:6px">Devolución prevista</label>' +
       '<input class="ag-input-field ag-loan-date" type="date" min="' + new Date().toISOString().split('T')[0] + '">' +
       '<div style="display:flex;gap:6px;margin-top:10px">' +
@@ -1655,6 +1709,22 @@
         }
       }
     }
+
+    // Aviso stock al cambiar cantidad
+    var qtyInput = formDiv.querySelector('.ag-loan-qty');
+    var stockWarn = formDiv.querySelector('.ag-loan-stock-warn');
+    function checkStockWarn() {
+      if (!stockWarn || !min) return;
+      var cant = Number(qtyInput.value) || 1;
+      var restante = qty - cant;
+      if (restante < min) {
+        stockWarn.style.display = 'block';
+        stockWarn.textContent = '⚠ Quedarán ' + restante + ' uds. (mínimo: ' + min + ')';
+      } else {
+        stockWarn.style.display = 'none';
+      }
+    }
+    if (qtyInput) { qtyInput.addEventListener('input', checkStockWarn); checkStockWarn(); }
 
     // Enfocar el primer campo vacío obligatorio
     if (!profInput.value) profInput.focus();
