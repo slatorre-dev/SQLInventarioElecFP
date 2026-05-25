@@ -1,6 +1,6 @@
 # Nota de Trabajo - SQLInventarioElecFP
 
-**Estado:** v374 | Mayo 2026
+**Estado:** v390 | Mayo 2026
 
 ---
 
@@ -59,7 +59,7 @@ migrations/             — SQL de migraciones D1
 
 ---
 
-## Agente Volt — Estado actual (v374)
+## Agente Volt — Estado actual (v390)
 
 ### Archivos
 - `js/agente-widget.js` — todo el widget (NLP, chat, voz, aprendizaje)
@@ -74,18 +74,23 @@ migrations/             — SQL de migraciones D1
 ### Intenciones válidas (whitelist)
 `prestamo | devolver | stock | estado | mantenimiento | buscar | resumen_aula | quien_tiene | stock_bajo | lista_mantenimiento`
 
-### NLP
+### NLP (v388)
 - `normalize(s)`: lowercase + quitar tildes + trim — usar SIEMPRE para comparar texto del usuario contra datos BD
 - `detectarIntencion(q)`: sin LLM, reglas de puntuación
+- `SINONIMOS`: tabla de 17 entradas del taller (multímetro=polímetro, osci=osciloscopio, fuente=fuente de alimentación…)
+- `applySinonimos(words)`: expande keywords con formas canónicas y alias
+- `extractKeywords(q)`: pasa por `textToNumber()` — "dos osciloscopios" = "2 osciloscopios"
+- `searchInventoryCandidates()`: fuzzy por prefijo común ≥4 chars + sinónimos
 - `extraerNombreItem(q)`: corta en verbos de acción y preposiciones de ubicación
 - `extraerAulaDeFrase(q)`: regex "aula/clase N" + comprueba contra array AULAS
-- `extraerUbicacionDeFrase(q)`: regex armario/estantería/vitrina + busca en `state.inventario`
-- Búsqueda de items usa `normalize()` en ambos lados (fix v354 — antes solo `.toLowerCase()`)
+- Búsqueda de items usa `normalize()` en ambos lados
 
-### Voz (v365)
+### Voz (v390)
 - Botón `#ag-mic`, Web Speech API `es-ES`
 - `continuous:false` + auto-session restart — evita texto basura en Android
-- Pausa de 2s de silencio antes de enviar (silenceTimer)
+- Pausa de 2s de silencio antes de enviar (`silenceTimer`)
+- `sessionCommitted`: captura resultado final en closure propio (fix duplicado v390)
+- `_voiceSent`: flag de un solo envío — evita condición de carrera timer+onend en Android
 - `startSession()`: crea nueva instancia SpeechRecognition; `onend` reinicia si timer activo
 
 ### Historial chat persistente (v366)
@@ -93,6 +98,10 @@ migrations/             — SQL de migraciones D1
 - `saveHistory()` llamado en `appendMsg()` y `appendMsgHtml()`
 - `restoreHistory()` en primer `renderChatReady()` con separador "— conversación anterior —"
 - `limpiarPantallaChat()` borra localStorage
+
+### Formulario préstamo (v388)
+- Aviso `ag-loan-stock-warn` en tiempo real al cambiar cantidad: "⚠ Quedarán N uds. (mínimo: M)"
+- Solo aparece si `qty - cantidad < min`
 
 ---
 
@@ -102,6 +111,18 @@ migrations/             — SQL de migraciones D1
 - Funciones: `toggleGenerarUnidades()`, `saveGenerarUnidades()` en `modal-item.js`
 
 ---
+
+## Sesión 25/05/2026 — Completado (v379→v390)
+
+1. ✅ Fix vista tabla tablet: `getInvRenderMode()` + override CSS `@media(pointer:coarse) and (min-width:640px)`
+2. ✅ Toast préstamos vencidos: 2.5s, más pequeño (11px) y translúcido (0.82)
+3. ✅ Icono logout: SVG inline (U+23FB tenía mal soporte Android)
+4. ✅ Banner loan-banner oculto en táctil (toast ya cubre el aviso)
+5. ✅ Botón Imprimir topbar → `openPrintChoiceModal()` (normal + QR)
+6. ✅ Al editar ítem: mantiene filtros y página del inventario (`renderInv()` en vez de `openSub()`)
+7. ✅ Volt NLP: sinónimos taller, fuzzy search, `textToNumber` en keywords
+8. ✅ Volt préstamo: aviso stock en tiempo real en formulario
+9. ✅ Volt voz: fix duplicado Android — `_voiceSent` + `sessionCommitted`
 
 ## Sesión 24/05/2026 — Completado (v352→v374)
 
@@ -118,7 +139,7 @@ migrations/             — SQL de migraciones D1
 11. ✅ Filtros activos como chips bajo barra de búsqueda (`renderActiveFilters()`)
 12. ✅ Badge préstamos vencidos en navbar (`#presVencBadge`, rojo, count)
 
-## Sesión 23/05/2026 — Completado
+## Sesión 23/05/2026 — Completado (v317→v338)
 
 1. ✅ Ciclo/Módulo full-width en PC, alias en móvil
 2. ✅ Vista tabla/cards toggle (PC) — móvil siempre cards
@@ -132,10 +153,14 @@ migrations/             — SQL de migraciones D1
 ## Pendiente (Próximas sesiones)
 - FASE 1 seguridad: Bearer tokens, password hashing, rate-limiting
 - Crear branch `feature/security-refactor`
-- Swipe en cards móvil (préstamo/editar deslizando)
+- Swipe en cards móvil (préstamo/editar deslizando) — ya funciona en móvil, falta tablet
 - QR directo en cada card sin abrir ítem
 - Historial de cambios por ítem en modal edición
-- Aviso préstamos vencidos al hacer login (toast)
+- Modo oscuro (variables CSS ya preparadas)
+- Aulas ordenadas por uso reciente en home
+- Búsqueda con historial de términos recientes
+- Volt: sugerencias contextuales tras acción ("¿prestar otro al mismo profesor?")
+- Volt: comando "¿qué está prestado ahora?" (resumen global activos)
 
 ---
 
@@ -163,10 +188,28 @@ migrations/             — SQL de migraciones D1
 | v372 | Fix login flicker inline CSS :not(.active) | 24/05/2026 |
 | v373 | Filter chips + fix display:none!important | 24/05/2026 |
 | v374 | Badge préstamos vencidos navbar | 24/05/2026 |
+| v375-v379 | Easter egg robot, FAB solo icono móvil, fix scroll tablet | 25/05/2026 |
+| v380 | Fix getInvRenderMode tablet (list/table) | 25/05/2026 |
+| v381 | Fix CSS tabla táctil ≥640px | 25/05/2026 |
+| v382 | Toast warn más discreto (2.5s, 11px, 0.82 opacity) | 25/05/2026 |
+| v383 | Logout botón más visible en táctil | 25/05/2026 |
+| v384 | Logout SVG inline (fix U+23FB Android) | 25/05/2026 |
+| v385 | Imprimir topbar → openPrintChoiceModal | 25/05/2026 |
+| v386 | loan-banner oculto en táctil | 25/05/2026 |
+| v387 | Editar ítem mantiene filtros y página | 25/05/2026 |
+| v388 | Volt: sinónimos, fuzzy, textToNumber, aviso stock préstamo | 25/05/2026 |
+| v389-v390 | Fix voz Volt: duplicado Android (_voiceSent, sessionCommitted) | 25/05/2026 |
 
 ---
 
-## Documentación en GitHub
-- DEVELOPMENT.md, ARCHITECTURE.md, API.md, ROADMAP.md, SECURITY.md
-- BACKEND_APRENDIZAJE_INTENCIONES.md — diseño del sistema de aprendizaje Volt
+## Documentación en GitHub (`docs/`)
+- `docs/DEVELOPMENT.md` — registro de sesiones de desarrollo
+- `docs/ARCHITECTURE.md` — arquitectura técnica
+- `docs/API.md` — endpoints del backend
+- `docs/ROADMAP.md` — hoja de ruta
+- `docs/SECURITY.md` — seguridad pendiente
+- `docs/IDEAS.md` — ideas implementadas y pendientes
+- `docs/BACKEND_APRENDIZAJE_INTENCIONES.md` — diseño sistema aprendizaje Volt
+- `docs/CONTEXT.md` — contexto general del proyecto
+- `.claude/memory/` — memorias de sesiones para Claude (sincronizadas con git)
 - Ver: https://github.com/sebantonio/SQLInventarioElecFP
