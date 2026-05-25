@@ -952,14 +952,9 @@ async function saveItem(){
     modalHasChanges = false;
     closeM(true);
     if(cf){
-      if(eid){
-        // Edición: re-render sin resetear filtros ni página
-        const all = getBase();
-        renderInv();
-        renderSubStats(all, all.filter(isLowStock).length);
-      } else {
-        openSub();
-      }
+      const all = getBase();
+      renderInvKeepPage();
+      renderSubStats(all, all.filter(isLowStock).length);
     } else {
       renderHome();
     }
@@ -985,7 +980,7 @@ function confDel(id){
       if(typeof logHistorial === 'function' && it) logHistorial('itemDelete', dId, it.item, `Item eliminado: ${it.item} (${it.ref || it.code || it.id})`);
       items = items.filter(x=>x.id!==dId);
       closeConf();
-      if(cf) openSub(); else renderHome();
+      if(cf){ const all=getBase(); renderInvKeepPage(); renderSubStats(all,all.filter(isLowStock).length); } else renderHome();
       toast('Ítem eliminado','ok');
     } catch(err) { toast('Error: '+err.message,'err'); }
     finally { btn.disabled=false; btn.textContent='Eliminar'; }
@@ -1062,7 +1057,7 @@ async function saveBaja(){
     items[idx] = updated;
     if(typeof logHistorial === 'function') logHistorial('itemBaja', updated.id, updated.item, `Baja de ${cant} unidad${cant!==1?'es':''}: ${updated.item}. Motivo: ${motivo}`);
     closeBaja();
-    if(cf) openSub(); else renderHome();
+    if(cf){ const all=getBase(); renderInvKeepPage(); renderSubStats(all,all.filter(isLowStock).length); } else renderHome();
     toast(restante===0 ? 'Ítem dado de baja completamente' : `${cant} unidad${cant!==1?'es':''} dada${cant!==1?'s':''} de baja · Quedan ${restante}`,'ok');
   }catch(err){ toast('Error: '+err.message,'err'); }
   finally{ btn.disabled=false; btn.textContent='⛔ Confirmar baja'; }

@@ -176,6 +176,7 @@ let _invPage = 1;
 let _pageSize = 25;
 let _pageSizeUserSet = false;
 let _pageSig = '';
+function renderInvKeepPage(){ const p=_invPage; _pageSig=''; renderInv(); _invPage=Math.min(p,Math.max(1,Math.ceil(getFiltered().length/_pageSize)||1)); renderInv(); }
 function isTouchLike(){
   return matchMedia('(hover: none), (pointer: coarse)').matches;
 }
