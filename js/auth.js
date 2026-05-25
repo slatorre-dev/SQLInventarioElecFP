@@ -207,6 +207,8 @@ function logout(){
   document.getElementById('btnE').style.display = 'none';
   document.getElementById('bc').innerHTML = '';
   setConn('', 'Sin sesión');
+  // Permite que el botón de Google vuelva a disparar el callback tras logout
+  if(typeof google !== 'undefined' && google.accounts?.id) google.accounts.id.disableAutoSelect();
   show('pLogin');
 }
 
