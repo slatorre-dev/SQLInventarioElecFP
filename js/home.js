@@ -62,9 +62,8 @@ function renderHome(){
 function renderLoanBanner(){
   const el = document.getElementById('loanBanner');
   if(!el) return;
-
-  const rol = (SESSION?.rol || '').toLowerCase().trim();
-  const esJefe = ['jefe departamento','jefe de departamento','administrador','admin'].includes(rol);
+  el.innerHTML = ''; // Toast + badge en navbar ya cubren el aviso
+}
 
   let activos, vencidos;
   if(esJefe){
