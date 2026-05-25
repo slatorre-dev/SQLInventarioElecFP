@@ -1552,7 +1552,7 @@
         if (ciclo && ciclo.modulos && ciclo.modulos.length > 0) {
           ciclo.modulos.forEach(function(m) {
             var opt = document.createElement('option');
-            opt.value = m.cod;
+            opt.value = cicloId + '__' + m.cod;
             opt.textContent = m.name;
             modSelect.appendChild(opt);
           });
