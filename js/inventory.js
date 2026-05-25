@@ -1005,6 +1005,20 @@ function openPrintModal(){
       <input type="checkbox" id="prcol_${c.key}" ${sel[c.key]?'checked':''}>
       <span>${c.label}</span>
     </label>`).join('');
+  const filtered = getFiltered();
+  const total = items.length;
+  const info = document.getElementById('printFilterInfo');
+  if(info){
+    if(filtered.length < total){
+      info.textContent = `🔍 Filtro activo: se imprimirán ${filtered.length} de ${total} ítems`;
+      info.style.color = 'var(--primary,#6366f1)';
+      info.style.fontWeight = '600';
+    } else {
+      info.textContent = `📋 Se imprimirán todos los ítems (${total})`;
+      info.style.color = 'var(--muted)';
+      info.style.fontWeight = '400';
+    }
+  }
   document.getElementById('mPrint').classList.add('open');
 }
 
