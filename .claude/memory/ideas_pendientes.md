@@ -50,11 +50,15 @@ metadata:
 - [x] Badge préstamos vencidos en navbar (punto rojo con count)
 
 ## Pendiente (confirmado no implementado a 24/05/2026)
+- [ ] **Bulk actions: añadir/cambiar referencia** — En acciones por lotes, permitir asignar o modificar el campo `ref` a los items seleccionados (similar a como ya funciona el bulk edit de aula/ciclo/categoría)
 - [ ] Swipe en cards móvil (préstamo/editar deslizando)
 - [ ] QR directo en cada card sin abrir ítem
 - [ ] Historial de cambios por ítem en modal edición
 - [ ] Aviso préstamos vencidos al hacer login (toast)
 - [ ] FASE 1 seguridad: Bearer tokens, password hashing, rate-limiting
+
+## Seguridad — Agujero OAuth (detectado 25/05/2026)
+- [ ] **CRÍTICO:** Cualquier cuenta Google que pase la validación OAuth obtiene acceso completo a la app aunque no tenga usuario registrado en D1. El middleware acepta el token OAuth como autenticación suficiente, sin verificar que el email exista en la tabla `usuarios`. Fix pendiente: en `_middleware.js`, tras validar el token OAuth, comprobar que el email del token existe en `usuarios` — si no existe, devolver 401/403 y bloquear el acceso por completo, igual que si la contraseña fuera incorrecta.
 
 ## Notas
 - Duplicar item, filtro mantenimiento y exportar CSV ya estaban (confirmado 23/05/2026)
