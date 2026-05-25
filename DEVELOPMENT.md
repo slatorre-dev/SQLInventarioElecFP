@@ -4,6 +4,29 @@ Registro de desarrollo y mejoras implementadas en la aplicación.
 
 ## Sesiones de trabajo
 
+### Sesión 25/05/2026 — Usabilidad tablet/móvil + Volt NLP (v379→v390)
+
+#### Fixes tablet/móvil
+- **v380** `getInvRenderMode()`: en tablet con `view='list'` devolvía siempre 'cards' — corregido
+- **v381** CSS: `.tw{display:none!important}` en `@media(pointer:coarse)` ocultaba la tabla en tablets — override con `min-width:640px`
+- **v382** Toast préstamos vencidos: 2.5s (antes 5s), 11px, opacity 0.82
+- **v383-v384** Icono logout: `⏻` (U+23FB, sin soporte Android) → SVG inline flecha salida; 20px en táctil
+- **v386** `loan-banner` oculto en móvil/tablet táctil — el toast ya avisa al inicio
+
+#### Mejoras inventario
+- **v385** Botón Imprimir del topbar llamaba a `openPrintModal()` → ahora `openPrintChoiceModal()` (normal + QR)
+- **v387** `saveItem()`: al editar ítem llama `renderInv()` en vez de `openSub()` — filtros y página del inventario se mantienen tras guardar
+
+#### Mejoras Volt (v388-v390)
+- `SINONIMOS`: tabla 17 entradas (multímetro↔polímetro, osci→osciloscopio, fuente→fuente de alimentación…)
+- `applySinonimos()`: expande keywords con alias antes de buscar
+- `extractKeywords()`: pasa por `textToNumber()` — "dos osciloscopios" funciona
+- `searchInventoryCandidates()`: fuzzy por prefijo común ≥4 chars
+- Formulario préstamo: aviso `ag-loan-stock-warn` en tiempo real ("⚠ Quedarán N uds.")
+- Voz fix duplicado Android: `_voiceSent` + `sessionCommitted` en closure propio evitan doble envío
+
+---
+
 ### Sesión Mayo 2026 — Sesión 1 (v128→v133)
 
 #### 1. Gestión de Tags (v129)

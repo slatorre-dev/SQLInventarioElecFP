@@ -262,10 +262,41 @@ CREATE INDEX idx_items_aula ON items(aula);
 
 **Prioridad:** Baja
 
+## Mejoras de Usabilidad (añadidas 25/05/2026)
+
+### ✅ Mantener filtros al editar ítem (v387)
+Al guardar edición ya no se resetean los filtros ni la página del inventario.
+
+### ✅ Fuzzy search en Volt (v388)
+`searchInventoryCandidates()` añade puntuación por prefijo común ≥4 chars.
+
+### ✅ Sinónimos del taller en Volt (v388)
+Tabla `SINONIMOS` con 17 entradas: multímetro=polímetro, osci=osciloscopio, etc.
+
+### ✅ Aviso stock al prestar en Volt (v388)
+Formulario muestra alerta en tiempo real si la cantidad deja el stock por debajo del mínimo.
+
+### Pendiente — Prioridad Alta
+- **Búsqueda con historial** — últimas 5 búsquedas en localStorage, mostrar al hacer foco
+- **Aulas ordenadas por uso reciente** — contador visitas en localStorage
+- **Paginación persiste entre sesiones** — guardar `_pageSize` en localStorage
+- **Modo oscuro** — variables CSS ya preparadas, toggle en perfil
+
+### Pendiente — Volt
+- **Sugerencias contextuales** tras acción ("¿prestar otro al mismo profesor?")
+- **Comando "¿qué está prestado ahora?"** — resumen global sin filtrar por ítem
+- **Edición inline** en tablas de resultados de Volt (botón ✏️ por fila)
+
+### Pendiente — Seguridad (FASE 1)
+- Bearer tokens en lugar de `?u=&p=` en query params
+- Password hashing (bcrypt)
+- Rate-limiting en endpoints críticos
+- Branch: `feature/security-refactor`
+
 ## Estado
 
-- **Última actualización:** 17/05/2026 (Sesión 5)
-- **Versión actual:** v166
-- **Ideas implementadas:** Historial (v147→v156), Bulk Actions (v158), Auditoría (v159→v166)
-- **Ideas pendientes de review:** Control acceso por aula, Búsqueda avanzada, Reportes visuales
-- **Ideas en backlog de auditoría:** Indicador progreso, Marcar grupo completado, Estadísticas, Filtros AND/OR, Exportar reporte
+- **Última actualización:** 25/05/2026
+- **Versión actual:** v390
+- **Ideas implementadas:** Historial (v147→v156), Bulk Actions (v158), Auditoría (v159→v166), Fuzzy Volt (v388), Sinónimos Volt (v388), Mantener filtros edición (v387)
+- **Ideas pendientes:** Búsqueda historial, aulas por uso, paginación persistente, modo oscuro, seguridad FASE 1
+- **Ideas backlog Volt:** Sugerencias contextuales, resumen préstamos global, edición inline resultados
