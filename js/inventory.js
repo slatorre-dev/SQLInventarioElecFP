@@ -187,7 +187,8 @@ function setView(v){
 }
 function getInvRenderMode(){
   if(window.innerWidth < 640) return 'cards';
-  if(view==='table' && window.innerWidth > 600) return 'table';
+  if(view==='table') return 'table';
+  if(view==='list') return 'list';
   return 'cards';
 }
 function updateViewBtns(){
