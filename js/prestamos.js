@@ -327,8 +327,8 @@ function openPrestar(itemId){
   const profsFiltrados = loanTeacherOptions();
   const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
   if(profPropio){
-    profSelect.innerHTML = '<option value="">â€” Seleccionar â€”</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}${p.departamento?' ('+p.departamento+')':''}</option>`).join('');
+    profSelect.innerHTML = '<option value=””>— Seleccionar —</option>' +
+      profsFiltrados.map(p=>`<option value=”${p.id}” ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}${p.departamento?' ('+p.departamento+')':''}</option>`).join('');
     profSelect.disabled = false;
   } else {
     profSelect.disabled = false;
@@ -367,8 +367,8 @@ function openPrestarCaja(cajaId){
   const profsFiltrados = loanTeacherOptions();
   const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
   if(profPropio){
-    profSelect.innerHTML = '<option value="">â€” Seleccionar â€”</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}</option>`).join('');
+    profSelect.innerHTML = '<option value=””>— Seleccionar —</option>' +
+      profsFiltrados.map(p=>`<option value=”${p.id}” ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}</option>`).join('');
     profSelect.disabled = false;
   } else {
     profSelect.disabled = false;
