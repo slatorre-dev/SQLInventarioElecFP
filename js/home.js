@@ -62,37 +62,5 @@ function renderHome(){
 function renderLoanBanner(){
   const el = document.getElementById('loanBanner');
   if(!el) return;
-  el.innerHTML = ''; // Toast + badge en navbar ya cubren el aviso
-}
-
-  let activos, vencidos;
-  if(esJefe){
-    activos = getPrestamosActivos();
-    vencidos = getVencidos();
-  } else {
-    // Solo muestra los préstamos donde el usuario logueado es el prestatario
-    const miNombre = (SESSION?.nombre || '').toLowerCase().trim();
-    activos = getPrestamosActivos().filter(p=>(p.profesorNombre||'').toLowerCase().trim()===miNombre);
-    vencidos = activos.filter(isVencido);
-  }
-
-  if(vencidos.length){
-    el.innerHTML=`<div class="loan-banner danger">
-      <div class="loan-banner-info">
-        <div class="loan-banner-icon">⚠️</div>
-        <div class="loan-banner-text"><span class="loan-banner-count">${vencidos.length}</span> préstamo${vencidos.length!==1?'s':''} vencido${vencidos.length!==1?'s':''} pendiente${vencidos.length!==1?'s':''} de devolución</div>
-      </div>
-      <button class="loan-banner-btn" onclick="goPrestamos('vencidos')">Ver vencidos →</button>
-    </div>`;
-  } else if(activos.length){
-    el.innerHTML=`<div class="loan-banner">
-      <div class="loan-banner-info">
-        <div class="loan-banner-icon">📋</div>
-        <div class="loan-banner-text"><span class="loan-banner-count">${activos.length}</span> préstamo${activos.length!==1?'s':''} activo${activos.length!==1?'s':''} en curso</div>
-      </div>
-      <button class="loan-banner-btn" onclick="goPrestamos('activos')">Ver préstamos →</button>
-    </div>`;
-  } else {
-    el.innerHTML='';
-  }
+  el.innerHTML = '';
 }
