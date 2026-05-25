@@ -14,6 +14,21 @@ metadata:
 2. Entrada en MEMORY.md index
 3. Commits atómicos (una feature = un/varios commits lógicos)
 4. SW version bump + push con cada set de cambios
+5. **Sincronizar memorias al repo**: copiar `C:\Users\PC\.claude\projects\...\memory\*.md` → `.claude/memory/` del repo y hacer commit — permite trabajar en otro PC con contexto completo
+
+## Sincronización entre PCs (desde 25/05/2026)
+Las memorias viven en DOS sitios que hay que mantener sincronizados:
+- **Local Claude**: `C:\Users\PC\.claude\projects\...\memory\` — las usa Claude automáticamente
+- **Repo Git**: `.claude/memory/` — se sincronizan con git push/pull
+
+**Al empezar en un PC nuevo:**
+1. `git pull origin main`
+2. Copiar `.claude/memory/*.md` → `C:\Users\PC\.claude\projects\...\memory\`
+
+**Al terminar sesión:**
+1. Crear/actualizar archivos en `C:\Users\PC\.claude\projects\...\memory\`
+2. Copiar todos al repo: `Copy-Item "C:\Users\PC\.claude\projects\...\memory\*.md" ".claude\memory\" -Force`
+3. `git add .claude/memory/ && git commit -m "docs: sync memorias" && git push`
 
 **Why:** La memoria ayuda a recordar en futuras sesiones:
 - Qué se implementó y dónde
