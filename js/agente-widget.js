@@ -3370,8 +3370,12 @@
       el.chatInput.placeholder = 'Ej: ¿Dónde está...? | ¿Quién tiene...?';
     }
 
+    var _voiceSent = false;
     function sendAndStop() {
+      if (_voiceSent) return;
+      _voiceSent = true;
       clearTimeout(silenceTimer);
+      silenceTimer = null;
       userStopped = true;
       if (_recognition) { try { _recognition.stop(); } catch(e) {} }
       _recognition = null;
