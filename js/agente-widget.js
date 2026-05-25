@@ -61,7 +61,9 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
-    }).then(function(r){ return r.json(); });
+    }).then(function(r){
+      return r.json().catch(function(){ return {ok:false, error:'Respuesta inválida del servidor (HTTP '+r.status+')'}; });
+    });
   }
 
   function decompressItems(data) {
@@ -1575,12 +1577,25 @@
       if (!file) { fotoData = null; fotoPreview.innerHTML = ''; return; }
       var reader = new FileReader();
       reader.onload = function(event) {
-        fotoData = event.target.result;
-        var img = document.createElement('img');
-        img.src = fotoData;
-        img.style.cssText = 'max-width:100%;max-height:100px;border-radius:4px';
-        fotoPreview.innerHTML = '';
-        fotoPreview.appendChild(img);
+        var MAX = 360, QUALITY = 0.45;
+        var raw = new Image();
+        raw.onload = function() {
+          var w = raw.width, h = raw.height;
+          if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(raw, 0, 0, w, h);
+          fotoData = canvas.toDataURL('image/jpeg', QUALITY);
+          var img = document.createElement('img');
+          img.src = fotoData;
+          img.style.cssText = 'max-width:100%;max-height:100px;border-radius:4px';
+          fotoPreview.innerHTML = '';
+          fotoPreview.appendChild(img);
+        };
+        raw.src = event.target.result;
       };
       reader.readAsDataURL(file);
     });
