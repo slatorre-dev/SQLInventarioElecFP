@@ -19,6 +19,8 @@
   var LEARN_KEY = 'volt_intent_examples_v1';
   var HISTORY_KEY = 'volt_chat_history_v1';
   var HISTORY_MAX = 40; // máximo de mensajes a persistir
+  var FORM_CORRECTIONS_KEY = 'volt_form_corrections_v1';
+  var FORM_CORRECTIONS_MAX = 60;
 
   // Obtener credenciales — usa SESSION global de la app (state.js)
   function getCreds() {
@@ -325,6 +327,7 @@
     contextItem: null,  // último ítem en contexto (para "este", "esta", etc.)
     contextAula: null,  // última aula mencionada en la conversación
     learnedIntents: [],
+    formCorrections: [],
     // csv
     csvParsed: [],
     // audit filter
@@ -666,6 +669,7 @@
     if (!state.dataLoaded) loadData();
     else renderCurrentTab();
     if (!LEARN_LOADED) cargarAprendizajes();
+    if (!FORM_CORRECTIONS_LOADED) cargarCorreccionesD1();
   }
   function closePanel() {
     state.open = false;
@@ -1766,6 +1770,7 @@
           resultEl.style.color = '#34d399';
           formDiv.querySelector('.ag-new-item-submit').disabled = true;
           formDiv.querySelector('.ag-new-item-submit').textContent = '✅ Guardado';
+          detectarYGuardarCorreccion(formDiv, fraseCompleta);
           if (typeof items !== 'undefined' && Array.isArray(items)) {
             items.push(res.item);
             state.inventario = items;
@@ -1949,6 +1954,7 @@
 
   var LEARN_LOADED = false; // flag: ya cargado desde backend en esta sesión
   var MIGRATE_FLAG = 'volt_intents_migrated_v1';
+  var FORM_CORRECTIONS_LOADED = false;
 
   function apiCreds() {
     var c = getCreds();
@@ -2059,6 +2065,112 @@
     if (!words.length) return 0;
     var hits = words.filter(function(w) { return n.includes(w); }).length;
     return hits >= Math.ceil(words.length * 0.7) ? 14 : 0;
+  }
+
+  // ── Aprendizaje de correcciones en formulario de nuevo ítem ───────────────
+  function _fraseWords(fraseN) {
+    return fraseN.split(/\s+/).filter(function(w) { return w.length >= 3; });
+  }
+
+  function phraseSimilarity(fa, fb) {
+    var wa = _fraseWords(fa);
+    var wbSet = {};
+    _fraseWords(fb).forEach(function(w) { wbSet[w] = 1; });
+    if (!wa.length || !Object.keys(wbSet).length) return 0;
+    var hits = wa.filter(function(w) { return wbSet[w]; }).length;
+    return hits / Math.max(wa.length, Object.keys(wbSet).length);
+  }
+
+  // Carga correcciones desde D1; fallback a localStorage si falla o no hay sesión
+  function cargarCorreccionesD1() {
+    var creds = apiCreds();
+    if (!creds) {
+      _cargarCorreccionesLocal();
+      return;
+    }
+    fetch('/api/form-corrections' + creds)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.ok && Array.isArray(data.items)) {
+          state.formCorrections = data.items.map(function(x) {
+            return { fraseN: x.fraseNorm, aulaId: x.aulaId, cicloId: x.cicloId, modCod: x.modCod, catId: x.catId };
+          });
+          FORM_CORRECTIONS_LOADED = true;
+          // Sincronizar a localStorage como caché offline
+          try { localStorage.setItem(FORM_CORRECTIONS_KEY, JSON.stringify(state.formCorrections)); } catch(e) {}
+        } else {
+          _cargarCorreccionesLocal();
+        }
+      })
+      .catch(function() { _cargarCorreccionesLocal(); });
+  }
+
+  function _cargarCorreccionesLocal() {
+    try { state.formCorrections = JSON.parse(localStorage.getItem(FORM_CORRECTIONS_KEY) || '[]'); } catch(e) { state.formCorrections = []; }
+    FORM_CORRECTIONS_LOADED = true;
+  }
+
+  function cargarCorreccionesFormulario() {
+    if (!FORM_CORRECTIONS_LOADED) _cargarCorreccionesLocal();
+    return state.formCorrections;
+  }
+
+  function guardarCorreccionFormulario(entry) {
+    // Actualización optimista en memoria
+    state.formCorrections = state.formCorrections.filter(function(x) { return x.fraseN !== entry.fraseN; });
+    state.formCorrections.push(entry);
+    if (state.formCorrections.length > FORM_CORRECTIONS_MAX) state.formCorrections = state.formCorrections.slice(-FORM_CORRECTIONS_MAX);
+    // Caché offline
+    try { localStorage.setItem(FORM_CORRECTIONS_KEY, JSON.stringify(state.formCorrections)); } catch(e) {}
+    // Persistir en D1
+    var creds = apiCreds();
+    if (creds) {
+      fetch('/api/form-corrections' + creds, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fraseNorm: entry.fraseN, aulaId: entry.aulaId, cicloId: entry.cicloId, modCod: entry.modCod, catId: entry.catId })
+      }).catch(function() {});
+    }
+  }
+
+  function consultarCorreccionAprendida(frase) {
+    var fraseN = normalize(normalizarEntradaUsuario(frase));
+    var list = cargarCorreccionesFormulario();
+    var best = null, bestScore = 0;
+    list.forEach(function(entry) {
+      var score = phraseSimilarity(fraseN, entry.fraseN);
+      if (score > bestScore) { bestScore = score; best = entry; }
+    });
+    return bestScore >= 0.55 ? best : null;
+  }
+
+  function detectarYGuardarCorreccion(formDiv, frase) {
+    var sug = formDiv._voltSugerencias;
+    if (!sug || !frase) return;
+    var aulaFinal  = (formDiv.querySelector('.ag-new-item-aula')  || {}).value || null;
+    var cicloFinal = (formDiv.querySelector('.ag-new-item-ciclo') || {}).value || null;
+    var modFinal   = (formDiv.querySelector('.ag-new-item-mod')   || {}).value || null;
+    var catFinal   = (formDiv.querySelector('.ag-new-item-cat')   || {}).value || null;
+    var cambios = [];
+    if (aulaFinal  !== sug.aulaId)  cambios.push('aula');
+    if (cicloFinal !== sug.cicloId) cambios.push('ciclo');
+    if (modFinal   !== sug.modCod)  cambios.push('módulo');
+    if (catFinal   !== sug.catId)   cambios.push('categoría');
+    if (!cambios.length) return;
+    guardarCorreccionFormulario({
+      fraseN:  normalize(normalizarEntradaUsuario(frase)),
+      aulaId:  aulaFinal,
+      cicloId: cicloFinal,
+      modCod:  modFinal,
+      catId:   catFinal,
+      ts: Date.now()
+    });
+    var chip = document.createElement('div');
+    chip.className = 'ag-intent-chip';
+    chip.style.cssText = 'color:#34d399;border-color:rgba(52,211,153,.3);margin:4px 14px';
+    chip.textContent = '🧠 Aprendido: la próxima vez usaré ' + cambios.join(', ') + ' correcto' + (cambios.length > 1 ? 's' : '');
+    el.messages.appendChild(chip);
+    el.messages.scrollTop = el.messages.scrollHeight;
   }
 
   function scorePatterns(n, rules) {
@@ -2531,11 +2643,20 @@
   function autocompletarFormulario(formDiv, frase) {
     var msgs = [];
 
+    // Corrección aprendida de una frase similar anterior
+    var correccion = consultarCorreccionAprendida(frase);
+
     // Aula
     var aula = extraerAulaDeFrase(frase);
-    if (aula) {
-      var aulaEl = formDiv.querySelector('.ag-new-item-aula');
-      if (aulaEl) { aulaEl.value = aula.id; msgs.push('🏫 ' + aula.name); }
+    var aulaEl = formDiv.querySelector('.ag-new-item-aula');
+    if (aulaEl) {
+      if (correccion && correccion.aulaId && !aula) {
+        aulaEl.value = correccion.aulaId;
+        msgs.push('🏫 ' + correccion.aulaId + ' (aprendido)');
+      } else if (aula) {
+        aulaEl.value = aula.id;
+        msgs.push('🏫 ' + aula.name);
+      }
     }
 
     // Ubicación
@@ -2545,37 +2666,47 @@
       if (locInput) { locInput.value = loc; msgs.push('📍 ' + loc); }
     }
 
-    // Ciclo: primero desde la frase, luego contexto actual de la app
+    // Ciclo: corrección aprendida tiene prioridad sobre extracción de la frase
     var cicloDetectado = extraerCicloDeFrase(frase);
     if (!cicloDetectado && typeof cf !== 'undefined' && cf && cf.type === 'mod' && cf.ciclo) {
       cicloDetectado = cf.ciclo;
     }
+    if (correccion && correccion.cicloId && !cicloDetectado) {
+      cicloDetectado = (typeof CICLOS !== 'undefined' ? CICLOS : []).find(function(c) { return c.id === correccion.cicloId; }) || null;
+    }
 
-    // Módulo: primero buscar en el ciclo detectado, si no en todos
+    // Módulo: corrección aprendida tiene prioridad
     var modDetectado = cicloDetectado
       ? extraerModuloDeFrase(frase, cicloDetectado)
       : extraerModuloDeFrase(frase, null);
-
-    // Si el módulo viene de otro ciclo (búsqueda libre), usar ese ciclo
     if (modDetectado && !cicloDetectado) cicloDetectado = modDetectado.ciclo;
 
     if (cicloDetectado) {
       var cicloSel = formDiv.querySelector('.ag-new-item-ciclo');
       if (cicloSel) {
+        var wasLearned = correccion && correccion.cicloId === cicloDetectado.id && !extraerCicloDeFrase(frase);
         cicloSel.value = cicloDetectado.id;
-        cicloSel.dispatchEvent(new Event('change')); // carga los módulos síncronamente
-        msgs.push('📚 ' + (cicloDetectado.alias || cicloDetectado.name));
+        cicloSel.dispatchEvent(new Event('change'));
+        msgs.push('📚 ' + (cicloDetectado.alias || cicloDetectado.name) + (wasLearned ? ' (aprendido)' : ''));
       }
     }
 
-    if (modDetectado) {
+    // Si el módulo no salió de la frase pero hay corrección aprendida, aplicarla
+    if (!modDetectado && correccion && correccion.modCod && cicloDetectado) {
+      var modSel2 = formDiv.querySelector('.ag-new-item-mod');
+      if (modSel2 && modSel2.querySelector('option[value="' + correccion.modCod + '"]')) {
+        modSel2.value = correccion.modCod;
+        msgs.push('📖 (módulo aprendido)');
+      }
+    } else if (modDetectado) {
       var modSel = formDiv.querySelector('.ag-new-item-mod');
       if (modSel) { modSel.value = modDetectado.mod.cod; msgs.push('📖 ' + modDetectado.mod.name); }
     }
 
-    // Categoría sugerida: primero por nombre del item, si no por la frase completa
+    // Categoría: corrección aprendida tiene prioridad
     var nombreInput = formDiv.querySelector('.ag-new-item-name');
     var catSugerida = sugerirCategoria((nombreInput && nombreInput.value) || frase);
+    if (correccion && correccion.catId && !catSugerida) catSugerida = correccion.catId;
     if (catSugerida) {
       var catSel = formDiv.querySelector('.ag-new-item-cat');
       if (catSel) { catSel.value = catSugerida; msgs.push('🏷️ ' + catSugerida); }
@@ -2590,6 +2721,14 @@
           msgs.map(function(m) { return '<span style="color:#34d399;margin-right:6px">' + esc(m) + '</span>'; }).join('');
       }
     }
+
+    // Guardar lo que Volt rellenó para detectar correcciones al enviar
+    formDiv._voltSugerencias = {
+      aulaId:  aulaEl ? aulaEl.value || null : null,
+      cicloId: (formDiv.querySelector('.ag-new-item-ciclo') || {}).value || null,
+      modCod:  (formDiv.querySelector('.ag-new-item-mod')   || {}).value || null,
+      catId:   (formDiv.querySelector('.ag-new-item-cat')   || {}).value || null
+    };
   }
 
   // ── Extraer nombre de profesor/a de una frase ─────────────────────
