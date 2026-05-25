@@ -16,19 +16,31 @@ metadata:
 4. SW version bump + push con cada set de cambios
 5. **Sincronizar memorias al repo**: copiar `C:\Users\PC\.claude\projects\...\memory\*.md` → `.claude/memory/` del repo y hacer commit — permite trabajar en otro PC con contexto completo
 
-## Sincronización entre PCs (desde 25/05/2026)
-Las memorias viven en DOS sitios que hay que mantener sincronizados:
-- **Local Claude**: `C:\Users\PC\.claude\projects\...\memory\` — las usa Claude automáticamente
-- **Repo Git**: `.claude/memory/` — se sincronizan con git push/pull
+## Sincronización entre PCs con Junction (desde 25/05/2026)
+Una sola carpeta — junction Windows hace que Claude y el repo lean del mismo sitio.
 
-**Al empezar en un PC nuevo:**
-1. `git pull origin main`
-2. Copiar `.claude/memory/*.md` → `C:\Users\PC\.claude\projects\...\memory\`
+**Cómo está configurado en este PC:**
+```
+C:\Users\PC\.claude\projects\...\memory\  →  (junction)  →  .claude\memory\ del repo
+```
+Git push/pull sincroniza todo automáticamente. No hay que copiar nada.
 
-**Al terminar sesión:**
-1. Crear/actualizar archivos en `C:\Users\PC\.claude\projects\...\memory\`
-2. Copiar todos al repo: `Copy-Item "C:\Users\PC\.claude\projects\...\memory\*.md" ".claude\memory\" -Force`
-3. `git add .claude/memory/ && git commit -m "docs: sync memorias" && git push`
+**Al empezar en un PC NUEVO (hacerlo una sola vez):**
+```powershell
+# 1. Clonar o pullear el repo
+git clone https://github.com/sebantonio/SQLInventarioElecFP
+# (o git pull si ya existe)
+
+# 2. Crear la carpeta del proyecto en Claude si no existe
+$proj = "C:\Users\TU_USUARIO\.claude\projects\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-SQLInventarioElecFP"
+New-Item -ItemType Directory -Force $proj
+
+# 3. Crear junction (ajustar ruta del repo)
+$repoMemory = "RUTA_AL_REPO\.claude\memory"
+New-Item -ItemType Junction -Path "$proj\memory" -Target $repoMemory
+```
+
+**Al terminar cada sesión:** solo `git add .claude/memory/ && git commit && git push` — las memorias ya están en el repo.
 
 **Why:** La memoria ayuda a recordar en futuras sesiones:
 - Qué se implementó y dónde
