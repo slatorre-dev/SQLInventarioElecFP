@@ -12,7 +12,9 @@
       "Bash(Select-String -Path \"d:\\\\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\\\\Github\\\\SQLInventarioElecFP\\\\index.html\" -Pattern \"bulkBar|bulkAction\")",
       "Bash(Select-Object -First 20)",
       "Bash(mkdir -p \"d:\\\\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\\\\Github\\\\SQLInventarioElecFP\\\\.claude\\\\memory\")",
-      "Bash(cp 'C:\\\\Users\\\\PC\\\\.claude\\\\projects\\\\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-SQLInventarioElecFP\\\\memory\\\\*' \"d:\\\\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\\\\Github\\\\SQLInventarioElecFP\\\\.claude\\\\memory\\\\\")"
+      "Bash(cp 'C:\\\\Users\\\\PC\\\\.claude\\\\projects\\\\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-SQLInventarioElecFP\\\\memory\\\\*' \"d:\\\\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\\\\Github\\\\SQLInventarioElecFP\\\\.claude\\\\memory\\\\\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "d:\\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\\Github\\SQLInventarioElecFP\\.claude",
