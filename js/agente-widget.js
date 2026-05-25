@@ -2473,17 +2473,6 @@
     return null;
   }
 
-  // ── Extraer cantidad numérica de una frase ────────────────────────
-  function extraerCantidadDeFrase(q) {
-    var n = normalize(q || '');
-    var m = n.match(/\b(\d+)\s*(?:unidades?|uds?\.?|ud\.?|piezas?|ejemplares?|items?)?/);
-    if (m) { var v = parseInt(m[1]); if (v > 0 && v < 1000) return v; }
-    var NUMS = { uno:1, una:1, dos:2, tres:3, cuatro:4, cinco:5, seis:6, siete:7,
-                 ocho:8, nueve:9, diez:10, once:11, doce:12, quince:15, veinte:20, veinticinco:25 };
-    for (var w in NUMS) { if (new RegExp('\\b' + w + '\\b').test(n)) return NUMS[w]; }
-    return null;
-  }
-
   // ── Extraer fecha de devolución prevista de una frase ─────────────
   function extraerFechaDevolucion(q) {
     var n = normalize(q || '');
