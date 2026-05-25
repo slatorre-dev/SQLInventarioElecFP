@@ -25,6 +25,8 @@ function toggleActionMenu(evt, itemId){
   if(!isVisible){
     const btn = evt.currentTarget;
     const r = btn.getBoundingClientRect();
+    // Mover al body para escapar de cualquier filter/opacity del ancestro
+    if(menu.parentElement !== document.body) document.body.appendChild(menu);
     menu.style.position = 'fixed';
     menu.style.top = (r.bottom + 4) + 'px';
     menu.style.left = Math.max(4, r.right - 180) + 'px';
