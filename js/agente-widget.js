@@ -3390,50 +3390,56 @@
       r.continuous = false;      // más estable en móvil
       r.interimResults = true;
 
+      var sessionCommitted = '';  // texto final confirmado en esta sesión
+
       r.onresult = function(e) {
         var interim = '';
-        var sessionFinal = '';
+        var finalNow = '';
         for (var i = 0; i < e.results.length; i++) {
-          if (e.results[i].isFinal) sessionFinal += e.results[i][0].transcript + ' ';
+          if (e.results[i].isFinal) finalNow += e.results[i][0].transcript + ' ';
           else interim += e.results[i][0].transcript;
         }
-        // Mostrar lo acumulado + esta sesión
-        el.chatInput.value = (accumulatedText + sessionFinal + interim).trim();
-        // Reiniciar temporizador de silencio
+        sessionCommitted = finalNow;
+        el.chatInput.value = (accumulatedText + finalNow + interim).trim();
         clearTimeout(silenceTimer);
         silenceTimer = setTimeout(function() {
-          // Confirmar lo final de esta sesión antes de enviar
-          accumulatedText += sessionFinal || interim;
+          silenceTimer = null;
+          // Usar sessionCommitted (capturado en el closure del resultado final)
+          var toAdd = sessionCommitted || interim;
+          if (toAdd.trim()) accumulatedText = (accumulatedText + toAdd).trim() + ' ';
           sendAndStop();
         }, 2000);
       };
 
       r.onerror = function(e) {
         if (e.error === 'aborted') return;
-        if (e.error === 'no-speech') return; // ignorar — se gestiona en onend
+        if (e.error === 'no-speech') return;
         clearTimeout(silenceTimer);
+        silenceTimer = null;
         _recognition = null;
         resetMicUI();
         appendMsg('ai', '⚠ Error de micrófono: ' + e.error);
       };
 
       r.onend = function() {
-        if (userStopped) return;
-        // El STT cortó por pausa del sistema — acumular lo transcrito y reiniciar
+        if (userStopped || _voiceSent) return;
+        // Acumular lo que haya en el input (texto reconocido esta sesión)
         var currentText = el.chatInput.value.trim();
-        if (currentText && currentText !== accumulatedText.trim()) {
+        var accumulated = accumulatedText.trim();
+        if (currentText && currentText !== accumulated) {
           accumulatedText = currentText + ' ';
         }
-        // Si hay timer activo (el usuario aún está hablando), reiniciar sesión
+        // Si el timer sigue activo, reiniciar sesión (el usuario aún habla)
         if (silenceTimer !== null) {
-          // Esperar un poco y reiniciar para capturar el resto
+          clearTimeout(silenceTimer);
+          silenceTimer = null;
           setTimeout(function() {
-            if (!userStopped && _recognition === r) {
+            if (!userStopped && !_voiceSent) {
               _recognition = startSession();
             }
           }, 100);
         } else {
-          // Sin timer — pausa real, enviar lo acumulado
+          // Sin timer activo — pausa real, enviar
           sendAndStop();
         }
       };
