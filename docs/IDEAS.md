@@ -1,302 +1,246 @@
 # Ideas de Mejoras — SQLInventarioElecFP
 
-Registro de ideas y mejoras sugeridas para futuras sesiones.
+Registro de ideas pendientes para futuras sesiones. Las ya implementadas se han eliminado de esta lista.
 
-## Mejoras de Gestión de Inventario
+---
 
-### 1. Alertas de Stock Bajo
-**Descripción:** Banner o notificación más visible cuando hay items por debajo del mínimo.
+## Gestión de Inventario
 
-**Implementación sugerida:**
+### Alertas de Stock Bajo
+Banner o notificación más visible cuando hay items por debajo del mínimo.
 - Banner en la parte superior del inventario si hay items con stock bajo
-- Número de items afectados
-- Link para ver lista filtrada
+- Número de items afectados + link para ver lista filtrada
 
 **Prioridad:** Media
 
-### 2. Filtro por Mantenimiento Pendiente
-**Descripción:** Botón rápido para ver solo items que necesitan mantenimiento.
-
-**Implementación sugerida:**
+### Filtro por Mantenimiento Pendiente
+Botón rápido para ver solo items que necesitan mantenimiento (`mant = '1'`).
 - Botón en toolbar junto a filtros de categoría/estado
-- Muestra items donde `mant = '1'`
 - Contador de items pendientes
 
 **Prioridad:** Media
 
-### 3. Historial de Cambios ✅ IMPLEMENTADO
-**Descripción:** Auditoría de quién cambió qué y cuándo.
-
-**Implementado en v147→v156:**
-- Tabla `log` en BD (id, actor, item_id, campo, valor_anterior, valor_nuevo, fecha, detalles)
-- Endpoint `/api/historial` para obtener registro
-- Modal de historial con detalles de cambios
-- Botón "Historial" en modal de item (solo si hay cambios)
-- Vista con cambios ordenados por fecha (más recientes primero)
-- Control de acceso: visible a admins/jefes
-
-**Status:** ✅ COMPLETADO
-
-### 4. Búsqueda Avanzada
-**Descripción:** Filtros combinados avanzados.
-
-**Ejemplo:** "Consumibles en Aula 35 con stock bajo"
-
-**Implementación sugerida:**
-- Interfaz de filtros expandible
-- Soportar: tipo_material, aula, categoría, estado, stock bajo, mantenimiento
+### Búsqueda Avanzada
+Filtros combinados: "Consumibles en Aula 35 con stock bajo".
+- Interfaz de filtros expandible (tipo_material + aula + categoría + estado + stock bajo + mantenimiento)
 - Guardar búsquedas frecuentes
 
 **Prioridad:** Baja
 
-### 5. Reporte de Stock por Categoría/Aula
-**Descripción:** Resumen visual de cómo está distribuido el inventario.
-
-**Implementación sugerida:**
-- Gráficos de distribución (pie chart, bar chart)
-- Exportable a PDF
+### Reporte de Stock por Categoría/Aula
+Resumen visual de distribución del inventario.
+- Gráficos pie/bar exportables a PDF
 - Vista por categoría y por aula
 
 **Prioridad:** Baja
 
-### 6. Notificaciones en Tiempo Real
-**Descripción:** Si otro usuario actualiza un item mientras lo estás viendo, avisarte.
-
-**Implementación sugerida:**
-- WebSocket o polling cada 30s
+### Notificaciones en Tiempo Real
+Si otro usuario actualiza un item mientras lo estás viendo, avisarte.
+- Polling cada 30s
 - Toast o modal de actualización
-- Opción de recargar
 
 **Prioridad:** Baja
 
-### 7. Merge/Consolidar Items Duplicados
-**Descripción:** Fusionar dos items iguales accidentalmente.
-
-**Implementación sugerida:**
-- Detectar posibles duplicados (mismo nombre, misma referencia)
-- Interfaz para seleccionar items a fusionar
-- Opción de mantener imagen de uno de ellos
-- Consolidar cantidad
+### Merge/Consolidar Items Duplicados
+Detectar y fusionar items iguales accidentalmente creados.
+- Detectar por nombre similar o misma referencia
+- Interfaz para seleccionar y fusionar, consolidando cantidad
 
 **Prioridad:** Media
 
-### 8. Bulk Inventory Actions ✅ IMPLEMENTADO
-**Descripción:** Acciones en lote sobre múltiples items.
-
-**Implementado en v158:**
-- UI para seleccionar múltiples items
-- Acciones en lote: cambiar estado, categoría, cantidad, etc.
-- Cambios registrados en auditoría automáticamente
-- Integrado con modal de item
-
-**Status:** ✅ COMPLETADO
-
-### 8. Control de Acceso por Aula
-**Descripción:** Profesores solo ven y editan items de su aula.
-
-**Implementación sugerida:**
-- Nueva columna en tabla Usuarios: aula_default
-- Filtrar items por aula en renderizado
-- Permisos: solo editar items de propia aula (excepto admin)
+### Control de Acceso por Aula
+Profesores solo ven y editan items de su aula.
+- Nueva columna en tabla Usuarios: `aula_default`
+- Filtrar items por aula en renderizado (excepto admin)
 
 **Prioridad:** Media-Alta
 
-## Optimizaciones de Performance
+---
 
-### 1. Lazy Loading de Imágenes
-**Descripción:** Cargar fotos solo cuando se necesitan.
+## Inventario General del Instituto
 
-**Implementación sugerida:**
-- Usar `loading="lazy"` en `<img>` tags
-- Para modales: cargar al abrir
-- Para listados: cargar al scroll cerca
+### Módulo Multi-Departamento
+Actualmente la app gestiona el inventario de un solo departamento (Electricidad/FP). La idea es extenderla para que el **instituto completo** pueda inventariar todos sus departamentos desde una misma instancia.
+
+**Casos de uso:**
+- Jefatura de estudios ve el inventario global de todos los departamentos
+- Cada jefe de departamento gestiona solo el suyo
+- Inventario compartido (sala de actos, biblioteca, aulas comunes)
+- Coordinación de recursos entre departamentos ("¿alguien tiene un proyector libre?")
+
+**Enfoque técnico:**
+- Nueva columna `departamento_id` en tabla `items`
+- Nueva tabla `departamentos` (id, nombre, color, responsable_id)
+- Roles extendidos: `superadmin_instituto` > `admin_departamento` > `jefe` > `profesor` > `alumno`
+- Filtro global por departamento en la UI (selector en navbar o home)
+- Cada departamento tiene su propia vista pero comparten la misma base D1
+- Opción: instancias D1 separadas por departamento (más aislamiento, más coste)
+
+**Ventajas del enfoque single-D1:**
+- Sin coste adicional de infraestructura
+- Búsquedas cruzadas entre departamentos
+- Un solo deploy de Cloudflare Pages
+
+**Pasos de implementación:**
+1. Migración D1: añadir tabla `departamentos` + columna `departamento_id` en `items` y `usuarios`
+2. Backend: filtrar todos los endpoints por `departamento_id` del usuario autenticado
+3. Frontend: selector de departamento en home/navbar para superadmin
+4. Panel de superadmin con stats globales del instituto
+5. Importación masiva por departamento (CSV/Excel)
+
+**Prioridad:** Alta — alto impacto institucional
+
+---
+
+## Inventario por Cámara
+
+### Reconocimiento de Equipos con Modelo Local (Roboflow + ONNX)
+Pasar la cámara del móvil por el taller para generar/actualizar el inventario automáticamente, sin API externa ni coste por uso.
+
+**Enfoque técnico:**
+- Modelo de detección basado en dataset público de **Roboflow Universe** (equipos de laboratorio electrónica: multímetros, osciloscopios, fuentes de alimentación...)
+- Fine-tuning con fotos de los equipos específicos del taller (~20-30 fotos por tipo)
+- Exportar como **ONNX** e integrar con `onnxruntime-web` — inferencia 100% local en el navegador
+- **OCR complementario** con Tesseract.js para leer etiquetas (número de serie, modelo)
+- Flujo: cámara detecta equipo → rellena campos del formulario → usuario confirma → guarda en D1
+
+**Por qué sin API externa:**
+- Sin coste por inferencia (todo local en el navegador)
+- Sin dependencia de terceros para uso masivo en el instituto
+
+**Pasos de implementación:**
+1. Buscar dataset en Roboflow Universe ("electronics lab", "multimeter", "oscilloscope")
+2. Añadir fotos propias de cada equipo del taller para fine-tune
+3. Entrenar y exportar modelo ONNX
+4. Nuevo módulo "Inventario por cámara" en la app (separado de Volt)
+5. Integrar OCR para números de serie
+
+**Prioridad:** Media-Alta
+
+---
+
+## UX y Usabilidad
+
+### Búsqueda con Historial de Términos Recientes
+Últimas 5 búsquedas en localStorage, mostrar al hacer foco en el campo de búsqueda.
 
 **Prioridad:** Media
-**Impacto:** Reducir uso de datos/ancho de banda
 
-### 2. Caché Inteligente
-**Descripción:** Caché más selectivo en Service Worker.
-
-**Cambios sugeridos:**
-- Cachear datos que cambian poco (categorías, aulas, ciclos)
-- No cachear datos tiempo real (items, stock)
-- Borrar caché más agresivamente
+### Aulas Ordenadas por Uso Reciente
+Contador de visitas en localStorage, las aulas más usadas aparecen primero en home.
 
 **Prioridad:** Media
-**Impacto:** Mejor experiencia offline
 
-### 3. Compresión de Imágenes Automática
-**Descripción:** Optimizar fotos al subirlas.
+### Paginación Persistente entre Sesiones
+Guardar `_pageSize` en localStorage para que el usuario no tenga que reconfigurar al volver.
 
-**Implementación sugerida:**
-- Usar ImageMagick o similar en servidor
-- Reducir a máximo 1000x1000px
-- Comprimir JPEG a 80% calidad
-- Almacenar thumbnail 200x200px
+**Prioridad:** Baja
+
+### Modo Oscuro
+Variables CSS ya preparadas, solo falta toggle en perfil de usuario.
 
 **Prioridad:** Media
-**Impacto:** Reducir tamaño BD y tiempo carga
 
-### 4. Paginación en Listados Grandes
-**Descripción:** Si hay >1000 items, cargar de 50 en 50.
+### Swipe en Cards Tablet
+El swipe para prestar/ver ya funciona en móvil. Falta adaptar para tablet (pointer:coarse + min-width:640px).
 
-**Implementación sugerida:**
-- Implementar en `renderInv()`
-- Botones "Siguiente/Anterior" o scroll infinito
-- Mantener estado de página al cambiar filtros
+**Prioridad:** Media
 
-**Prioridad:** Baja (depende de crecer el inventario)
-**Impacto:** Mejor performance con muchos items
+### QR Directo en Card
+Ver QR del ítem sin necesidad de abrir el modal de edición.
 
-### 5. Indexación/Búsqueda Rápida
-**Descripción:** Crear índices en D1 para campos que se buscan.
+**Prioridad:** Baja
 
-**Campos a indexar:**
+### Historial de Cambios en Modal Edición
+Ver el log de cambios de un ítem directamente desde el modal de edición.
+
+**Prioridad:** Media
+
+---
+
+## Volt — Agente IA
+
+### Sugerencias Contextuales
+Tras una acción, Volt sugiere la siguiente lógica: "¿prestar otro al mismo profesor?", "¿ver el historial de este ítem?".
+
+**Prioridad:** Media
+
+### Comando Resumen Global de Préstamos
+"¿Qué está prestado ahora?" — resumen de todos los préstamos activos sin filtrar por ítem.
+
+**Prioridad:** Media
+
+### Edición Inline en Resultados de Volt
+Botón ✏️ por fila en tablas de resultados para editar sin salir del chat.
+
+**Prioridad:** Baja
+
+---
+
+## Performance
+
+### Índices en Tabla Items (D1)
 ```sql
 CREATE INDEX idx_items_ref ON items(ref);
 CREATE INDEX idx_items_name ON items(item);
 CREATE INDEX idx_items_tags ON items(tags);
 CREATE INDEX idx_items_aula ON items(aula);
 ```
+**Prioridad:** Alta — urgente si el inventario crece
 
-**Prioridad:** Alta
-**Impacto:** Búsqueda más rápida
-
-### 6. Code Splitting
-**Descripción:** Dividir JS en módulos más pequeños.
-
-**Modulos sugeridos:**
-- `core.js` — funciones comunes
-- `inventory.js` — gestión de inventario
-- `modals.js` — lógica de modales
-- `print.js` — impresión
-- `search.js` — búsqueda
-
-**Prioridad:** Baja
-**Impacto:** Carga inicial más rápida
-
-### 7. Debounce en Búsqueda
-**Descripción:** Esperar a que pare de escribir antes de buscar.
-
-**Implementación sugerida:**
-- Esperar 300ms sin input
-- Reduce cálculos innecesarios
-- Ya existe `debounce()` en algunas partes
-
-**Prioridad:** Media
-**Impacto:** Mejor responsividad UI
-
-### 8. Web Workers para Operaciones Pesadas
-**Descripción:** Movimientos de datos grandes a thread separado.
-
-**Casos de uso:**
-- Filtrado de 10000 items
-- Exportación a CSV
-- Procesamiento de búsqueda
-
-**Prioridad:** Baja
-**Impacto:** UI más responsiva con muchos datos
-
-## Priorización Sugerida
-
-### ✅ COMPLETADOS
-1. ✅ Historial de cambios (v147→v156)
-2. ✅ Bulk inventory actions (v158)
-
-### Hacer Ahora (Próximas 2 sesiones)
-1. Indexación de BD (búsqueda rápida) — URGENTE si log table crece
-2. Lazy loading de imágenes
-3. Alertas de stock bajo (mejor UX)
-4. Filtro por mantenimiento pendiente
-
-### Hacer Después (Próximas 4-8 sesiones)
-5. Consolidar items duplicados (workflow)
-6. Control acceso por aula (seguridad)
-7. Búsqueda avanzada con filtros
-8. Paginación en listados grandes
-
-### Hacer Luego (Backlog)
-9. Reporte visual de stock (nice to have)
-10. Notificaciones tiempo real (infraestructura)
-11. Code splitting (optimización)
-12. Web Workers (optimización extrema)
-13. Compresión de imágenes automática
-
-## Mejoras de UX para Auditoría de Datos
-
-### 1. Indicador visual de progreso
-**Descripción:** Mostrar contador de items completados mientras se editan.
-- Display: "5/243 items completados" o barra de progreso
-- Ubicación: En la barra de bulk actions o en un panel flotante
-- Beneficio: El usuario sabe cuántos items quedan sin arreglar
+### Lazy Loading de Imágenes
+`loading="lazy"` en `<img>` del listado; cargar fotos de modal solo al abrir.
 
 **Prioridad:** Media
 
-### 2. Botón "Marcar grupo como completado"
-**Descripción:** Una vez arreglados todos los items de un grupo (ej. Aula 35), marcarlo visualmente.
-- Opciones: Mostrar como ✓ hecho, cambiar color, mover a sección "completados"
-- Beneficio: Evita revisitar los mismos grupos, reduce confusión
+### Compresión de Imágenes Automática
+Reducir a máx 1000x1000px y comprimir JPEG al 80% al subir. Thumbnail 200x200px.
 
 **Prioridad:** Media
 
-### 3. Vista estadística inicial
-**Descripción:** Panel de resumen antes de entrar al trabajo.
-- Contenido: "969 items con problemas: 250 sin módulo, 180 sin aula, 200 sin categoría..."
-- Ubicación: Encima de la tabla de auditoría
-- Beneficio: El usuario ve dónde enfocarse primero (10 min vs. 2 horas)
-
-**Prioridad:** Alta
-
-### 4. Combinación inteligente de filtros (AND/OR)
-**Descripción:** Pasar de filtros exclusivos a lógica AND/OR.
-- Actual: "Sin módulo" O "Sin aula" (uno a uno)
-- Propuesto: "Sin módulo Y sin aula" para ver items que necesitan ambos
-- Beneficio: Mayor granularidad en auditoría
-
-**Prioridad:** Media
-
-### 5. Exportar reporte
-**Descripción:** Generar CSV o PDF con items problemáticos.
-- Formato: Items agrupados por aula/categoría
-- Beneficio: El coordinador puede revisar offline o compartir resultados
+### Web Workers para Operaciones Pesadas
+Filtrado de muchos items, exportación CSV, procesamiento de búsqueda en thread separado.
 
 **Prioridad:** Baja
 
-## Mejoras de Usabilidad (añadidas 25/05/2026)
+---
 
-### ✅ Mantener filtros al editar ítem (v387)
-Al guardar edición ya no se resetean los filtros ni la página del inventario.
+## Seguridad (FASE 1) — Pendiente crítico
 
-### ✅ Fuzzy search en Volt (v388)
-`searchInventoryCandidates()` añade puntuación por prefijo común ≥4 chars.
-
-### ✅ Sinónimos del taller en Volt (v388)
-Tabla `SINONIMOS` con 17 entradas: multímetro=polímetro, osci=osciloscopio, etc.
-
-### ✅ Aviso stock al prestar en Volt (v388)
-Formulario muestra alerta en tiempo real si la cantidad deja el stock por debajo del mínimo.
-
-### Pendiente — Prioridad Alta
-- **Búsqueda con historial** — últimas 5 búsquedas en localStorage, mostrar al hacer foco
-- **Aulas ordenadas por uso reciente** — contador visitas en localStorage
-- **Paginación persiste entre sesiones** — guardar `_pageSize` en localStorage
-- **Modo oscuro** — variables CSS ya preparadas, toggle en perfil
-
-### Pendiente — Volt
-- **Sugerencias contextuales** tras acción ("¿prestar otro al mismo profesor?")
-- **Comando "¿qué está prestado ahora?"** — resumen global sin filtrar por ítem
-- **Edición inline** en tablas de resultados de Volt (botón ✏️ por fila)
-
-### Pendiente — Seguridad (FASE 1)
-- Bearer tokens en lugar de `?u=&p=` en query params
+- Bearer tokens en lugar de `?u=&p=` en query params (visible en logs)
 - Password hashing (bcrypt)
 - Rate-limiting en endpoints críticos
-- Branch: `feature/security-refactor`
+- Branch propuesta: `feature/security-refactor`
+
+**Prioridad:** Alta — bloquea despliegue a más usuarios
+
+---
+
+## Auditoría de Datos — Mejoras UX pendientes
+
+### Indicador Visual de Progreso
+"5/243 items completados" o barra de progreso durante auditoría en lote.
+
+**Prioridad:** Media
+
+### Vista Estadística Inicial
+Panel de resumen antes de entrar al trabajo: "969 items con problemas: 250 sin módulo, 180 sin aula..."
+
+**Prioridad:** Alta
+
+### Filtros AND/OR en Auditoría
+Pasar de filtros exclusivos a lógica combinada: "Sin módulo Y sin aula".
+
+**Prioridad:** Media
+
+### Exportar Reporte de Auditoría
+CSV o PDF con items problemáticos agrupados por aula/categoría.
+
+**Prioridad:** Baja
+
+---
 
 ## Estado
 
-- **Última actualización:** 25/05/2026
-- **Versión actual:** v390
-- **Ideas implementadas:** Historial (v147→v156), Bulk Actions (v158), Auditoría (v159→v166), Fuzzy Volt (v388), Sinónimos Volt (v388), Mantener filtros edición (v387)
-- **Ideas pendientes:** Búsqueda historial, aulas por uso, paginación persistente, modo oscuro, seguridad FASE 1
-- **Ideas backlog Volt:** Sugerencias contextuales, resumen préstamos global, edición inline resultados
+- **Última actualización:** 26/05/2026
+- **Versión actual:** v415
