@@ -755,6 +755,7 @@ function openModal(id=null, src=null){
   if (btnH) btnH.style.display = existing ? '' : 'none';
   document.getElementById('mItem').classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.body.dataset.scrollY = window.scrollY;
 
   resetModalChanges();
   captureModalOriginalValues();
@@ -787,6 +788,8 @@ function closeM(force=false){
   }
   document.getElementById('mItem').classList.remove('open');
   document.body.style.overflow = '';
+  const sy = parseInt(document.body.dataset.scrollY || '0', 10);
+  window.scrollTo(0, sy);
   setItemModalReadonly(false);
   resetModalChanges();
 }
