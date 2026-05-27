@@ -1,6 +1,6 @@
 # Nota de Trabajo - SQLInventarioElecFP
 
-**Estado:** v390 | Mayo 2026
+**Estado:** v423 | Mayo 2026
 
 ---
 
@@ -112,6 +112,15 @@ migrations/             — SQL de migraciones D1
 
 ---
 
+## Sesión 27/05/2026 — Completado (v417→v423)
+
+1. ✅ Feed actividad reciente en home (v417-v419, descartado por estética)
+2. ✅ Página historial visual `pHistorialPage`: timeline agrupado por día, avatar de color, frase natural (v420)
+3. ✅ Botón "📋 Historial" en panel acciones rápidas home (solo admin/superadmin)
+4. ✅ Click en ítem del historial navega directamente al modal del ítem via `openItemRoute()` (v421)
+5. ✅ Topbar: `conn-status` reducido a solo punto de color con tooltip; botón QR eliminado (ya en buscador) (v422)
+6. ✅ Botón recargar 🔄 eliminado del topbar (v423)
+
 ## Sesión 25/05/2026 — Completado (v379→v390)
 
 1. ✅ Fix vista tabla tablet: `getInvRenderMode()` + override CSS `@media(pointer:coarse) and (min-width:640px)`
@@ -199,6 +208,11 @@ migrations/             — SQL de migraciones D1
 | v387 | Editar ítem mantiene filtros y página | 25/05/2026 |
 | v388 | Volt: sinónimos, fuzzy, textToNumber, aviso stock préstamo | 25/05/2026 |
 | v389-v390 | Fix voz Volt: duplicado Android (_voiceSent, sessionCommitted) | 25/05/2026 |
+| v417-v419 | Feed actividad home (descartado, reemplazado por página historial) | 27/05/2026 |
+| v420 | Página historial visual con timeline + botón acciones rápidas | 27/05/2026 |
+| v421 | Historial: click en ítem navega al modal del ítem | 27/05/2026 |
+| v422 | Topbar: conn-status solo punto, quitar botón QR duplicado | 27/05/2026 |
+| v423 | Quitar botón recargar 🔄 del topbar | 27/05/2026 |
 
 ---
 

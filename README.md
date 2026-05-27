@@ -76,7 +76,7 @@ Botón flotante que abre un panel de chat para gestionar el inventario en lengua
 - Panel de auditoría: detecta ítems con campos incompletos (sin aula, sin categoría, sin foto, sin ubicación…)
 - Filtros por tipo de problema combinables
 - Acciones masivas desde el panel de auditoría
-- Historial completo de acciones: quién hizo qué y cuándo, filtrable por usuario, acción y tipo
+- Historial completo de acciones: página visual con timeline agrupado por día, avatares de color por tipo, click en ítem navega directamente al modal
 
 ### Importación y exportación
 
@@ -119,7 +119,7 @@ Este repositorio contiene la migración del proyecto original (Google Apps Scrip
 
 ## 1. Estado actual
 
-Estado a 2026-05-24 — versión `v371`:
+Estado a 2026-05-27 — versión `v423`:
 
 - **Frontend:** SPA (Single Page Application) en HTML5, CSS3 y JavaScript vanilla sin frameworks.
 - **Hosting:** Cloudflare Pages, despliegue automático en cada `git push` a `main`.

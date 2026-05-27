@@ -4,6 +4,20 @@ Registro de desarrollo y mejoras implementadas en la aplicación.
 
 ## Sesiones de trabajo
 
+### Sesión 27/05/2026 — Historial visual + limpieza topbar (v417→v423)
+
+#### Página de historial visual
+- **v420** Nueva página `pHistorialPage` — timeline agrupado por día con avatares de color (verde=añadido, azul=editado, rojo=eliminado, amarillo=préstamo, gris=devolución, morado=sistema), frase natural "Juan editó **Multímetro #3**", hora a la derecha
+- **v420** Botón "📋 Historial" en panel de acciones rápidas de la home (solo admin/superadmin/seba)
+- **v421** Click en fila del historial con itemId: navega directamente al modal del ítem via `openItemRoute()`. Hover muestra fondo azul y flecha `→`. Préstamos/devoluciones/importaciones no son clicables.
+- **v417-v419** Feed de actividad en home (chips de pulso) — descartado por estética, reemplazado por la página de historial
+
+#### Limpieza topbar
+- **v422** `conn-status`: eliminado texto "Sincronizado/Conectando", queda solo el punto de color. El texto pasa a `title` (tooltip al hover). Botón QR del topbar eliminado (duplicado del QR en buscador)
+- **v423** Botón recargar 🔄 eliminado — F5 cumple la misma función
+
+---
+
 ### Sesión 25/05/2026 — Usabilidad tablet/móvil + Volt NLP (v379→v390)
 
 #### Fixes tablet/móvil
