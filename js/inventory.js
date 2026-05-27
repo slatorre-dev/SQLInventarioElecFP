@@ -179,7 +179,6 @@ function renderInv(){
 
 let _consumibleGroupsOpen = Object.create(null);
 let _consumibleTagGroupsOpen = Object.create(null);
-let _consumibleTagShowAll = Object.create(null);
 
 function shouldGroupConsumibles(data){
   const q = (document.getElementById('srch')?.value || '').trim();
@@ -304,16 +303,7 @@ function tagIcon(tag){
 function renderConsumibleTagGroups(catKey, items, mode){
   const catEncoded = encodeURIComponent(catKey);
   const tagGroups = groupConsumiblesByTag(items);
-  const MAX_TAG_GROUPS = 12;
-  const showAll = !!_consumibleTagShowAll[catKey];
-  const visibleGroups = showAll
-    ? tagGroups
-    : tagGroups.filter((g, idx) => {
-        const stateKey = `${catKey}::${g.key}`;
-        return idx < MAX_TAG_GROUPS || !!_consumibleTagGroupsOpen[stateKey];
-      });
-  const hiddenCount = Math.max(0, tagGroups.length - visibleGroups.length);
-  const groupsHtml = visibleGroups.map(g=>{
+  const groupsHtml = tagGroups.map(g=>{
     const tagEncoded = encodeURIComponent(g.key);
     const stateKey = `${catKey}::${g.key}`;
     const isOpen = !!_consumibleTagGroupsOpen[stateKey];
@@ -328,10 +318,7 @@ function renderConsumibleTagGroups(catKey, items, mode){
       <div class="cons-subgroup-body${isOpen?' open':''}">${isOpen ? renderItemsFragment(g.items, mode) : ''}</div>
     </section>`;
   }).join('');
-  const toggleMore = tagGroups.length > MAX_TAG_GROUPS
-    ? `<button class="cons-subgroup-more" type="button" onclick="toggleConsumibleTagShowAll('${catEncoded}')">${showAll ? 'Ver menos tags' : `Ver ${hiddenCount} tags más`}</button>`
-    : '';
-  return `<div class="cons-subgroups-wrap"><div class="cons-subgroups">${groupsHtml}</div>${toggleMore}</div>`;
+  return `<div class="cons-subgroups-wrap"><div class="cons-subgroups">${groupsHtml}</div></div>`;
 }
 
 function renderConsumibleGroups(mc,data,mode){
@@ -395,12 +382,6 @@ function toggleConsumibleTagGroup(encodedCatKey, encodedTagKey){
   const tagKey = decodeURIComponent(encodedTagKey);
   const stateKey = `${catKey}::${tagKey}`;
   _consumibleTagGroupsOpen[stateKey] = !_consumibleTagGroupsOpen[stateKey];
-  renderInv();
-}
-
-function toggleConsumibleTagShowAll(encodedCatKey){
-  const catKey = decodeURIComponent(encodedCatKey);
-  _consumibleTagShowAll[catKey] = !_consumibleTagShowAll[catKey];
   renderInv();
 }
 
