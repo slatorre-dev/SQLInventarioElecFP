@@ -178,6 +178,7 @@ function renderInv(){
 }
 
 let _consumibleGroupsOpen = Object.create(null);
+let _consumibleTagGroupsOpen = Object.create(null);
 
 function shouldGroupConsumibles(data){
   const q = (document.getElementById('srch')?.value || '').trim();
@@ -220,6 +221,52 @@ function renderItemsFragment(data, mode){
   return tmp.innerHTML;
 }
 
+function tagKeyForItem(item){
+  const tags = itemTags(item);
+  return tags.length ? tags[0] : 'Sin tag';
+}
+
+function groupConsumiblesByTag(items){
+  const map = new Map();
+  for(const x of items){
+    const tag = tagKeyForItem(x);
+    if(!map.has(tag)) map.set(tag, []);
+    map.get(tag).push(x);
+  }
+  return [...map.entries()]
+    .map(([tag, tagItems]) => ({
+      key: tag,
+      tag,
+      items: tagItems,
+      refs: tagItems.length,
+      units: tagItems.reduce((a,i)=>a+(Number(i.qty)||0),0),
+      low: tagItems.filter(isLowStock).length
+    }))
+    .sort((a,b)=>{
+      if(a.tag === 'Sin tag') return 1;
+      if(b.tag === 'Sin tag') return -1;
+      return a.tag.localeCompare(b.tag);
+    });
+}
+
+function renderConsumibleTagGroups(catKey, items, mode){
+  const catEncoded = encodeURIComponent(catKey);
+  const tagGroups = groupConsumiblesByTag(items);
+  return `<div class="cons-subgroups">${tagGroups.map(g=>{
+    const tagEncoded = encodeURIComponent(g.key);
+    const stateKey = `${catKey}::${g.key}`;
+    const isOpen = !!_consumibleTagGroupsOpen[stateKey];
+    return `<section class="cons-subgroup${isOpen?' open':''}">
+      <button class="cons-subgroup-btn" type="button" onclick="toggleConsumibleTagGroup('${catEncoded}','${tagEncoded}')">
+        <span class="cons-subgroup-title">#${escHtml(g.tag)}</span>
+        <span class="cons-subgroup-metrics">${g.refs} refs · ${g.units} uds${g.low?` · ⚠ ${g.low}`:''}</span>
+        <span class="cons-subgroup-chevron">${isOpen ? '▲' : '▼'}</span>
+      </button>
+      <div class="cons-subgroup-body${isOpen?' open':''}">${isOpen ? renderItemsFragment(g.items, mode) : ''}</div>
+    </section>`;
+  }).join('')}</div>`;
+}
+
 function renderConsumibleGroups(mc,data,mode){
   const { groups, inventariables } = groupConsumiblesByCategory(data);
   const invBlock = inventariables.length
@@ -250,17 +297,18 @@ function renderConsumibleGroups(mc,data,mode){
         <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
         <span class="cons-group-main">
           <span class="cons-group-title">${escHtml(g.name)}</span>
-          <span class="cons-group-sub">Consumibles agrupados</span>
+          <span class="cons-group-sub">Consumibles subagrupados por tags</span>
         </span>
         <span class="cons-metrics">
           <span class="cons-metric">${g.refs} refs</span>
           <span class="cons-metric">${g.units} uds</span>
+          <span class="cons-metric">${groupConsumiblesByTag(g.items).length} tags</span>
           ${g.low ? `<span class="cons-metric warn">⚠ ${g.low} bajo</span>` : ''}
         </span>
         <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
       </button>
       <div class="cons-group-body${isOpen ? ' open' : ''}">
-        ${isOpen ? renderItemsFragment(g.items, mode) : ''}
+        ${isOpen ? renderConsumibleTagGroups(g.key, g.items, mode) : ''}
       </div>
     </section>`;
   }).join('');
@@ -272,6 +320,14 @@ function renderConsumibleGroups(mc,data,mode){
 function toggleConsumibleGroup(encodedKey){
   const key = decodeURIComponent(encodedKey);
   _consumibleGroupsOpen[key] = !_consumibleGroupsOpen[key];
+  renderInv();
+}
+
+function toggleConsumibleTagGroup(encodedCatKey, encodedTagKey){
+  const catKey = decodeURIComponent(encodedCatKey);
+  const tagKey = decodeURIComponent(encodedTagKey);
+  const stateKey = `${catKey}::${tagKey}`;
+  _consumibleTagGroupsOpen[stateKey] = !_consumibleTagGroupsOpen[stateKey];
   renderInv();
 }
 
