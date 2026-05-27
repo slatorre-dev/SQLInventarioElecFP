@@ -4,6 +4,45 @@ Registro de desarrollo y mejoras implementadas en la aplicación.
 
 ## Sesiones de trabajo
 
+### Sesión 27/05/2026 — Inventario agrupado por tags + normalización D1 (v424→v435)
+
+#### Topbar y despliegue
+- **v424-v425** Botón `Instalar` del topbar en modo icono para escritorio/PC (ahorro de espacio)
+- **v426-v435** Incrementos sucesivos de `sw.js` para cache-bust en cada publicación
+
+#### Inventario: agrupación visual para reducir ruido
+- **v426** Vista agrupada al abrir inventario (sin búsqueda):
+  - Consumibles agrupados por categoría
+  - Grupos colapsados por defecto
+  - Inventariables en bloque separado
+- **v427-v428** Refinado visual de tarjetas de grupo y densidad para escritorio
+- **v429** Subagrupación por tags dentro de cada categoría consumible (grupos plegables)
+- **v430** Normalización de tags en agrupación visual:
+  - Insensible a mayúsculas/minúsculas
+  - Insensible a tildes
+  - Singular/plural básico
+- **v431-v432** Ajustes de ergonomía:
+  - Eliminado botón “ver más” en subgrupos
+  - Tarjetas de tags menos compactas
+  - Fijado a 6 tags por fila en PC
+- **v433** Inventariables también subagrupados por tags
+
+#### Normalización avanzada de tags por familia
+- **v434** Agrupación por familia raíz de tag para casos como:
+  - `ruedas`, `ruedas goma`, `ruedas coche` → `ruedas`
+  - Manteniendo deduplicación y visual homogénea
+
+#### Persistencia en D1 (limpieza histórica real)
+- **v435** Nueva acción backend para normalizar tags guardados en D1 (no solo vista):
+  - Endpoint/action: `normalizeTagsCanonical` en `functions/api/config.js`
+  - Mapeada en `js/api.js`
+  - Protegida por permisos en `js/roles.js`
+  - Lanzable desde UI en modal de categorías (`index.html` + `js/modal-cats.js`)
+- Resultado:
+  - Limpieza histórica item por item en D1
+  - Unificación de variantes repetidas
+  - Recarga automática de items/tags en cliente tras ejecutar
+
 ### Sesión 27/05/2026 — Historial visual + limpieza topbar (v417→v423)
 
 #### Página de historial visual
