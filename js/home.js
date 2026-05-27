@@ -101,10 +101,7 @@ function _afLabel(accion, nombre, detalles) {
 }
 
 async function renderActivityFeed() {
-  if (typeof can !== 'function') return;
-  const isAdmin = can('historial.read') || SESSION?.rol?.toLowerCase().includes('admin') ||
-                  SESSION?.rol?.toLowerCase().includes('jefe') || SESSION?.usuario?.toLowerCase() === 'seba';
-  if (!isAdmin) return;
+  if (typeof canAccessHistorial !== 'function' || !canAccessHistorial()) return;
 
   const section = document.getElementById('activityFeedSection');
   const feed = document.getElementById('activityFeed');
@@ -114,8 +111,7 @@ async function renderActivityFeed() {
   feed.innerHTML = '<div class="af-item" style="justify-content:center;color:var(--muted);font-size:12px">Cargando...</div>';
 
   try {
-    const qs = SESSION ? `?u=${encodeURIComponent(SESSION.usuario)}&p=${encodeURIComponent(SESSION.password||'')}` : '';
-    const res = await fetch(`/api/historial${qs}`);
+    const res = await fetch(urlWithAuth('historial'));
     if (!res.ok) { section.style.display='none'; return; }
     const data = await res.json();
     const logs = Array.isArray(data) ? data : (data.logs || []);
