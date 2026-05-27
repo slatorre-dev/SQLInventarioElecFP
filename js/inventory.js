@@ -222,7 +222,6 @@ function renderItemsFragment(data, mode){
 
 function renderConsumibleGroups(mc,data,mode){
   const { groups, inventariables } = groupConsumiblesByCategory(data);
-  const head = `<div class="cons-head"><strong>🧩 Vista resumida de consumibles</strong><span>Agrupados por categoría para evitar listas largas al abrir inventario.</span></div>`;
   const invBlock = inventariables.length
     ? `<section class="cons-group cons-group-inv${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
@@ -266,7 +265,7 @@ function renderConsumibleGroups(mc,data,mode){
     </section>`;
   }).join('');
 
-  mc.innerHTML = `<div class="cons-wrap">${head}${invBlock}${groupBlocks}</div>`;
+  mc.innerHTML = `<div class="cons-wrap">${invBlock}${groupBlocks}</div>`;
   if(mode !== 'table') addCardSwipeListeners(mc);
 }
 
