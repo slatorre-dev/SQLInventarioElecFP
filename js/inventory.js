@@ -323,21 +323,23 @@ function renderConsumibleTagGroups(catKey, items, mode){
 
 function renderConsumibleGroups(mc,data,mode){
   const { groups, inventariables } = groupConsumiblesByCategory(data);
+  const invTagCount = inventariables.length ? groupConsumiblesByTag(inventariables).length : 0;
   const invBlock = inventariables.length
     ? `<section class="cons-group cons-group-inv${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
           <span class="cons-group-icon" style="background:#eff6ff;color:#1d4ed8">📦</span>
           <span class="cons-group-main">
             <span class="cons-group-title">Inventariables</span>
-            <span class="cons-group-sub">Material inventariable sin agrupar</span>
+            <span class="cons-group-sub">Inventariables subagrupados por tags</span>
           </span>
           <span class="cons-metrics">
             <span class="cons-metric">${inventariables.length} ítems</span>
+            <span class="cons-metric">${invTagCount} tags</span>
           </span>
           <span class="cons-group-chevron">${_consumibleGroupsOpen['__inventariable__'] ? '▲' : '▼'}</span>
         </button>
         <div class="cons-group-body${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
-          ${_consumibleGroupsOpen['__inventariable__'] ? renderItemsFragment(inventariables, mode) : ''}
+          ${_consumibleGroupsOpen['__inventariable__'] ? renderConsumibleTagGroups('__inventariable__', inventariables, mode) : ''}
         </div>
       </section>`
     : '';
