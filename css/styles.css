@@ -1232,6 +1232,11 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .topbar-right{min-width:0;justify-content:flex-end}
 }
 
+@media (min-width:641px) and (max-width:1200px){
+  #btnInstall{padding:7px 10px;min-width:38px;justify-content:center;gap:0}
+  #btnInstall .btn-install-label{display:none}
+}
+
 /* ── MODAL IMPRIMIR ────────────────────────────────────── */
 .print-col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:6px}
 .print-col-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;transition:background .15s}
