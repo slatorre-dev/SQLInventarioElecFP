@@ -222,12 +222,18 @@ function renderItemsFragment(data, mode){
 
 function renderConsumibleGroups(mc,data,mode){
   const { groups, inventariables } = groupConsumiblesByCategory(data);
-  const head = `<div class="cons-head">🧩 Consumibles agrupados por categoría</div>`;
+  const head = `<div class="cons-head"><strong>🧩 Vista resumida de consumibles</strong><span>Agrupados por categoría para evitar listas largas al abrir inventario.</span></div>`;
   const invBlock = inventariables.length
-    ? `<section class="cons-group cons-group-inv">
+    ? `<section class="cons-group cons-group-inv${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
-          <span class="cons-group-title">📦 Inventariables</span>
-          <span class="cons-group-meta">${inventariables.length} ítems</span>
+          <span class="cons-group-icon" style="background:#eff6ff;color:#1d4ed8">📦</span>
+          <span class="cons-group-main">
+            <span class="cons-group-title">Inventariables</span>
+            <span class="cons-group-sub">Material inventariable sin agrupar</span>
+          </span>
+          <span class="cons-metrics">
+            <span class="cons-metric">${inventariables.length} ítems</span>
+          </span>
           <span class="cons-group-chevron">${_consumibleGroupsOpen['__inventariable__'] ? '▲' : '▼'}</span>
         </button>
         <div class="cons-group-body${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
@@ -239,10 +245,19 @@ function renderConsumibleGroups(mc,data,mode){
   const groupBlocks = groups.map(g => {
     const k = encodeURIComponent(g.key);
     const isOpen = !!_consumibleGroupsOpen[g.key];
-    return `<section class="cons-group">
+    const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:'🏷️' };
+    return `<section class="cons-group${isOpen ? ' open' : ''}">
       <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
-        <span class="cons-group-title">🏷️ ${escHtml(g.name)}</span>
-        <span class="cons-group-meta">${g.refs} refs · ${g.units} uds${g.low?` · ⚠ ${g.low} bajo`:''}</span>
+        <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
+        <span class="cons-group-main">
+          <span class="cons-group-title">${escHtml(g.name)}</span>
+          <span class="cons-group-sub">Consumibles agrupados</span>
+        </span>
+        <span class="cons-metrics">
+          <span class="cons-metric">${g.refs} refs</span>
+          <span class="cons-metric">${g.units} uds</span>
+          ${g.low ? `<span class="cons-metric warn">⚠ ${g.low} bajo</span>` : ''}
+        </span>
         <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
       </button>
       <div class="cons-group-body${isOpen ? ' open' : ''}">

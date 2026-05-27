@@ -676,17 +676,35 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .table-util-text{display:inline-block;max-width:15ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
 
 /* Agrupacion de consumibles (vista inicial inventario) */
-.cons-wrap{display:flex;flex-direction:column;gap:10px}
-.cons-head{font-size:12px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
-.cons-group{background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);overflow:hidden}
-.cons-group-btn{width:100%;display:flex;align-items:center;gap:10px;background:var(--white);border:none;padding:12px 14px;cursor:pointer;text-align:left}
-.cons-group-btn:hover{background:var(--surface2)}
-.cons-group-title{font-size:13px;font-weight:800;color:var(--text)}
-.cons-group-meta{margin-left:auto;font-size:12px;color:var(--muted)}
-.cons-group-chevron{font-size:12px;color:var(--muted);min-width:16px;text-align:right}
-.cons-group-body{display:none;padding:10px 10px 12px;background:var(--bg)}
+.cons-wrap{display:flex;flex-direction:column;gap:12px}
+.cons-head{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);background:linear-gradient(135deg,#eef2ff,#ecfeff);border:1px solid #c7d2fe;border-radius:12px;padding:12px 14px}
+.cons-head strong{font-size:13px;color:#1e3a8a}
+.cons-group{background:var(--white);border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh);overflow:hidden;transition:box-shadow .18s,border-color .18s,transform .12s}
+.cons-group:hover{border-color:#cbd5e1;box-shadow:0 4px 16px rgba(15,23,42,.08)}
+.cons-group.open{border-color:#93c5fd;box-shadow:0 6px 20px rgba(37,99,235,.12)}
+.cons-group-btn{width:100%;display:flex;align-items:center;gap:12px;background:var(--white);border:none;padding:12px 14px;cursor:pointer;text-align:left}
+.cons-group-btn:hover{background:#f8fafc}
+.cons-group-icon{width:34px;height:34px;flex:0 0 34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid rgba(148,163,184,.28)}
+.cons-group-main{display:flex;flex-direction:column;min-width:0;gap:1px}
+.cons-group-title{font-size:14px;font-weight:800;color:var(--text);line-height:1.2}
+.cons-group-sub{font-size:11px;color:var(--muted);line-height:1.2}
+.cons-metrics{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.cons-metric{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:700;white-space:nowrap}
+.cons-metric.warn{background:#fff7ed;color:#c2410c}
+.cons-group-chevron{font-size:12px;color:var(--muted);min-width:18px;text-align:right;margin-left:4px}
+.cons-group-body{display:none;padding:10px 10px 12px;background:linear-gradient(180deg,#f8fafc,#f4f6fb)}
 .cons-group-body.open{display:block}
 .cons-group-inv .cons-group-title{color:#1d4ed8}
+
+@media (max-width:740px){
+  .cons-group-btn{padding:11px 12px;align-items:flex-start}
+  .cons-group-icon{width:30px;height:30px;flex-basis:30px;font-size:15px;border-radius:8px}
+  .cons-group-title{font-size:13px}
+  .cons-group-sub{font-size:10px}
+  .cons-metrics{margin-left:0;justify-content:flex-start}
+  .cons-group-btn{flex-wrap:wrap}
+  .cons-group-chevron{margin-left:auto}
+}
 .tag-mini{display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2563eb;font-size:10px;margin-top:3px}
 .tag-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:10px;font-weight:700}
 .qr-name-icon{width:17px;height:17px;display:block}
