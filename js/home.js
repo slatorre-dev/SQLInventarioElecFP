@@ -57,6 +57,86 @@ function renderHome(){
       <div class="ccard-desc">${c.desc}</div>
     </div>`;
   }).join('');
+
+  renderActivityFeed();
+}
+
+function _afTimeAgo(fechaStr) {
+  if (!fechaStr) return '';
+  const d = new Date(fechaStr.replace(' ', 'T'));
+  if (isNaN(d)) return fechaStr.slice(0, 16).replace('T', ' ');
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60) return 'Ahora mismo';
+  if (diff < 3600) return `Hace ${Math.floor(diff/60)} min`;
+  if (diff < 86400) return `Hace ${Math.floor(diff/3600)} h`;
+  if (diff < 172800) return 'Ayer';
+  return d.toLocaleDateString('es-ES', { day:'numeric', month:'short' });
+}
+
+function _afDotClass(accion) {
+  const a = (accion || '').toLowerCase();
+  if (['itemadd','add','bulkimport'].includes(a)) return 'add';
+  if (['itemupdate','update'].includes(a)) return 'edit';
+  if (['itemdelete','delete','itembaja'].includes(a)) return 'del';
+  if (['prestar','prestarcaja'].includes(a)) return 'loan';
+  if (a === 'devolver') return 'ret';
+  return 'sys';
+}
+
+function _afIcon(dotClass) {
+  return { add:'➕', edit:'✏️', del:'🗑️', loan:'📤', ret:'📥', sys:'⚙️' }[dotClass] || '•';
+}
+
+function _afLabel(accion, nombre, detalles) {
+  const a = (accion || '').toLowerCase();
+  const n = nombre || detalles || '';
+  if (a === 'itemadd' || a === 'add') return n ? `Añadido: ${n}` : 'Ítem añadido';
+  if (a === 'itemupdate' || a === 'update') return n ? `Editado: ${n}` : 'Ítem editado';
+  if (a === 'itemdelete' || a === 'delete') return n ? `Eliminado: ${n}` : 'Ítem eliminado';
+  if (a === 'itembaja') return n ? `Baja: ${n}` : 'Ítem dado de baja';
+  if (a === 'prestar' || a === 'prestarcaja') return n ? `Préstamo: ${n}` : 'Préstamo realizado';
+  if (a === 'devolver') return n ? `Devuelto: ${n}` : 'Devolución';
+  if (a === 'bulkimport') return 'Importación masiva';
+  return detalles || accion || 'Acción';
+}
+
+async function renderActivityFeed() {
+  if (typeof can !== 'function') return;
+  const isAdmin = can('historial.read') || SESSION?.rol?.toLowerCase().includes('admin') ||
+                  SESSION?.rol?.toLowerCase().includes('jefe') || SESSION?.usuario?.toLowerCase() === 'seba';
+  if (!isAdmin) return;
+
+  const section = document.getElementById('activityFeedSection');
+  const feed = document.getElementById('activityFeed');
+  if (!section || !feed) return;
+
+  section.style.display = '';
+  feed.innerHTML = '<div class="af-item" style="justify-content:center;color:var(--muted);font-size:12px">Cargando...</div>';
+
+  try {
+    const qs = SESSION ? `?u=${encodeURIComponent(SESSION.usuario)}&p=${encodeURIComponent(SESSION.password||'')}` : '';
+    const res = await fetch(`/api/historial${qs}`);
+    if (!res.ok) { section.style.display='none'; return; }
+    const data = await res.json();
+    const logs = Array.isArray(data) ? data : (data.logs || []);
+    const recent = logs.slice(0, 10);
+    if (!recent.length) { feed.innerHTML = '<div class="af-item" style="color:var(--muted);font-size:12px;padding:12px 4px">Sin actividad reciente.</div>'; return; }
+    feed.innerHTML = recent.map(r => {
+      const dc = _afDotClass(r.accion);
+      const label = _afLabel(r.accion, r.nombre || r.que, r.detalles);
+      const quien = r.usuario ? `${r.usuario}${r.rol ? ' · ' + r.rol : ''}` : '';
+      return `<div class="af-item">
+        <div class="af-dot ${dc}">${_afIcon(dc)}</div>
+        <div class="af-body">
+          <div class="af-action">${label}</div>
+          ${quien ? `<div class="af-meta">${quien}</div>` : ''}
+        </div>
+        <div class="af-time">${_afTimeAgo(r.fecha || r.timestamp)}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    section.style.display = 'none';
+  }
 }
 
 function renderLoanBanner(){
