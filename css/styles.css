@@ -730,11 +730,13 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 }
 
 @media (max-width:740px){
-  .cons-wrap{grid-template-columns:1fr}
-  .cons-group-btn{padding:11px 12px}
-  .cons-group-icon{width:30px;height:30px;flex-basis:30px;font-size:15px;border-radius:8px}
-  .cons-group-title{font-size:13px}
-  .cons-group-sub{font-size:10px}
+  .cons-wrap{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cons-group-btn{padding:8px 9px;gap:7px}
+  .cons-group-icon{width:24px;height:24px;flex-basis:24px;font-size:13px;border-radius:7px}
+  .cons-group-title{font-size:12px}
+  .cons-group-sub{font-size:9px}
+  .cons-metric{font-size:9px;padding:1px 5px}
+  .cons-group-chevron{top:7px;right:8px;font-size:9px}
   .cons-subgroups{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cons-subgroup-btn{padding:8px 10px;min-height:38px}
 }
