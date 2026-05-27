@@ -1,6 +1,6 @@
 # Nota de Trabajo - SQLInventarioElecFP
 
-**Estado:** v423 | Mayo 2026
+**Estado:** v437 | Mayo 2026
 
 ---
 
@@ -121,6 +121,18 @@ migrations/             — SQL de migraciones D1
 5. ✅ Topbar: `conn-status` reducido a solo punto de color con tooltip; botón QR eliminado (ya en buscador) (v422)
 6. ✅ Botón recargar 🔄 eliminado del topbar (v423)
 
+## Sesión 27/05/2026 — Completado (v424→v435)
+
+1. ✅ Topbar: botón Instalar reducido a icono en PC (v424-v425)
+2. ✅ Inventario: agrupación inicial de consumibles por categoría, colapsados por defecto (v426)
+3. ✅ Tarjetas de grupos más visuales y ajuste de densidad en escritorio (v427-v428)
+4. ✅ Subagrupación por tags dentro de cada categoría consumible (v429)
+5. ✅ Normalización visual de tags (tildes/mayúsculas/singular-plural) para evitar duplicados (v430)
+6. ✅ Ajuste UI tags: sin "ver más", menos compactas, y 6 por fila en PC (v431-v432)
+7. ✅ Inventariables también agrupados por tags (v433)
+8. ✅ Agrupación por familia de tag (ej. "ruedas goma" y "ruedas coche" → "ruedas") (v434)
+9. ✅ Normalización persistente de tags en D1 desde UI: nueva acción backend + botón en modal categorías (v435)
+
 ## Sesión 25/05/2026 — Completado (v379→v390)
 
 1. ✅ Fix vista tabla tablet: `getInvRenderMode()` + override CSS `@media(pointer:coarse) and (min-width:640px)`
@@ -213,6 +225,15 @@ migrations/             — SQL de migraciones D1
 | v421 | Historial: click en ítem navega al modal del ítem | 27/05/2026 |
 | v422 | Topbar: conn-status solo punto, quitar botón QR duplicado | 27/05/2026 |
 | v423 | Quitar botón recargar 🔄 del topbar | 27/05/2026 |
+| v424-v425 | Topbar Instalar solo icono en PC | 27/05/2026 |
+| v426 | Consumibles agrupados por categoría en inventario | 27/05/2026 |
+| v427-v428 | Mejora visual y densidad de tarjetas de grupos | 27/05/2026 |
+| v429 | Subagrupación por tags en consumibles | 27/05/2026 |
+| v430 | Normalización visual de tags para deduplicar | 27/05/2026 |
+| v431-v432 | Ajuste UI tags + 6 por fila en PC | 27/05/2026 |
+| v433 | Inventariables también agrupados por tags | 27/05/2026 |
+| v434 | Agrupación por familia de tag (raíz) | 27/05/2026 |
+| v435 | Normalización persistente de tags en D1 desde UI | 27/05/2026 |
 
 ---
 
