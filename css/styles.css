@@ -387,7 +387,11 @@ body{
 .hp-badge.loan{background:#fef3c7;border-color:#fcd34d;color:#92400e}
 .hp-badge.ret {background:#f1f5f9;border-color:#cbd5e1;color:#475569}
 .hp-badge.sys {background:#ede9fe;border-color:#c4b5fd;color:#6d28d9}
-.hp-time{font-size:11px;color:var(--muted);flex-shrink:0;white-space:nowrap;padding-top:2px}
+.hp-time{font-size:11px;color:var(--muted);flex-shrink:0;white-space:nowrap;padding-top:2px;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.hp-go{font-size:12px;color:var(--accent);opacity:0;transition:opacity .15s}
+.hp-row-link{border-radius:10px;transition:background .15s}
+.hp-row-link:hover{background:var(--accent-l)}
+.hp-row-link:hover .hp-go{opacity:1}
 @media(max-width:639px){.hp-controls{flex-wrap:wrap}.hp-controls select{flex:1}}
 .ccard{background:var(--white);border:1.5px solid var(--border);border-left:4px solid var(--ch,var(--accent));border-radius:12px;padding:16px 14px;cursor:pointer;text-align:center;position:relative;overflow:hidden;transition:all .25s cubic-bezier(.34,1.4,.64,1);box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .ccard:hover{transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,.10);border-color:var(--ch,var(--accent))}

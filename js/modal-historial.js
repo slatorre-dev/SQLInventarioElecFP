@@ -262,7 +262,10 @@ function hpRender(data) {
       const nombre = h.nombre || h.que || '';
       const quien = h.usuario || '';
       const det = h.detalles || '';
-      return `<div class="hp-row">
+      const itemId = h.que || '';
+      const clickable = itemId && !['prestar','prestarcaja','devolver','bulkimport'].includes((h.accion||'').toLowerCase());
+      const clickAttr = clickable ? `onclick="openItemRoute('${historialEsc(itemId)}')" style="cursor:pointer" title="Ir al ítem"` : '';
+      return `<div class="hp-row${clickable?' hp-row-link':''}" ${clickAttr}>
         <div class="hp-avatar ${cls}">${_hpIcon(cls)}</div>
         <div class="hp-body">
           <div class="hp-title">${historialEsc(quien)} <span>${verb}</span>${nombre ? ' <b>'+historialEsc(nombre)+'</b>' : ''}</div>
@@ -272,7 +275,7 @@ function hpRender(data) {
             ${det ? `<span title="${historialEsc(det)}">${historialEsc(det.slice(0,60))}${det.length>60?'…':''}</span>` : ''}
           </div>
         </div>
-        <div class="hp-time">${_hpTime(h.fecha || h.timestamp)}</div>
+        <div class="hp-time">${_hpTime(h.fecha || h.timestamp)}${clickable ? '<span class="hp-go">→</span>' : ''}</div>
       </div>`;
     }).join('');
     return `<div class="hp-day">${label}</div>${rowsHtml}`;
