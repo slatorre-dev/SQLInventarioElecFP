@@ -711,6 +711,10 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .cons-subgroup-body{display:none;padding:10px;background:var(--bg)}
 .cons-subgroup-body.open{display:block}
 
+@media (min-width:1024px){
+  .cons-subgroups{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+
 @media (min-width:1280px){
   .cons-wrap{grid-template-columns:repeat(5,minmax(0,1fr))}
 }
