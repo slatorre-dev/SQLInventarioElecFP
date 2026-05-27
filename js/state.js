@@ -21,7 +21,7 @@ let _subFilter = null;
 function setConn(state, txt){
   const el = document.getElementById('connStatus');
   el.className = 'conn-status ' + state;
-  document.getElementById('connTxt').textContent = txt;
+  el.title = txt;
   const bar = document.getElementById('connBar');
   if(bar){
     bar.className = state;

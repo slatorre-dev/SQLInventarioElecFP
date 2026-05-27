@@ -117,7 +117,6 @@ function applyRoleUI(){
     ['btnDeptGame', null,      'flex'],
     ['btnPres','loans.write',  'flex'],
     ['btnPed', 'orders.write', 'flex'],
-    ['btnQr',  null,           ''],
     ['btnPrint', null,         'flex'],
     ['gsQr',   null,           'inline-flex']
   ];
