@@ -93,6 +93,33 @@ async function normalizeCategoriesToTags(){
   }
 }
 
+async function normalizeTagsCanonicalPersist(){
+  if(!requirePerm('categories.manage')) return;
+  if(!confirm('Esto normalizará los tags guardados en D1 (mayúsculas, tildes y variantes como ruedas/ruedas goma/ruedas coche). ¿Continuar?')) return;
+  try{
+    const res = await apiPost({action:'normalizeTagsCanonical'});
+    if(!res.ok) throw new Error(res.error);
+    if(res.items) items = res.items;
+    const seen = new Set();
+    TAGS = (items || []).flatMap(itemTags)
+      .map(t => String(t || '').trim())
+      .filter(Boolean)
+      .filter(t => {
+        const k = t.toLowerCase();
+        if(seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .sort(tagNameCompare);
+    renderTagsList();
+    fillTagSuggestions();
+    if(cf) renderInv();
+    toast(`Tags normalizados en D1: ${res.updated||0} ítems actualizados`, 'ok');
+  }catch(err){
+    toast('Error al normalizar tags: ' + err.message, 'err');
+  }
+}
+
 // ═════════════════════════════════════════════════════════
 // GESTIÓN DE TAGS
 // ═════════════════════════════════════════════════════════

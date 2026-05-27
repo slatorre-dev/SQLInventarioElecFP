@@ -36,6 +36,36 @@ function addTag(tags, value){
   if(!tags.some(t=>normText(t)===normText(tag))) tags.push(tag);
 }
 
+function singularizeToken(tok){
+  if(tok.length <= 3) return tok;
+  if(tok.endsWith('es') && tok.length > 4) return tok.slice(0, -2);
+  if(tok.endsWith('s') && tok.length > 3) return tok.slice(0, -1);
+  return tok;
+}
+
+function canonicalTagFamily(tag){
+  const cleaned = normText(tag)
+    .replace(/[^a-z0-9\s\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if(!cleaned) return '';
+  const tokens = cleaned.split(' ').filter(Boolean).map(singularizeToken);
+  return tokens[0] || '';
+}
+
+function normalizeTagsCanonical(value){
+  const seen = new Set();
+  const out = [];
+  for(const raw of splitTags(value)){
+    const family = canonicalTagFamily(raw);
+    if(!family || seen.has(family)) continue;
+    seen.add(family);
+    out.push(family);
+  }
+  out.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  return out.join(', ');
+}
+
 function normalizeItemCategoryAndTags(item){
   const text = normText([item.cat,item.item,item.ref,item.util,item.loc,item.obs].join(' '));
   const oldCat = String(item.cat || '').trim();
@@ -132,6 +162,25 @@ export async function onRequestPost({ request, env }) {
     await auditLog(env.DB, user, 'normalizeCategoriesTags', `Normalizadas categorias y tags en ${updates.length} items`);
     const items = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
     return Response.json({ ok: true, updated: updates.length, cats: NORMALIZED_CATS, items: items.results || [] });
+  }
+
+  if (action === 'normalizeTagsCanonical') {
+    await env.DB.prepare("ALTER TABLE inventario ADD COLUMN tags TEXT DEFAULT ''").run().catch(() => {});
+    const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
+    const rows = inv.results || [];
+    const updates = [];
+    for (const item of rows) {
+      const nextTags = normalizeTagsCanonical(item.tags || '');
+      const current = String(item.tags || '').trim();
+      if (nextTags !== current) updates.push({ id:item.id, tags:nextTags });
+    }
+    if (updates.length) {
+      const stmt = env.DB.prepare('UPDATE inventario SET tags=? WHERE id=?');
+      await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
+    }
+    await auditLog(env.DB, user, 'normalizeTagsCanonical', `Normalizados tags en ${updates.length} items`);
+    const items = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    return Response.json({ ok: true, updated: updates.length, items: items.results || [] });
   }
 
   if (action === 'ubicacionesSync') {

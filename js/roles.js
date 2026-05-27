@@ -42,6 +42,7 @@ const ACTION_PERMISSIONS = {
   aulasSync: 'config.manage',
   catsSync: 'categories.manage',
   normalizeCategoriesTags: 'categories.manage',
+  normalizeTagsCanonical: 'categories.manage',
   ciclosSync: 'config.manage',
   ubicacionesSync: 'config.manage',
   prestar: 'loans.write',
