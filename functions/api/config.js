@@ -36,8 +36,25 @@ function addTag(tags, value){
   if(!tags.some(t=>normText(t)===normText(tag))) tags.push(tag);
 }
 
+const TAG_PLURAL_OVERRIDES = {
+  reles: 'rele',
+  relays: 'rele',
+  cables: 'cable',
+  conectores: 'conector',
+  sensores: 'sensor',
+  resistencias: 'resistencia',
+  condensadores: 'condensador',
+  osciloscopios: 'osciloscopio',
+  polimetros: 'polimetro',
+  multimetros: 'multimetro',
+  fuentes: 'fuente',
+  ruedas: 'rueda',
+};
+
 function singularizeToken(tok){
+  if(TAG_PLURAL_OVERRIDES[tok]) return TAG_PLURAL_OVERRIDES[tok];
   if(tok.length <= 3) return tok;
+  if(tok.endsWith('ces') && tok.length > 4) return tok.slice(0, -3) + 'z';
   if(tok.endsWith('es') && tok.length > 4) return tok.slice(0, -2);
   if(tok.endsWith('s') && tok.length > 3) return tok.slice(0, -1);
   return tok;

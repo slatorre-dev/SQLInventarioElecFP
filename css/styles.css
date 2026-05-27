@@ -704,12 +704,18 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .cons-subgroup.open{grid-column:1/-1}
 .cons-subgroup-btn{width:100%;display:flex;align-items:center;gap:8px;padding:9px 11px;background:#f8fafc;border:none;text-align:left;cursor:pointer;min-height:40px}
 .cons-subgroup-btn:hover{background:#f1f5f9}
+.cons-subgroup.open .cons-subgroup-btn{background:linear-gradient(90deg,#eff6ff,#f8fafc);box-shadow:inset 3px 0 0 #3b82f6}
 .cons-subgroup-title{font-size:12px;font-weight:800;color:#1e40af;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
 .cons-subgroup-metrics{font-size:11px;color:#334155;background:#e2e8f0;border-radius:999px;padding:2px 7px;line-height:1.2}
 .cons-subgroup-low{font-size:11px;color:#c2410c;background:#ffedd5;border-radius:999px;padding:2px 7px;line-height:1.2}
 .cons-subgroup-chevron{font-size:9px;color:var(--muted);min-width:10px;text-align:right}
 .cons-subgroup-body{display:none;padding:10px;background:var(--bg)}
-.cons-subgroup-body.open{display:block}
+.cons-subgroup-body.open{display:block;animation:tag-subgroup-open .18s ease-out}
+
+@keyframes tag-subgroup-open{
+  from{opacity:.45;transform:translateY(-4px)}
+  to{opacity:1;transform:translateY(0)}
+}
 
 @media (min-width:1024px){
   .cons-subgroups{grid-template-columns:repeat(6,minmax(0,1fr))}
