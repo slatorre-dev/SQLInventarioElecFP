@@ -249,6 +249,18 @@ function canonicalTagKey(tag){
   return n.split(' ').filter(Boolean).map(singularizeToken).join(' ');
 }
 
+function tagFamilyKey(tag){
+  const canonical = canonicalTagKey(tag);
+  if(canonical === 'sin tag') return canonical;
+  return canonical.split(' ')[0] || canonical;
+}
+
+function firstTagWord(tag){
+  const raw = String(tag || '').trim();
+  if(!raw) return 'Sin tag';
+  return raw.split(/\s+/)[0] || raw;
+}
+
 function pickBestTagLabel(labelsMap, fallback){
   const arr = [...labelsMap.entries()].sort((a,b)=>{
     if(b[1] !== a[1]) return b[1] - a[1];
@@ -261,11 +273,11 @@ function groupConsumiblesByTag(items){
   const map = new Map();
   for(const x of items){
     const rawTag = tagKeyForItem(x);
-    const key = canonicalTagKey(rawTag);
+    const key = tagFamilyKey(rawTag);
     if(!map.has(key)) map.set(key, { items: [], labels: new Map() });
     const bucket = map.get(key);
     bucket.items.push(x);
-    const display = String(rawTag || 'Sin tag').trim() || 'Sin tag';
+    const display = firstTagWord(rawTag);
     bucket.labels.set(display, (bucket.labels.get(display) || 0) + 1);
   }
   return [...map.entries()]
