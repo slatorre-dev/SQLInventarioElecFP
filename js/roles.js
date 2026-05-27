@@ -151,4 +151,6 @@ function canAccessHistorial() {
 function showHistorialButton(){
   const btnHistorial = document.getElementById('btnHistorialDept');
   if(btnHistorial) btnHistorial.style.display = canAccessHistorial() ? 'flex' : 'none';
+  const btnGo = document.getElementById('btnGoHistorial');
+  if(btnGo) btnGo.style.display = canAccessHistorial() ? 'inline-flex' : 'none';
 }

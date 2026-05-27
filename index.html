@@ -254,6 +254,7 @@
       <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
       <a class="btn icon-btn" href="javascript:void(0)" onclick="goDocsDpto()" style="display:inline-flex;padding:11px 24px;font-size:14px;border-color:#0891b2;color:#0891b2;text-decoration:none">📂 <span class="btn-text">Documentación</span></a>
       <button class="btn icon-btn" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="goMaintenance()">🛠️ <span class="btn-text">Mantenimiento</span></button>
+      <button class="btn icon-btn" id="btnGoHistorial" style="display:none;padding:11px 24px;font-size:14px;border-color:#6366f1;color:#6366f1" onclick="goHistorialPage()">📋 <span class="btn-text">Historial</span></button>
     </div>
     <div class="gsearch-wrap" id="gsWrap">
       <span class="gsearch-ico">🔍</span>
@@ -291,12 +292,28 @@
       <button class="mini-btn" data-perm="config.manage" onclick="openCiclosModal()">⚙️ Gestionar ciclos</button>
     </div>
     <div class="choice-grid" id="gCiclos"></div>
-    <div id="activityFeedSection" style="display:none">
-      <div style="height:20px"></div>
-      <div class="sec-label">Pulso del departamento</div>
-      <div id="activityFeed" class="af-chips-row"></div>
-    </div>
   </div>
+</div>
+
+<!-- ══ HISTORIAL PAGE ══ -->
+<div class="page" id="pHistorialPage">
+  <div class="sub-header">
+    <button class="sub-back" onclick="goHome()">←</button>
+    <div class="sub-tag" style="background:#ede9fe;color:#6d28d9">📋 Registro</div>
+    <div class="sub-title">Historial de acciones</div>
+    <span id="hpSummary" style="margin-left:auto;font-size:12px;color:var(--muted)"></span>
+  </div>
+  <div class="hp-controls">
+    <div class="sbox" style="flex:1"><span class="si">🔍</span><input type="text" id="hpSearch" placeholder="Buscar usuario, ítem, acción…" oninput="hpFilter()"></div>
+    <select id="hpFilterTipo" class="historial-filter" onchange="hpFilter()">
+      <option value="">Todos los tipos</option>
+      <option value="Items">Items</option>
+      <option value="Prestamos">Préstamos</option>
+      <option value="Usuarios">Usuarios</option>
+      <option value="Configuracion">Configuración</option>
+    </select>
+  </div>
+  <div id="hpFeed" class="hp-feed"></div>
 </div>
 
 <!-- ══ DOCS DPTO PAGE ══ -->

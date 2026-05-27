@@ -160,3 +160,121 @@ document.addEventListener('DOMContentLoaded', () => {
   if (tipo) tipo.addEventListener('change', filtrarHistorial);
   if (que) que.addEventListener('input', filtrarHistorial);
 });
+
+// ── Página de historial ──────────────────────────────────
+
+function _hpClass(accion) {
+  const a = (accion || '').toLowerCase();
+  if (['itemadd','add','bulkimport'].includes(a))    return 'add';
+  if (['itemupdate','update'].includes(a))           return 'edit';
+  if (['itemdelete','delete','itembaja'].includes(a))return 'del';
+  if (['prestar','prestarcaja'].includes(a))         return 'loan';
+  if (a === 'devolver')                              return 'ret';
+  return 'sys';
+}
+
+function _hpIcon(cls) {
+  return { add:'➕', edit:'✏️', del:'🗑️', loan:'📤', ret:'📥', sys:'⚙️' }[cls] || '•';
+}
+
+function _hpVerb(accion) {
+  const a = (accion || '').toLowerCase();
+  if (a === 'itemadd'   || a === 'add')         return 'Añadió';
+  if (a === 'itemupdate'|| a === 'update')       return 'Editó';
+  if (a === 'itemdelete'|| a === 'delete')       return 'Eliminó';
+  if (a === 'itembaja')                          return 'Dio de baja';
+  if (a === 'prestar'   || a === 'prestarcaja')  return 'Prestó';
+  if (a === 'devolver')                          return 'Devolvió';
+  if (a === 'bulkimport')                        return 'Importó';
+  return accion || 'Acción';
+}
+
+function _hpDayLabel(fechaStr) {
+  if (!fechaStr) return 'Sin fecha';
+  const d = new Date(fechaStr.replace(' ','T'));
+  if (isNaN(d)) return fechaStr.slice(0,10);
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+  if (d >= hoy) return 'Hoy';
+  if (d >= ayer) return 'Ayer';
+  return d.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+}
+
+function _hpTime(fechaStr) {
+  if (!fechaStr) return '';
+  const d = new Date(fechaStr.replace(' ','T'));
+  if (isNaN(d)) return '';
+  return d.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
+}
+
+let _hpData = [];
+
+async function goHistorialPage() {
+  if (!canAccessHistorial()) {
+    toast('Solo el administrador o jefe de departamento puede acceder al historial', 'err');
+    return;
+  }
+  show('pHistorialPage');
+  _hideHomeButtons && _hideHomeButtons();
+  document.getElementById('btnN').style.display='none';
+  _hpData = [];
+  document.getElementById('hpFeed').innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Cargando…</div>';
+  document.getElementById('hpSummary').textContent = '';
+  try {
+    _hpData = await apiGet('historial');
+    hpRender(_hpData);
+  } catch(e) {
+    document.getElementById('hpFeed').innerHTML = '<div style="padding:32px;text-align:center;color:var(--red);font-size:13px">Error al cargar el historial.</div>';
+  }
+}
+
+function hpFilter() {
+  const q = historialText(document.getElementById('hpSearch').value);
+  const tipo = document.getElementById('hpFilterTipo').value;
+  const filtered = _hpData.filter(h => {
+    const matchTipo = !tipo || h.tipo === tipo;
+    const hay = [h.usuario, h.nombre, h.que, h.detalles, h.accion].map(historialText).join(' ');
+    return matchTipo && (!q || hay.includes(q));
+  });
+  hpRender(filtered);
+}
+
+function hpRender(data) {
+  const feed = document.getElementById('hpFeed');
+  const summary = document.getElementById('hpSummary');
+  if (summary) summary.textContent = `${data.length} acciones`;
+  if (!data.length) {
+    feed.innerHTML = '<div style="padding:32px;text-align:center;color:var(--muted);font-size:13px">Sin resultados.</div>';
+    return;
+  }
+  // Agrupar por día
+  const groups = {};
+  data.forEach(h => {
+    const day = (h.fecha || h.timestamp || '').slice(0,10) || 'Sin fecha';
+    if (!groups[day]) groups[day] = [];
+    groups[day].push(h);
+  });
+  feed.innerHTML = Object.entries(groups).map(([day, rows]) => {
+    const label = _hpDayLabel(day + 'T00:00:00');
+    const rowsHtml = rows.map(h => {
+      const cls = _hpClass(h.accion);
+      const verb = _hpVerb(h.accion);
+      const nombre = h.nombre || h.que || '';
+      const quien = h.usuario || '';
+      const det = h.detalles || '';
+      return `<div class="hp-row">
+        <div class="hp-avatar ${cls}">${_hpIcon(cls)}</div>
+        <div class="hp-body">
+          <div class="hp-title">${historialEsc(quien)} <span>${verb}</span>${nombre ? ' <b>'+historialEsc(nombre)+'</b>' : ''}</div>
+          <div class="hp-sub">
+            <span class="hp-badge ${cls}">${historialEsc(h.accion)}</span>
+            ${h.tipo ? `<span>${historialEsc(h.tipo)}</span>` : ''}
+            ${det ? `<span title="${historialEsc(det)}">${historialEsc(det.slice(0,60))}${det.length>60?'…':''}</span>` : ''}
+          </div>
+        </div>
+        <div class="hp-time">${_hpTime(h.fecha || h.timestamp)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="hp-day">${label}</div>${rowsHtml}`;
+  }).join('');
+}
