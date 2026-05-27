@@ -165,12 +165,100 @@ function renderInv(){
   }
   const mode = getInvRenderMode();
   _lastInvRenderMode = mode;
+  if(shouldGroupConsumibles(data)){
+    renderConsumibleGroups(mc,data,mode);
+    return;
+  }
   const page = getInvPage(data);
   if(mode === 'table') rTable(page.items,mc);
   else if(mode === 'list') rList(page.items,mc);
   else rCards(page.items,mc);
   renderPager(mc,page);
   if(mode === 'table') requestAnimationFrame(setTwHeight);
+}
+
+let _consumibleGroupsOpen = Object.create(null);
+
+function shouldGroupConsumibles(data){
+  const q = (document.getElementById('srch')?.value || '').trim();
+  const ft = document.getElementById('fTipo')?.value || '';
+  if(q) return false;
+  if(ft === 'inventariable') return false;
+  return data.some(x => materialType(x) === 'consumible');
+}
+
+function groupConsumiblesByCategory(data){
+  const map = new Map();
+  const inventariables = [];
+  for(const x of data){
+    if(materialType(x) !== 'consumible'){
+      inventariables.push(x);
+      continue;
+    }
+    const key = String(x.cat || 'Sin categoría').trim() || 'Sin categoría';
+    if(!map.has(key)) map.set(key, []);
+    map.get(key).push(x);
+  }
+  const groups = [...map.entries()]
+    .map(([name, items]) => ({
+      key: name,
+      name,
+      items,
+      refs: items.length,
+      units: items.reduce((a,i)=>a+(Number(i.qty)||0),0),
+      low: items.filter(isLowStock).length
+    }))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  return { groups, inventariables };
+}
+
+function renderItemsFragment(data, mode){
+  const tmp = document.createElement('div');
+  const effectiveMode = mode === 'table' ? 'list' : mode;
+  if(effectiveMode === 'list') rList(data,tmp);
+  else rCards(data,tmp);
+  return tmp.innerHTML;
+}
+
+function renderConsumibleGroups(mc,data,mode){
+  const { groups, inventariables } = groupConsumiblesByCategory(data);
+  const head = `<div class="cons-head">🧩 Consumibles agrupados por categoría</div>`;
+  const invBlock = inventariables.length
+    ? `<section class="cons-group cons-group-inv">
+        <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
+          <span class="cons-group-title">📦 Inventariables</span>
+          <span class="cons-group-meta">${inventariables.length} ítems</span>
+          <span class="cons-group-chevron">${_consumibleGroupsOpen['__inventariable__'] ? '▲' : '▼'}</span>
+        </button>
+        <div class="cons-group-body${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
+          ${_consumibleGroupsOpen['__inventariable__'] ? renderItemsFragment(inventariables, mode) : ''}
+        </div>
+      </section>`
+    : '';
+
+  const groupBlocks = groups.map(g => {
+    const k = encodeURIComponent(g.key);
+    const isOpen = !!_consumibleGroupsOpen[g.key];
+    return `<section class="cons-group">
+      <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
+        <span class="cons-group-title">🏷️ ${escHtml(g.name)}</span>
+        <span class="cons-group-meta">${g.refs} refs · ${g.units} uds${g.low?` · ⚠ ${g.low} bajo`:''}</span>
+        <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
+      </button>
+      <div class="cons-group-body${isOpen ? ' open' : ''}">
+        ${isOpen ? renderItemsFragment(g.items, mode) : ''}
+      </div>
+    </section>`;
+  }).join('');
+
+  mc.innerHTML = `<div class="cons-wrap">${head}${invBlock}${groupBlocks}</div>`;
+  if(mode !== 'table') addCardSwipeListeners(mc);
+}
+
+function toggleConsumibleGroup(encodedKey){
+  const key = decodeURIComponent(encodedKey);
+  _consumibleGroupsOpen[key] = !_consumibleGroupsOpen[key];
+  renderInv();
 }
 
 let _lastInvRenderMode = null;
