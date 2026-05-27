@@ -179,6 +179,7 @@ function renderInv(){
 
 let _consumibleGroupsOpen = Object.create(null);
 let _consumibleTagGroupsOpen = Object.create(null);
+let _consumibleTagShowAll = Object.create(null);
 
 function shouldGroupConsumibles(data){
   const q = (document.getElementById('srch')?.value || '').trim();
@@ -226,45 +227,111 @@ function tagKeyForItem(item){
   return tags.length ? tags[0] : 'Sin tag';
 }
 
+function normalizeTagText(tag){
+  return String(tag || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function singularizeToken(tok){
+  if(tok.length <= 3) return tok;
+  if(tok.endsWith('es') && tok.length > 4) return tok.slice(0, -2);
+  if(tok.endsWith('s') && tok.length > 3) return tok.slice(0, -1);
+  return tok;
+}
+
+function canonicalTagKey(tag){
+  const n = normalizeTagText(tag);
+  if(!n) return 'sin tag';
+  return n.split(' ').filter(Boolean).map(singularizeToken).join(' ');
+}
+
+function pickBestTagLabel(labelsMap, fallback){
+  const arr = [...labelsMap.entries()].sort((a,b)=>{
+    if(b[1] !== a[1]) return b[1] - a[1];
+    return a[0].length - b[0].length;
+  });
+  return arr[0]?.[0] || fallback;
+}
+
 function groupConsumiblesByTag(items){
   const map = new Map();
   for(const x of items){
-    const tag = tagKeyForItem(x);
-    if(!map.has(tag)) map.set(tag, []);
-    map.get(tag).push(x);
+    const rawTag = tagKeyForItem(x);
+    const key = canonicalTagKey(rawTag);
+    if(!map.has(key)) map.set(key, { items: [], labels: new Map() });
+    const bucket = map.get(key);
+    bucket.items.push(x);
+    const display = String(rawTag || 'Sin tag').trim() || 'Sin tag';
+    bucket.labels.set(display, (bucket.labels.get(display) || 0) + 1);
   }
   return [...map.entries()]
-    .map(([tag, tagItems]) => ({
-      key: tag,
-      tag,
-      items: tagItems,
-      refs: tagItems.length,
-      units: tagItems.reduce((a,i)=>a+(Number(i.qty)||0),0),
-      low: tagItems.filter(isLowStock).length
+    .map(([key, bucket]) => ({
+      key,
+      tag: pickBestTagLabel(bucket.labels, key === 'sin tag' ? 'Sin tag' : key),
+      items: bucket.items,
+      refs: bucket.items.length,
+      units: bucket.items.reduce((a,i)=>a+(Number(i.qty)||0),0),
+      low: bucket.items.filter(isLowStock).length
     }))
     .sort((a,b)=>{
-      if(a.tag === 'Sin tag') return 1;
-      if(b.tag === 'Sin tag') return -1;
+      if(a.key === 'sin tag') return 1;
+      if(b.key === 'sin tag') return -1;
       return a.tag.localeCompare(b.tag);
     });
+}
+
+function tagIcon(tag){
+  const t = String(tag || '').toLowerCase();
+  if(/resist/.test(t)) return '🧱';
+  if(/condens|capac/.test(t)) return '⚡';
+  if(/cable|hilo|wire/.test(t)) return '🧵';
+  if(/conector|jack|terminal/.test(t)) return '🔌';
+  if(/diod|led/.test(t)) return '💡';
+  if(/transist|mosfet/.test(t)) return '🧠';
+  if(/fusible/.test(t)) return '🔥';
+  if(/tornill|tuerca|arandela/.test(t)) return '🔩';
+  if(/sensor/.test(t)) return '📡';
+  if(/placa|pcb/.test(t)) return '🟩';
+  if(/sin tag/.test(t)) return '🏷️';
+  return '🔹';
 }
 
 function renderConsumibleTagGroups(catKey, items, mode){
   const catEncoded = encodeURIComponent(catKey);
   const tagGroups = groupConsumiblesByTag(items);
-  return `<div class="cons-subgroups">${tagGroups.map(g=>{
+  const MAX_TAG_GROUPS = 12;
+  const showAll = !!_consumibleTagShowAll[catKey];
+  const visibleGroups = showAll
+    ? tagGroups
+    : tagGroups.filter((g, idx) => {
+        const stateKey = `${catKey}::${g.key}`;
+        return idx < MAX_TAG_GROUPS || !!_consumibleTagGroupsOpen[stateKey];
+      });
+  const hiddenCount = Math.max(0, tagGroups.length - visibleGroups.length);
+  const groupsHtml = visibleGroups.map(g=>{
     const tagEncoded = encodeURIComponent(g.key);
     const stateKey = `${catKey}::${g.key}`;
     const isOpen = !!_consumibleTagGroupsOpen[stateKey];
+    const icon = tagIcon(g.tag);
     return `<section class="cons-subgroup${isOpen?' open':''}">
       <button class="cons-subgroup-btn" type="button" onclick="toggleConsumibleTagGroup('${catEncoded}','${tagEncoded}')">
-        <span class="cons-subgroup-title">#${escHtml(g.tag)}</span>
-        <span class="cons-subgroup-metrics">${g.refs} refs · ${g.units} uds${g.low?` · ⚠ ${g.low}`:''}</span>
+        <span class="cons-subgroup-title" title="${escHtml(g.tag)}">${icon} ${escHtml(g.tag)}</span>
+        <span class="cons-subgroup-metrics">${g.refs}</span>
+        ${g.low?`<span class="cons-subgroup-low" title="Stock bajo">⚠ ${g.low}</span>`:''}
         <span class="cons-subgroup-chevron">${isOpen ? '▲' : '▼'}</span>
       </button>
       <div class="cons-subgroup-body${isOpen?' open':''}">${isOpen ? renderItemsFragment(g.items, mode) : ''}</div>
     </section>`;
-  }).join('')}</div>`;
+  }).join('');
+  const toggleMore = tagGroups.length > MAX_TAG_GROUPS
+    ? `<button class="cons-subgroup-more" type="button" onclick="toggleConsumibleTagShowAll('${catEncoded}')">${showAll ? 'Ver menos tags' : `Ver ${hiddenCount} tags más`}</button>`
+    : '';
+  return `<div class="cons-subgroups-wrap"><div class="cons-subgroups">${groupsHtml}</div>${toggleMore}</div>`;
 }
 
 function renderConsumibleGroups(mc,data,mode){
@@ -328,6 +395,12 @@ function toggleConsumibleTagGroup(encodedCatKey, encodedTagKey){
   const tagKey = decodeURIComponent(encodedTagKey);
   const stateKey = `${catKey}::${tagKey}`;
   _consumibleTagGroupsOpen[stateKey] = !_consumibleTagGroupsOpen[stateKey];
+  renderInv();
+}
+
+function toggleConsumibleTagShowAll(encodedCatKey){
+  const catKey = decodeURIComponent(encodedCatKey);
+  _consumibleTagShowAll[catKey] = !_consumibleTagShowAll[catKey];
   renderInv();
 }
 
