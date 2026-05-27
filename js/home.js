@@ -64,40 +64,36 @@ function renderHome(){
 function _afTimeAgo(fechaStr) {
   if (!fechaStr) return '';
   const d = new Date(fechaStr.replace(' ', 'T'));
-  if (isNaN(d)) return fechaStr.slice(0, 16).replace('T', ' ');
+  if (isNaN(d)) return '';
   const diff = Math.floor((Date.now() - d) / 1000);
-  if (diff < 60) return 'Ahora mismo';
-  if (diff < 3600) return `Hace ${Math.floor(diff/60)} min`;
-  if (diff < 86400) return `Hace ${Math.floor(diff/3600)} h`;
-  if (diff < 172800) return 'Ayer';
+  if (diff < 60) return 'ahora';
+  if (diff < 3600) return `${Math.floor(diff/60)}m`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h`;
+  if (diff < 172800) return 'ayer';
   return d.toLocaleDateString('es-ES', { day:'numeric', month:'short' });
 }
 
-function _afDotClass(accion) {
+function _afChipStyle(accion) {
   const a = (accion || '').toLowerCase();
-  if (['itemadd','add','bulkimport'].includes(a)) return 'add';
-  if (['itemupdate','update'].includes(a)) return 'edit';
-  if (['itemdelete','delete','itembaja'].includes(a)) return 'del';
-  if (['prestar','prestarcaja'].includes(a)) return 'loan';
-  if (a === 'devolver') return 'ret';
-  return 'sys';
+  if (['itemadd','add','bulkimport'].includes(a))      return { icon:'➕', cls:'add' };
+  if (['itemupdate','update'].includes(a))              return { icon:'✏️', cls:'edit' };
+  if (['itemdelete','delete','itembaja'].includes(a))   return { icon:'🗑️', cls:'del' };
+  if (['prestar','prestarcaja'].includes(a))            return { icon:'📤', cls:'loan' };
+  if (a === 'devolver')                                 return { icon:'📥', cls:'ret' };
+  return { icon:'⚙️', cls:'sys' };
 }
 
-function _afIcon(dotClass) {
-  return { add:'➕', edit:'✏️', del:'🗑️', loan:'📤', ret:'📥', sys:'⚙️' }[dotClass] || '•';
-}
-
-function _afLabel(accion, nombre, detalles) {
+function _afChipLabel(accion, nombre, detalles) {
   const a = (accion || '').toLowerCase();
-  const n = nombre || detalles || '';
-  if (a === 'itemadd' || a === 'add') return n ? `Añadido: ${n}` : 'Ítem añadido';
-  if (a === 'itemupdate' || a === 'update') return n ? `Editado: ${n}` : 'Ítem editado';
-  if (a === 'itemdelete' || a === 'delete') return n ? `Eliminado: ${n}` : 'Ítem eliminado';
-  if (a === 'itembaja') return n ? `Baja: ${n}` : 'Ítem dado de baja';
-  if (a === 'prestar' || a === 'prestarcaja') return n ? `Préstamo: ${n}` : 'Préstamo realizado';
-  if (a === 'devolver') return n ? `Devuelto: ${n}` : 'Devolución';
-  if (a === 'bulkimport') return 'Importación masiva';
-  return detalles || accion || 'Acción';
+  const n = (nombre || detalles || '').slice(0, 28);
+  if (a === 'itemadd' || a === 'add')         return ['Añadido', n];
+  if (a === 'itemupdate' || a === 'update')   return ['Editado', n];
+  if (a === 'itemdelete' || a === 'delete')   return ['Eliminado', n];
+  if (a === 'itembaja')                       return ['Baja', n];
+  if (a === 'prestar' || a === 'prestarcaja') return ['Préstamo', n];
+  if (a === 'devolver')                       return ['Devuelto', n];
+  if (a === 'bulkimport')                     return ['Importación', ''];
+  return [detalles || accion || 'Acción', ''];
 }
 
 async function renderActivityFeed() {
@@ -108,27 +104,25 @@ async function renderActivityFeed() {
   if (!section || !feed) return;
 
   section.style.display = '';
-  feed.innerHTML = '<div class="af-item" style="justify-content:center;color:var(--muted);font-size:12px">Cargando...</div>';
+  feed.innerHTML = '<span class="af-chip af-chip-loading">Cargando…</span>';
 
   try {
     const res = await fetch(urlWithAuth('historial'));
     if (!res.ok) { section.style.display='none'; return; }
     const data = await res.json();
     const logs = Array.isArray(data) ? data : (data.logs || []);
-    const recent = logs.slice(0, 10);
-    if (!recent.length) { feed.innerHTML = '<div class="af-item" style="color:var(--muted);font-size:12px;padding:12px 4px">Sin actividad reciente.</div>'; return; }
+    const recent = logs.slice(0, 12);
+    if (!recent.length) { section.style.display='none'; return; }
     feed.innerHTML = recent.map(r => {
-      const dc = _afDotClass(r.accion);
-      const label = _afLabel(r.accion, r.nombre || r.que, r.detalles);
-      const quien = r.usuario ? `${r.usuario}${r.rol ? ' · ' + r.rol : ''}` : '';
-      return `<div class="af-item">
-        <div class="af-dot ${dc}">${_afIcon(dc)}</div>
-        <div class="af-body">
-          <div class="af-action">${label}</div>
-          ${quien ? `<div class="af-meta">${quien}</div>` : ''}
-        </div>
-        <div class="af-time">${_afTimeAgo(r.fecha || r.timestamp)}</div>
-      </div>`;
+      const { icon, cls } = _afChipStyle(r.accion);
+      const [verb, name] = _afChipLabel(r.accion, r.nombre || r.que, r.detalles);
+      const t = _afTimeAgo(r.fecha || r.timestamp);
+      const who = (r.usuario || '').split(' ')[0];
+      return `<span class="af-chip af-chip-${cls}" title="${verb}${name ? ': '+name : ''}${who ? ' · '+who : ''}">
+        <span class="af-chip-icon">${icon}</span>
+        <span class="af-chip-text">${name || verb}</span>
+        ${t ? `<span class="af-chip-time">${t}</span>` : ''}
+      </span>`;
     }).join('');
   } catch(e) {
     section.style.display = 'none';
