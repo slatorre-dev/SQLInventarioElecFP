@@ -181,9 +181,16 @@ let _consumibleGroupsOpen = Object.create(null);
 let _consumibleTagGroupsOpen = Object.create(null);
 
 function shouldGroupConsumibles(data){
+  if(!_groupView) return false;
   const ft = document.getElementById('fTipo')?.value || '';
   if(ft === 'inventariable') return data.some(x => materialType(x) === 'inventariable');
   return data.some(x => materialType(x) === 'consumible');
+}
+function setGroupView(v){
+  _groupView = v;
+  localStorage.setItem('inv_group_view', v ? 'true' : 'false');
+  updateViewBtns();
+  renderInv();
 }
 
 function groupItemsByCategory(data, targetType){
@@ -515,6 +522,8 @@ function getInvRenderMode(){
 }
 function updateViewBtns(){
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  const gb = document.getElementById('btnGroupView');
+  if(gb){ gb.title = _groupView ? 'Vista lista clásica' : 'Vista agrupada'; gb.classList.toggle('active', _groupView); }
 }
 
 function getPageSig(data){

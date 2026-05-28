@@ -10,6 +10,7 @@ let UBICACIONES = [];
 let cf = null;
 let currentCiclo = null;
 let view = localStorage.getItem('inv_view') || 'table';
+let _groupView = localStorage.getItem('inv_group_view') !== 'false';
 let sk = 'item', sa = true;
 let eid = null;
 let currentPresTab = 'activos';
