@@ -31,6 +31,7 @@
 - [Sesión 23/05/2026](session_mayo_20260523.md) — Ciclo PC full-width, vista tabla/cards, SET-/CONT- contenedores, bulk delete 5s, agente Volt expandido + voz (v317→v338)
 - [Sesión 24/05/2026](session_mayo_20260524.md) — Backup D1, Volt backend D1, fix voz/scroll/flicker, chips filtros, badge préstamos vencidos (v352→v374)
 - [Sesión 25/05/2026](session_mayo_20260525.md) — Fixes tablet/móvil, mantener filtros al editar, mejoras NLP Volt, fix voz duplicada (v379→v390)
+- [Sesión 27/05/2026](session_mayo_20260527.md) — Historial visual timeline, botón en home, click navega a ítem, limpieza topbar (v417→v423)
 
 ## Entorno & Ops
 - [Wrangler red corporativa](feedback_wrangler_red_corporativa.md) — NODE_TLS_REJECT_UNAUTHORIZED=0 antes de wrangler; login previo en terminal interactiva
