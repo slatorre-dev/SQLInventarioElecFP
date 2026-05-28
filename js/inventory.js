@@ -418,7 +418,11 @@ function renderConsumibleGroups(mc,data,mode){
 
 function toggleConsumibleGroup(encodedKey){
   const key = decodeURIComponent(encodedKey);
-  _consumibleGroupsOpen[key] = !_consumibleGroupsOpen[key];
+  const wasOpen = !!_consumibleGroupsOpen[key];
+  // Cerrar todos antes de abrir el seleccionado (acordeón)
+  _consumibleGroupsOpen = Object.create(null);
+  _consumibleTagGroupsOpen = Object.create(null);
+  if(!wasOpen) _consumibleGroupsOpen[key] = true;
   renderInv();
 }
 
@@ -426,7 +430,12 @@ function toggleConsumibleTagGroup(encodedCatKey, encodedTagKey){
   const catKey = decodeURIComponent(encodedCatKey);
   const tagKey = decodeURIComponent(encodedTagKey);
   const stateKey = `${catKey}::${tagKey}`;
-  _consumibleTagGroupsOpen[stateKey] = !_consumibleTagGroupsOpen[stateKey];
+  const wasOpen = !!_consumibleTagGroupsOpen[stateKey];
+  // Cerrar todos los subgrupos de esta categoría antes de abrir el seleccionado
+  Object.keys(_consumibleTagGroupsOpen).forEach(k => {
+    if(k.startsWith(catKey + '::')) delete _consumibleTagGroupsOpen[k];
+  });
+  if(!wasOpen) _consumibleTagGroupsOpen[stateKey] = true;
   renderInv();
 }
 
