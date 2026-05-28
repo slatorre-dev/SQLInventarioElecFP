@@ -390,6 +390,8 @@ function fmtNum(n){
 }
 
 function renderConsumibleGroups(mc,data,mode){
+  const pt = document.getElementById('pagerTop');
+  if(pt){ pt.innerHTML=''; pt.style.display='none'; }
   const q = (document.getElementById('srch')?.value || '').trim();
   const ft = document.getElementById('fTipo')?.value || '';
 
