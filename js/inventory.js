@@ -350,25 +350,32 @@ function renderConsumibleTagGroups(catKey, items, mode){
   return `<div class="cons-subgroups-wrap"><div class="cons-subgroups">${groupsHtml}</div></div>`;
 }
 
+function fmtNum(n){
+  const v = Number(n) || 0;
+  if(v >= 10000) return Math.round(v/1000)+'K+';
+  if(v >= 1000)  return (v/1000).toFixed(1).replace('.0','')+'K';
+  return String(v);
+}
+
 function renderConsumibleGroups(mc,data,mode){
   const { groups, inventariables } = groupConsumiblesByCategory(data);
-  const invTagCount = inventariables.length ? groupConsumiblesByTag(inventariables).length : 0;
+
+  // Inventariables: bloque simple sin subagrupación por tags
   const invBlock = inventariables.length
     ? `<section class="cons-group cons-group-inv${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
           <span class="cons-group-icon" style="background:#eff6ff;color:#1d4ed8">📦</span>
           <span class="cons-group-main">
             <span class="cons-group-title">Inventariables</span>
-            <span class="cons-group-sub">Inventariables subagrupados por tags</span>
           </span>
           <span class="cons-metrics">
-            <span class="cons-metric">${inventariables.length} ítems</span>
-            <span class="cons-metric">${invTagCount} tags</span>
+            <span class="cons-metric">${fmtNum(inventariables.length)} refs</span>
+            <span class="cons-metric">${fmtNum(inventariables.reduce((a,x)=>a+(Number(x.qty)||0),0))} uds</span>
           </span>
           <span class="cons-group-chevron">${_consumibleGroupsOpen['__inventariable__'] ? '▲' : '▼'}</span>
         </button>
         <div class="cons-group-body${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
-          ${_consumibleGroupsOpen['__inventariable__'] ? renderConsumibleTagGroups('__inventariable__', inventariables, mode) : ''}
+          ${_consumibleGroupsOpen['__inventariable__'] ? renderItemsFragment(inventariables, mode) : ''}
         </div>
       </section>`
     : '';
@@ -382,13 +389,11 @@ function renderConsumibleGroups(mc,data,mode){
         <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
         <span class="cons-group-main">
           <span class="cons-group-title">${escHtml(g.name)}</span>
-          <span class="cons-group-sub">Consumibles subagrupados por tags</span>
         </span>
         <span class="cons-metrics">
-          <span class="cons-metric">${g.refs} refs</span>
-          <span class="cons-metric">${g.units} uds</span>
-          <span class="cons-metric">${groupConsumiblesByTag(g.items).length} tags</span>
-          ${g.low ? `<span class="cons-metric warn">⚠ ${g.low} bajo</span>` : ''}
+          <span class="cons-metric">${fmtNum(g.refs)} refs</span>
+          <span class="cons-metric">${fmtNum(g.units)} uds</span>
+          ${g.low ? `<span class="cons-metric warn">⚠ ${fmtNum(g.low)}</span>` : ''}
         </span>
         <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
       </button>
