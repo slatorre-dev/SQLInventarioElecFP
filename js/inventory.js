@@ -442,7 +442,7 @@ function renderConsumibleGroups(mc,data,mode){
           <span class="cons-group-chevron">${invOpen ? '▲' : '▼'}</span>
         </button>
         <div class="cons-group-body${invOpen ? ' open' : ''}">
-          ${invOpen ? renderItemsFragment(inventariables, mode) : ''}
+          ${invOpen ? renderConsumibleTagGroups('__inventariable__', inventariables, mode) : ''}
         </div>
       </section>`
     : '';
