@@ -261,13 +261,13 @@ function normalizeTagText(tag){
 
 // Agrupa variantes \u2192 forma can\u00f3nica bonita (mismo mapa que backend)
 const TAG_CANONICAL_MAP = {
-  'rele':'Rel\u00e9s','reles':'Rel\u00e9s','relay':'Rel\u00e9s','relays':'Rel\u00e9s',
-  'resistencia':'Resistencias','resistencias':'Resistencias',
-  'condensador':'Condensadores','condensadores':'Condensadores',
+  'rel':'Rel\u00e9s','rele':'Rel\u00e9s','reles':'Rel\u00e9s','relay':'Rel\u00e9s','relays':'Rel\u00e9s',
+  'resistencia':'Resistencias','resistencias':'Resistencias','resist':'Resistencias',
+  'condensador':'Condensadores','condensadores':'Condensadores','condensad':'Condensadores','conden':'Condensadores',
   'sensor':'Sensores','sensores':'Sensores',
   'smd':'SMD','led':'LED','leds':'LED',
   'diodo':'Diodos','diodos':'Diodos',
-  'transistor':'Transistores','transistores':'Transistores',
+  'transistor':'Transistores','transistores':'Transistores','transistor':'Transistores',
   'cable':'Cables','cables':'Cables','manguera':'Cables',
   'conector':'Conectores','conectores':'Conectores',
   'fusible':'Fusibles','fusibles':'Fusibles',
@@ -322,10 +322,16 @@ function pickBestTagLabel(labelsMap, fallback){
 function groupConsumiblesByTag(items){
   const map = new Map();
   for(const x of items){
-    const rawTag = tagKeyForItem(x);
-    const key = tagFamilyKey(rawTag);
-    if(!map.has(key)) map.set(key, { items: [] });
-    map.get(key).items.push(x);
+    const tags = itemTags(x);
+    const tagList = tags.length ? tags : ['Sin tag'];
+    const seenKeys = new Set();
+    for(const rawTag of tagList){
+      const key = tagFamilyKey(rawTag);
+      if(seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      if(!map.has(key)) map.set(key, { items: [] });
+      map.get(key).items.push(x);
+    }
   }
   return [...map.entries()]
     .map(([key, bucket]) => ({
