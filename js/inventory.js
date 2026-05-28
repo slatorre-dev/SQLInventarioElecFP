@@ -393,7 +393,8 @@ function renderConsumibleGroups(mc,data,mode){
   const q = (document.getElementById('srch')?.value || '').trim();
   const ft = document.getElementById('fTipo')?.value || '';
 
-  if(ft === 'inventariable'){
+  const hasConsumibles = data.some(x => materialType(x) === 'consumible');
+  if(ft === 'inventariable' || !hasConsumibles){
     const invGroups = groupItemsByCategory(data, 'inventariable');
     const blocks = invGroups.map(g => {
       const k = encodeURIComponent(g.key);
