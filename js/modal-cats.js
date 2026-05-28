@@ -127,12 +127,56 @@ function renderTagsList(){
   const list = document.getElementById('tagsList');
   if(!list) return;
   const sorted = [...TAGS].sort(tagNameCompare);
-  list.innerHTML = sorted.map((tag, i) => `
-    <div class="tag-row">
-      <span class="tag-name">${tag}</span>
-      <button class="del-btn" onclick="removeTag('${tag.replace(/'/g, '\\\'')}')" title="Eliminar">🗑</button>
-    </div>
-  `).join('');
+  list.innerHTML = sorted.map(tag => {
+    const id = encodeURIComponent(tag);
+    const esc = tag.replace(/'/g,"\\'");
+    return `<div class="tag-row" id="tagrow-${id}">
+      <span class="tag-name">${escHtml(tag)}</span>
+      <button class="tag-edit-btn" onclick="startTagEdit('${id}')" title="Renombrar">✏️</button>
+      <button class="del-btn" onclick="removeTag('${esc}')" title="Eliminar">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function startTagEdit(encodedTag){
+  const tag = decodeURIComponent(encodedTag);
+  const row = document.getElementById('tagrow-' + encodedTag);
+  if(!row) return;
+  row.innerHTML = `
+    <input class="tag-edit-input" value="${escHtml(tag)}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();confirmTagRename('${encodedTag}',this.value)}else if(event.key==='Escape')renderTagsList()">
+    <button class="tag-edit-btn ok" onclick="confirmTagRename('${encodedTag}',this.previousElementSibling.value)" title="Guardar">✓</button>
+    <button class="del-btn" onclick="renderTagsList()" title="Cancelar">✕</button>`;
+  row.querySelector('input')?.select();
+}
+
+async function confirmTagRename(encodedOldTag, newTagRaw){
+  const oldTag = decodeURIComponent(encodedOldTag);
+  const newTag = (newTagRaw || '').trim();
+  if(!newTag){ toast('El tag no puede estar vacío','err'); return; }
+  if(newTag === oldTag){ renderTagsList(); return; }
+  if(TAGS.some(t => t.toLowerCase() === newTag.toLowerCase() && t !== oldTag)){
+    toast('Ya existe un tag con ese nombre','err'); return;
+  }
+  const idx = TAGS.indexOf(oldTag);
+  if(idx !== -1) TAGS[idx] = newTag;
+  for(const item of items){
+    if(!item.tags) continue;
+    const ts = item.tags.split(/[,;]/).map(t=>t.trim());
+    const ti = ts.findIndex(t=>t===oldTag);
+    if(ti !== -1){ ts[ti]=newTag; item.tags=ts.join(', '); }
+  }
+  renderTagsList();
+  fillTagSuggestions();
+  if(cf) renderInv();
+  try{
+    const res = await apiPost({action:'renameTag', oldTag, newTag});
+    if(!res.ok) throw new Error(res.error);
+    if(res.items) items = res.items;
+    toast(`"${oldTag}" → "${newTag}" (${res.updated||0} ítems)`,'ok');
+  }catch(err){
+    toast('Error al guardar: '+err.message,'err');
+  }
 }
 
 function addTagRow(){

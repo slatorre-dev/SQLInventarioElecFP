@@ -248,6 +248,28 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ ok: true, updated: updates.length, items: items.results || [] });
   }
 
+  if (action === 'renameTag') {
+    const oldTag = String(body.oldTag || '').trim();
+    const newTag = String(body.newTag || '').trim();
+    if (!oldTag || !newTag) return Response.json({ ok: false, error: 'Faltan parámetros' });
+    const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
+    const rows = inv.results || [];
+    const updates = [];
+    for (const item of rows) {
+      const tags = splitTags(item.tags || '');
+      let changed = false;
+      const next = tags.map(t => { if (t === oldTag) { changed = true; return newTag; } return t; });
+      if (changed) updates.push({ id: item.id, tags: next.join(', ') });
+    }
+    if (updates.length) {
+      const stmt = env.DB.prepare('UPDATE inventario SET tags=? WHERE id=?');
+      await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
+    }
+    await auditLog(env.DB, user, 'renameTag', `Tag "${oldTag}" → "${newTag}" en ${updates.length} ítems`);
+    const updated = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    return Response.json({ ok: true, updated: updates.length, items: updated.results || [] });
+  }
+
   if (action === 'ubicacionesSync') {
     const ubicaciones = body.ubicaciones || [];
     await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run();
