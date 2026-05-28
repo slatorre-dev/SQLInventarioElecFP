@@ -181,9 +181,7 @@ let _consumibleGroupsOpen = Object.create(null);
 let _consumibleTagGroupsOpen = Object.create(null);
 
 function shouldGroupConsumibles(data){
-  const q = (document.getElementById('srch')?.value || '').trim();
   const ft = document.getElementById('fTipo')?.value || '';
-  if(q) return false;
   if(ft === 'inventariable') return false;
   return data.some(x => materialType(x) === 'consumible');
 }
@@ -365,41 +363,45 @@ function fmtNum(n){
 }
 
 function renderConsumibleGroups(mc,data,mode){
+  const q = (document.getElementById('srch')?.value || '').trim();
   const { groups, inventariables } = groupConsumiblesByCategory(data);
 
   // Inventariables: bloque simple sin subagrupación por tags
+  const invOpen = q ? true : !!_consumibleGroupsOpen['__inventariable__'];
   const invBlock = inventariables.length
-    ? `<section class="cons-group cons-group-inv${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
+    ? `<section class="cons-group cons-group-inv${invOpen ? ' open' : ''}${q ? ' cons-group-filtered' : ''}">
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
           <span class="cons-group-icon" style="background:#eff6ff;color:#1d4ed8">📦</span>
           <span class="cons-group-main">
             <span class="cons-group-title">Inventariables</span>
           </span>
           <span class="cons-metrics">
-            <span class="cons-metric">${fmtNum(inventariables.length)} refs</span>
-            <span class="cons-metric">${fmtNum(inventariables.reduce((a,x)=>a+(Number(x.qty)||0),0))} uds</span>
+            ${q ? `<span class="cons-metric cons-metric-match">${fmtNum(inventariables.length)} coincid.</span>` : `<span class="cons-metric">${fmtNum(inventariables.length)} refs</span><span class="cons-metric">${fmtNum(inventariables.reduce((a,x)=>a+(Number(x.qty)||0),0))} uds</span>`}
           </span>
-          <span class="cons-group-chevron">${_consumibleGroupsOpen['__inventariable__'] ? '▲' : '▼'}</span>
+          <span class="cons-group-chevron">${invOpen ? '▲' : '▼'}</span>
         </button>
-        <div class="cons-group-body${_consumibleGroupsOpen['__inventariable__'] ? ' open' : ''}">
-          ${_consumibleGroupsOpen['__inventariable__'] ? renderItemsFragment(inventariables, mode) : ''}
+        <div class="cons-group-body${invOpen ? ' open' : ''}">
+          ${invOpen ? renderItemsFragment(inventariables, mode) : ''}
         </div>
       </section>`
     : '';
 
   const groupBlocks = groups.map(g => {
     const k = encodeURIComponent(g.key);
-    const isOpen = !!_consumibleGroupsOpen[g.key];
+    // Con búsqueda activa: abrir automáticamente los grupos con resultados
+    const isOpen = q ? true : !!_consumibleGroupsOpen[g.key];
     const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:'🏷️' };
-    return `<section class="cons-group${isOpen ? ' open' : ''}">
+    const matchBadge = q ? `<span class="cons-metric cons-metric-match">${fmtNum(g.refs)} coincid.</span>` : '';
+    return `<section class="cons-group${isOpen ? ' open' : ''}${q ? ' cons-group-filtered' : ''}">
       <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
         <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
         <span class="cons-group-main">
           <span class="cons-group-title">${escHtml(g.name)}</span>
         </span>
         <span class="cons-metrics">
-          <span class="cons-metric">${fmtNum(g.refs)} refs</span>
-          <span class="cons-metric">${fmtNum(g.units)} uds</span>
+          ${matchBadge}
+          ${!q ? `<span class="cons-metric">${fmtNum(g.refs)} refs</span>` : ''}
+          ${!q ? `<span class="cons-metric">${fmtNum(g.units)} uds</span>` : ''}
           ${g.low ? `<span class="cons-metric warn">⚠ ${fmtNum(g.low)}</span>` : ''}
         </span>
         <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
