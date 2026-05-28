@@ -100,6 +100,25 @@ function setFilterTipo(value){
   renderInv();
 }
 
+let _groupMode = localStorage.getItem('inv_group_mode') || 'tags';
+
+function updateGroupModeBtns(){
+  document.querySelectorAll('.group-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.gmode === _groupMode);
+  });
+}
+
+function setGroupMode(mode){
+  _groupMode = (mode === 'list') ? 'list' : 'tags';
+  localStorage.setItem('inv_group_mode', _groupMode);
+  updateGroupModeBtns();
+  renderInv();
+}
+
+function isGroupedMode(){
+  return _groupMode === 'tags';
+}
+
 function renderActiveFilters(){
   const bar = document.getElementById('activeFiltersBar');
   if(!bar) return;
@@ -141,6 +160,7 @@ function renderActiveFilters(){
 
 function renderInv(){
   updateViewBtns();
+  updateGroupModeBtns();
   const mc=document.getElementById('iContent');
   if(!itemsLoaded){
     document.getElementById('iCount').textContent='';
@@ -165,8 +185,8 @@ function renderInv(){
   }
   const mode = getInvRenderMode();
   _lastInvRenderMode = mode;
-  if(shouldGroupConsumibles(data)){
-    renderConsumibleGroups(mc,data,mode);
+  if(isGroupedMode()){
+    renderMaterialGroupsByTag(mc,data,mode);
     return;
   }
   const page = getInvPage(data);
@@ -180,10 +200,17 @@ function renderInv(){
 let _consumibleGroupsOpen = Object.create(null);
 let _consumibleTagGroupsOpen = Object.create(null);
 
-function shouldGroupConsumibles(data){
-  const ft = document.getElementById('fTipo')?.value || '';
-  if(ft === 'inventariable') return false;
-  return data.some(x => materialType(x) === 'consumible');
+function materialLabel(type){
+  return type === 'inventariable' ? 'Inventariables' : 'Consumibles';
+}
+
+function materialIcon(type){
+  return type === 'inventariable' ? '🔧' : '🧴';
+}
+
+function materialStyle(type){
+  if(type === 'inventariable') return { c:'#1d4ed8', bg:'#eff6ff' };
+  return { c:'#7c3aed', bg:'#f5f3ff' };
 }
 
 function groupConsumiblesByCategory(data){
@@ -413,6 +440,52 @@ function renderConsumibleGroups(mc,data,mode){
   }).join('');
 
   mc.innerHTML = `<div class="cons-wrap">${invBlock}${groupBlocks}</div>`;
+  if(mode !== 'table') addCardSwipeListeners(mc);
+}
+
+function renderMaterialGroupsByTag(mc,data,mode){
+  const q = (document.getElementById('srch')?.value || '').trim();
+  const byType = {
+    consumible: [],
+    inventariable: []
+  };
+  for(const x of data){
+    const mt = materialType(x) === 'inventariable' ? 'inventariable' : 'consumible';
+    byType[mt].push(x);
+  }
+
+  const orderedTypes = ['consumible', 'inventariable'];
+  const groupBlocks = orderedTypes
+    .filter(type => byType[type].length)
+    .map(type => {
+      const list = byType[type];
+      const key = `__type__:${type}`;
+      const encoded = encodeURIComponent(key);
+      const isOpen = q ? true : !!_consumibleGroupsOpen[key];
+      const sty = materialStyle(type);
+      const refs = list.length;
+      const units = list.reduce((a,i)=>a+(Number(i.qty)||0),0);
+      const low = list.filter(isLowStock).length;
+      return `<section class="cons-group${isOpen ? ' open' : ''}${q ? ' cons-group-filtered' : ''}">
+        <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${encoded}')">
+          <span class="cons-group-icon" style="background:${sty.bg};color:${sty.c}">${materialIcon(type)}</span>
+          <span class="cons-group-main">
+            <span class="cons-group-title">${materialLabel(type)}</span>
+          </span>
+          <span class="cons-metrics">
+            ${q ? `<span class="cons-metric cons-metric-match">${fmtNum(refs)} coincid.</span>` : `<span class="cons-metric">${fmtNum(refs)} refs</span><span class="cons-metric">${fmtNum(units)} uds</span>`}
+            ${low ? `<span class="cons-metric warn">⚠ ${fmtNum(low)}</span>` : ''}
+          </span>
+          <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
+        </button>
+        <div class="cons-group-body${isOpen ? ' open' : ''}">
+          ${isOpen ? renderConsumibleTagGroups(key, list, mode) : ''}
+        </div>
+      </section>`;
+    })
+    .join('');
+
+  mc.innerHTML = `<div class="cons-wrap">${groupBlocks}</div>`;
   if(mode !== 'table') addCardSwipeListeners(mc);
 }
 
