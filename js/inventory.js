@@ -523,7 +523,7 @@ function getInvRenderMode(){
 function updateViewBtns(){
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
   const gb = document.getElementById('btnGroupView');
-  if(gb){ gb.title = _groupView ? 'Vista lista clásica' : 'Vista agrupada'; gb.classList.toggle('active', _groupView); }
+  if(gb){ gb.textContent = _groupView ? 'Agrupado' : 'Lista'; gb.classList.toggle('active', _groupView); }
 }
 
 function getPageSig(data){
