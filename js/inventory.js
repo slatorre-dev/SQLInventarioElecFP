@@ -182,9 +182,7 @@ let _consumibleTagGroupsOpen = Object.create(null);
 
 function shouldGroupConsumibles(data){
   if(!_groupView) return false;
-  const ft = document.getElementById('fTipo')?.value || '';
-  if(ft === 'inventariable') return data.some(x => materialType(x) === 'inventariable');
-  return data.some(x => materialType(x) === 'consumible');
+  return data.length > 0;
 }
 function setGroupView(v){
   _groupView = v;
