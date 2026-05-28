@@ -182,8 +182,28 @@ let _consumibleTagGroupsOpen = Object.create(null);
 
 function shouldGroupConsumibles(data){
   const ft = document.getElementById('fTipo')?.value || '';
-  if(ft === 'inventariable') return false;
+  if(ft === 'inventariable') return data.some(x => materialType(x) === 'inventariable');
   return data.some(x => materialType(x) === 'consumible');
+}
+
+function groupItemsByCategory(data, targetType){
+  const map = new Map();
+  for(const x of data){
+    if(materialType(x) !== targetType) continue;
+    const key = String(x.cat || 'Sin categoría').trim() || 'Sin categoría';
+    if(!map.has(key)) map.set(key, []);
+    map.get(key).push(x);
+  }
+  return [...map.entries()]
+    .map(([name, items]) => ({
+      key: name,
+      name,
+      items,
+      refs: items.length,
+      units: items.reduce((a,i)=>a+(Number(i.qty)||0),0),
+      low: items.filter(isLowStock).length
+    }))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
 }
 
 function groupConsumiblesByCategory(data){
@@ -364,6 +384,39 @@ function fmtNum(n){
 
 function renderConsumibleGroups(mc,data,mode){
   const q = (document.getElementById('srch')?.value || '').trim();
+  const ft = document.getElementById('fTipo')?.value || '';
+
+  if(ft === 'inventariable'){
+    const invGroups = groupItemsByCategory(data, 'inventariable');
+    const blocks = invGroups.map(g => {
+      const k = encodeURIComponent(g.key);
+      const isOpen = q ? true : !!_consumibleGroupsOpen[g.key];
+      const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:'🏷️' };
+      const matchBadge = q ? `<span class="cons-metric cons-metric-match">${fmtNum(g.refs)} coincid.</span>` : '';
+      return `<section class="cons-group cons-group-inv${isOpen ? ' open' : ''}${q ? ' cons-group-filtered' : ''}">
+        <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
+          <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
+          <span class="cons-group-main">
+            <span class="cons-group-title">${escHtml(g.name)}</span>
+          </span>
+          <span class="cons-metrics">
+            ${matchBadge}
+            ${!q ? `<span class="cons-metric">${fmtNum(g.refs)} refs</span>` : ''}
+            ${!q ? `<span class="cons-metric">${fmtNum(g.units)} uds</span>` : ''}
+            ${g.low ? `<span class="cons-metric warn">⚠ ${fmtNum(g.low)}</span>` : ''}
+          </span>
+          <span class="cons-group-chevron">${isOpen ? '▲' : '▼'}</span>
+        </button>
+        <div class="cons-group-body${isOpen ? ' open' : ''}">
+          ${isOpen ? renderConsumibleTagGroups(g.key, g.items, mode) : ''}
+        </div>
+      </section>`;
+    }).join('');
+    mc.innerHTML = `<div class="cons-wrap">${blocks}</div>`;
+    if(mode !== 'table') addCardSwipeListeners(mc);
+    return;
+  }
+
   const { groups, inventariables } = groupConsumiblesByCategory(data);
 
   // Inventariables: bloque simple sin subagrupación por tags
