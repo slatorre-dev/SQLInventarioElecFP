@@ -236,40 +236,50 @@ function normalizeTagText(tag){
     .trim();
 }
 
-const TAG_PLURAL_OVERRIDES = {
-  reles: 'rele',
-  relays: 'rele',
-  cables: 'cable',
-  conectores: 'conector',
-  sensores: 'sensor',
-  resistencias: 'resistencia',
-  condensadores: 'condensador',
-  osciloscopios: 'osciloscopio',
-  polimetros: 'polimetro',
-  multimetros: 'multimetro',
-  fuentes: 'fuente',
-  ruedas: 'rueda',
+// Agrupa variantes \u2192 forma can\u00f3nica bonita (mismo mapa que backend)
+const TAG_CANONICAL_MAP = {
+  'rele':'Rel\u00e9s','reles':'Rel\u00e9s','relay':'Rel\u00e9s','relays':'Rel\u00e9s',
+  'resistencia':'Resistencias','resistencias':'Resistencias',
+  'condensador':'Condensadores','condensadores':'Condensadores',
+  'sensor':'Sensores','sensores':'Sensores',
+  'smd':'SMD','led':'LED','leds':'LED',
+  'diodo':'Diodos','diodos':'Diodos',
+  'transistor':'Transistores','transistores':'Transistores',
+  'cable':'Cables','cables':'Cables','manguera':'Cables',
+  'conector':'Conectores','conectores':'Conectores',
+  'fusible':'Fusibles','fusibles':'Fusibles',
+  '230v':'230V','220v':'230V',
+  'herramienta':'Herramientas','herramientas':'Herramientas',
+  'soldadura':'Soldadura',
+  'medida':'Medida',
+  'multimetro':'Mult\u00edmetros','multimetros':'Mult\u00edmetros',
+  'polimetro':'Mult\u00edmetros','polimetros':'Mult\u00edmetros',
+  'osciloscopio':'Osciloscopios','osciloscopios':'Osciloscopios',
+  'router':'Routers','routers':'Routers',
+  'switch':'Switches','switches':'Switches',
+  'antena':'Antenas','antenas':'Antenas',
+  'fibra':'Fibra \u00f3ptica','fibra optica':'Fibra \u00f3ptica',
+  'telecom':'Telecomunicaciones','telecomunicaciones':'Telecomunicaciones',
+  'ordenador':'Ordenadores','ordenadores':'Ordenadores',
+  'raspberry':'Raspberry Pi','raspberry pi':'Raspberry Pi',
+  'arduino':'Arduino','esp32':'ESP32','esp8266':'ESP32',
+  'domotica':'Dom\u00f3tica','robotica':'Rob\u00f3tica',
+  'tornillo':'Torniller\u00eda','tornillos':'Torniller\u00eda','tornilleria':'Torniller\u00eda',
+  'consumible':'Consumibles','consumibles':'Consumibles',
+  'fuente':'Fuentes de alimentaci\u00f3n','fuentes':'Fuentes de alimentaci\u00f3n',
+  'fuente de alimentacion':'Fuentes de alimentaci\u00f3n',
+  'rueda':'Ruedas','ruedas':'Ruedas',
+  'api':'API','apis':'API',
+  'pcb':'PCB','placa':'PCB','placas':'PCB',
+  'proteccion electrica':'Protecciones el\u00e9ctricas',
+  'protecciones electricas':'Protecciones el\u00e9ctricas',
+  'diferencial':'Protecciones el\u00e9ctricas',
 };
 
-function singularizeToken(tok){
-  if(TAG_PLURAL_OVERRIDES[tok]) return TAG_PLURAL_OVERRIDES[tok];
-  if(tok.length <= 3) return tok;
-  if(tok.endsWith('ces') && tok.length > 4) return tok.slice(0, -3) + 'z';
-  if(tok.endsWith('es') && tok.length > 4) return tok.slice(0, -2);
-  if(tok.endsWith('s') && tok.length > 3) return tok.slice(0, -1);
-  return tok;
-}
-
-function canonicalTagKey(tag){
-  const n = normalizeTagText(tag);
-  if(!n) return 'sin tag';
-  return n.split(' ').filter(Boolean).map(singularizeToken).join(' ');
-}
-
 function tagFamilyKey(tag){
-  const canonical = canonicalTagKey(tag);
-  if(canonical === 'sin tag') return canonical;
-  return canonical.split(' ')[0] || canonical;
+  if(!tag || tag === 'Sin tag') return 'sin tag';
+  const key = normalizeTagText(tag);
+  return TAG_CANONICAL_MAP[key] || tag || 'sin tag';
 }
 
 function firstTagWord(tag){
@@ -291,16 +301,13 @@ function groupConsumiblesByTag(items){
   for(const x of items){
     const rawTag = tagKeyForItem(x);
     const key = tagFamilyKey(rawTag);
-    if(!map.has(key)) map.set(key, { items: [], labels: new Map() });
-    const bucket = map.get(key);
-    bucket.items.push(x);
-    const display = firstTagWord(rawTag);
-    bucket.labels.set(display, (bucket.labels.get(display) || 0) + 1);
+    if(!map.has(key)) map.set(key, { items: [] });
+    map.get(key).items.push(x);
   }
   return [...map.entries()]
     .map(([key, bucket]) => ({
       key,
-      tag: pickBestTagLabel(bucket.labels, key === 'sin tag' ? 'Sin tag' : key),
+      tag: key === 'sin tag' ? 'Sin tag' : key,
       items: bucket.items,
       refs: bucket.items.length,
       units: bucket.items.reduce((a,i)=>a+(Number(i.qty)||0),0),
@@ -309,7 +316,7 @@ function groupConsumiblesByTag(items){
     .sort((a,b)=>{
       if(a.key === 'sin tag') return 1;
       if(b.key === 'sin tag') return -1;
-      return a.tag.localeCompare(b.tag);
+      return a.tag.localeCompare(b.tag,'es',{sensitivity:'base'});
     });
 }
 

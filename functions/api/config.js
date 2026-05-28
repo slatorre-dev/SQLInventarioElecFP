@@ -36,38 +36,66 @@ function addTag(tags, value){
   if(!tags.some(t=>normText(t)===normText(tag))) tags.push(tag);
 }
 
-const TAG_PLURAL_OVERRIDES = {
-  reles: 'rele',
-  relays: 'rele',
-  cables: 'cable',
-  conectores: 'conector',
-  sensores: 'sensor',
-  resistencias: 'resistencia',
-  condensadores: 'condensador',
-  osciloscopios: 'osciloscopio',
-  polimetros: 'polimetro',
-  multimetros: 'multimetro',
-  fuentes: 'fuente',
-  ruedas: 'rueda',
+// Mapa: forma normalizada (minúsculas sin tildes) → forma canónica bonita
+const TAG_CANONICAL_MAP = {
+  // Componentes electrónicos
+  'rele': 'Relés', 'reles': 'Relés', 'relay': 'Relés', 'relays': 'Relés',
+  'resistencia': 'Resistencias', 'resistencias': 'Resistencias',
+  'condensador': 'Condensadores', 'condensadores': 'Condensadores',
+  'sensor': 'Sensores', 'sensores': 'Sensores',
+  'smd': 'SMD',
+  'led': 'LED', 'leds': 'LED',
+  'diodo': 'Diodos', 'diodos': 'Diodos',
+  'transistor': 'Transistores', 'transistores': 'Transistores',
+  // Material eléctrico
+  'cable': 'Cables', 'cables': 'Cables', 'manguera': 'Cables',
+  'conector': 'Conectores', 'conectores': 'Conectores',
+  'proteccion electrica': 'Protecciones eléctricas', 'protecciones electricas': 'Protecciones eléctricas',
+  'diferencial': 'Protecciones eléctricas', 'magnetotermico': 'Protecciones eléctricas',
+  'fusible': 'Fusibles', 'fusibles': 'Fusibles',
+  '230v': '230V', '220v': '230V',
+  // Herramientas
+  'herramienta': 'Herramientas', 'herramientas': 'Herramientas',
+  'soldadura': 'Soldadura',
+  // Equipos de medida
+  'medida': 'Medida',
+  'multimetro': 'Multímetros', 'multimetros': 'Multímetros', 'polimetro': 'Multímetros', 'polimetros': 'Multímetros',
+  'osciloscopio': 'Osciloscopios', 'osciloscopios': 'Osciloscopios',
+  // Redes
+  'router': 'Routers', 'routers': 'Routers',
+  'switch': 'Switches', 'switches': 'Switches',
+  'antena': 'Antenas', 'antenas': 'Antenas',
+  'fibra optica': 'Fibra óptica', 'fibra': 'Fibra óptica',
+  'telecom': 'Telecomunicaciones', 'telecomunicaciones': 'Telecomunicaciones',
+  // Informática
+  'ordenador': 'Ordenadores', 'ordenadores': 'Ordenadores',
+  'raspberry pi': 'Raspberry Pi', 'raspberry': 'Raspberry Pi',
+  // Robótica
+  'arduino': 'Arduino',
+  'esp32': 'ESP32', 'esp8266': 'ESP32',
+  'domotica': 'Domótica', 'robotica': 'Robótica',
+  // Consumibles
+  'tornillo': 'Tornillería', 'tornilleria': 'Tornillería', 'tornillos': 'Tornillería',
+  'consumible': 'Consumibles', 'consumibles': 'Consumibles',
+  // Otros frecuentes
+  'fuente': 'Fuentes de alimentación', 'fuentes': 'Fuentes de alimentación', 'fuente de alimentacion': 'Fuentes de alimentación',
+  'rueda': 'Ruedas', 'ruedas': 'Ruedas',
+  'api': 'API', 'apis': 'API',
+  'pcb': 'PCB', 'placa': 'PCB', 'placas': 'PCB',
 };
 
-function singularizeToken(tok){
-  if(TAG_PLURAL_OVERRIDES[tok]) return TAG_PLURAL_OVERRIDES[tok];
-  if(tok.length <= 3) return tok;
-  if(tok.endsWith('ces') && tok.length > 4) return tok.slice(0, -3) + 'z';
-  if(tok.endsWith('es') && tok.length > 4) return tok.slice(0, -2);
-  if(tok.endsWith('s') && tok.length > 3) return tok.slice(0, -1);
-  return tok;
+function canonicalTagFamily(tag){
+  const key = normText(tag).replace(/\s+/g,' ').trim();
+  if(!key) return '';
+  return key;
 }
 
-function canonicalTagFamily(tag){
-  const cleaned = normText(tag)
-    .replace(/[^a-z0-9\s\-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if(!cleaned) return '';
-  const tokens = cleaned.split(' ').filter(Boolean).map(singularizeToken);
-  return tokens[0] || '';
+function prettyTag(raw){
+  const key = normText(raw).replace(/\s+/g,' ').trim();
+  if(TAG_CANONICAL_MAP[key]) return TAG_CANONICAL_MAP[key];
+  // Capitalizar primera letra si no está en el mapa
+  const t = raw.trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
 function normalizeTagsCanonical(value){
@@ -77,7 +105,7 @@ function normalizeTagsCanonical(value){
     const family = canonicalTagFamily(raw);
     if(!family || seen.has(family)) continue;
     seen.add(family);
-    out.push(family);
+    out.push(prettyTag(raw));
   }
   out.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
   return out.join(', ');
