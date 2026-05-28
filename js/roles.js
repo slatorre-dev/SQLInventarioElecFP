@@ -43,6 +43,8 @@ const ACTION_PERMISSIONS = {
   catsSync: 'categories.manage',
   normalizeCategoriesTags: 'categories.manage',
   normalizeTagsCanonical: 'categories.manage',
+  renameTag: 'categories.manage',
+  deleteTag: 'categories.manage',
   ciclosSync: 'config.manage',
   ubicacionesSync: 'config.manage',
   prestar: 'loans.write',

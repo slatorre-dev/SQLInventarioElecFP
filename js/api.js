@@ -6,7 +6,7 @@ const ENDPOINT_MAP = {
   add:'item', update:'item', delete:'item', bulkImport:'item', restoreBackup:'item', toggleOculto:'item',
   prestar:'prestar', devolver:'prestar', prestarCaja:'prestar',
   profAdd:'profesores', profUpdate:'profesores', profDelete:'profesores',
-  aulasSync:'config', catsSync:'config', normalizeCategoriesTags:'config', normalizeTagsCanonical:'config', ciclosSync:'config', ubicacionesSync:'config',
+  aulasSync:'config', catsSync:'config', normalizeCategoriesTags:'config', normalizeTagsCanonical:'config', renameTag:'config', deleteTag:'config', ciclosSync:'config', ubicacionesSync:'config',
   updateProfile:'perfil', changePassword:'perfil',
   getUsers:'usuarios', userAdd:'usuarios', userUpdate:'usuarios',
   userDelete:'usuarios', userResetPassword:'usuarios', userAssignModulos:'usuarios',
