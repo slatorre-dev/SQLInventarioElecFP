@@ -162,7 +162,7 @@ function findModulo(modId){
 // ═════════════════════════════════════════════════════════
 const CATS_DEFAULT={
   'Componentes electrónicos':{c:'#2563eb',bg:'#eff6ff',i:'⚡'},
-  'Consumibles':             {c:'#7c3aed',bg:'#f5f3ff',i:'📦'},
+  'Material de taller':      {c:'#7c3aed',bg:'#f5f3ff',i:'📦'},
   'Equipos de medida':       {c:'#0891b2',bg:'#ecfeff',i:'📊'},
   'Herramientas':            {c:'#d97706',bg:'#fffbeb',i:'🔨'},
   'Informática':             {c:'#1d4ed8',bg:'#eff6ff',i:'💻'},

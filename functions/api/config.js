@@ -12,7 +12,7 @@ async function auditLog(db, user, accion, resumen) {
 
 const NORMALIZED_CATS = [
   { name:'Componentes electrónicos', c:'#2563eb', bg:'#eff6ff', i:'⚡', orden:1 },
-  { name:'Consumibles', c:'#7c3aed', bg:'#f5f3ff', i:'📦', orden:2 },
+  { name:'Material de taller', c:'#7c3aed', bg:'#f5f3ff', i:'📦', orden:2 },
   { name:'Equipos de medida', c:'#0891b2', bg:'#ecfeff', i:'📊', orden:3 },
   { name:'Herramientas', c:'#d97706', bg:'#fffbeb', i:'🔨', orden:4 },
   { name:'Informática', c:'#1d4ed8', bg:'#eff6ff', i:'💻', orden:5 },
@@ -24,6 +24,14 @@ const NORMALIZED_CATS = [
 
 function normText(v){
   return String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+const CAT_MATERIAL_TALLER = 'Material de taller';
+function canonicalCategoryName(name){
+  const raw = String(name || '').trim();
+  const key = normText(raw);
+  if(key === 'consumible' || key === 'consumibles') return CAT_MATERIAL_TALLER;
+  return raw;
 }
 
 function splitTags(v){
@@ -113,7 +121,8 @@ function normalizeTagsCanonical(value){
 
 function normalizeItemCategoryAndTags(item){
   const text = normText([item.cat,item.item,item.ref,item.util,item.loc,item.obs].join(' '));
-  const oldCat = String(item.cat || '').trim();
+  const oldCatRaw = String(item.cat || '').trim();
+  const oldCat = canonicalCategoryName(oldCatRaw);
   const tags = splitTags(item.tags);
   let cat = NORMALIZED_CATS.some(c=>normText(c.name)===normText(oldCat)) ? oldCat : 'Otros';
 
@@ -141,8 +150,8 @@ function normalizeItemCategoryAndTags(item){
     { cat:'Componentes electrónicos', tag:'Condensadores', keys:['condensador','condensadores','cond-'] },
     { cat:'Componentes electrónicos', tag:'Relés', keys:['rele','relé','relay'] },
     { cat:'Componentes electrónicos', tag:'Sensores', keys:['sensor','sensores'] },
-    { cat:'Consumibles', tag:'Tornillería', keys:['tornillo','tuerca','arandela','tornilleria','tornillería'] },
-    { cat:'Consumibles', tag:'Consumible', keys:['consumible','brida','cinta','termorretractil','termorretráctil'] },
+    { cat:CAT_MATERIAL_TALLER, tag:'Tornillería', keys:['tornillo','tuerca','arandela','tornilleria','tornillería'] },
+    { cat:CAT_MATERIAL_TALLER, tag:'Consumible', keys:['consumible','brida','cinta','termorretractil','termorretráctil'] },
   ];
 
   for(const rule of rules){
@@ -176,11 +185,22 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'catsSync') {
-    const cats = body.cats || [];
+    const incoming = body.cats || [];
+    const seen = new Set();
+    const cats = incoming
+      .map(c => ({ ...c, name: canonicalCategoryName(c?.name) }))
+      .filter(c => {
+        const name = String(c?.name || '').trim();
+        if(!name) return false;
+        const key = normText(name);
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     await env.DB.prepare('DELETE FROM categorias').run();
     if (cats.length) {
       const stmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden) VALUES (?,?,?,?,?)');
-      await env.DB.batch(cats.map(c => stmt.bind(c.name,c.c,c.bg,c.i,c.orden||0)));
+      await env.DB.batch(cats.map(c => stmt.bind(c.name,String(c.c||'#6b7280'),String(c.bg||'#f9fafb'),String(c.i||'🏷️'),c.orden||0)));
     }
     await auditLog(env.DB, user, 'catsSync', `Sincronizadas ${cats.length} categorías`);
     return Response.json({ ok: true });

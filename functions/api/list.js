@@ -44,6 +44,14 @@ function normKey(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+function normText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 function mergeProfesores(profesoresRows, usuariosRows) {
   const profesores = (profesoresRows || [])
     .filter(p => String(p.nombre || '').trim() && String(p.nombre || '').trim().toLowerCase() !== 'departamento')
@@ -84,6 +92,38 @@ export async function onRequestGet({ request, env, data }) {
   await env.DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
   await env.DB.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT DEFAULT '')").run().catch(() => {});
+
+  const catRenameMigrated = await env.DB.prepare("SELECT value FROM app_meta WHERE key='rename_consumibles_to_material_taller_v1'").first().catch(() => null);
+  if (!catRenameMigrated) {
+    const CAT_NEW = 'Material de taller';
+    const catRows = await env.DB.prepare('SELECT rowid, name, c, bg, i, orden FROM categorias ORDER BY orden, rowid').all().catch(() => ({ results: [] }));
+    const rows = catRows.results || [];
+    const oldRows = rows.filter(r => {
+      const key = normText(r.name);
+      return key === 'consumible' || key === 'consumibles';
+    });
+    const newRow = rows.find(r => normText(r.name) === normText(CAT_NEW));
+    const seed = newRow || oldRows[0] || null;
+
+    await env.DB.prepare("UPDATE inventario SET cat=? WHERE lower(trim(cat)) IN ('consumible','consumibles')").bind(CAT_NEW).run().catch(() => {});
+
+    if (newRow || oldRows.length) {
+      await env.DB.prepare("DELETE FROM categorias WHERE lower(trim(name)) IN ('consumible','consumibles') OR lower(trim(name))='material de taller'").run().catch(() => {});
+      await env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden) VALUES (?,?,?,?,?)')
+        .bind(
+          CAT_NEW,
+          String(seed?.c || '#7c3aed'),
+          String(seed?.bg || '#f5f3ff'),
+          String(seed?.i || '📦'),
+          Number(seed?.orden || 2)
+        )
+        .run()
+        .catch(() => {});
+    }
+
+    await env.DB.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('rename_consumibles_to_material_taller_v1', datetime('now'))").run().catch(() => {});
+  }
+
   const tipoMigrado = await env.DB.prepare("SELECT value FROM app_meta WHERE key='tipo_material_migrated'").first().catch(() => null);
   if (!tipoMigrado) {
     await env.DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 OR lower(cat) LIKE '%herramient%' OR lower(cat) LIKE '%equipo%' OR lower(cat) LIKE '%instrument%'").run().catch(() => {});

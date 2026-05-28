@@ -2615,7 +2615,7 @@
                                     'tiristor', 'triac', 'mosfet', 'integrado', 'circuito integrado',
                                     'amplificador operacional', 'opamp', 'microcontrolador', 'cristal',
                                     'inductor', 'bobina', 'pulsador', 'potenciometro', 'encoder'],
-      'Consumibles':               ['cable ', 'cables', 'hilo', 'conector', 'conectores', 'tornillo',
+      'Material de taller':        ['cable ', 'cables', 'hilo', 'conector', 'conectores', 'tornillo',
                                     'tuerca', 'brida', 'cinta aislante', 'termoretractil', 'etiqueta',
                                     'toner', 'tinta', 'papel'],
       'Material eléctrico':        ['magnetotermico', 'diferencial', 'contactor', 'guardamotor', 'cuadro',
