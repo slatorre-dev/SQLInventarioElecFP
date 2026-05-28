@@ -7,8 +7,22 @@ function sortCatsEditing(){
   catsEditing.sort((a,b)=>catNameCompare(a.name, b.name));
 }
 
+function syncTagsFromItems(){
+  const seen = new Set(TAGS.map(t => t.toLowerCase()));
+  for(const item of items){
+    for(const tag of itemTags(item)){
+      const t = tag.trim();
+      if(!t) continue;
+      const k = t.toLowerCase();
+      if(!seen.has(k)){ seen.add(k); TAGS.push(t); }
+    }
+  }
+  TAGS.sort(tagNameCompare);
+}
+
 function openCatsModal(){
   if(!requirePerm('categories.manage')) return;
+  syncTagsFromItems();
   catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
   sortCatsEditing();
   renderCatsList();
