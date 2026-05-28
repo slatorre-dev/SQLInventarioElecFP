@@ -255,10 +255,11 @@ export async function onRequestPost({ request, env }) {
     const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
     const rows = inv.results || [];
     const updates = [];
+    const oldLower = oldTag.toLowerCase();
     for (const item of rows) {
       const tags = splitTags(item.tags || '');
       let changed = false;
-      const next = tags.map(t => { if (t === oldTag) { changed = true; return newTag; } return t; });
+      const next = tags.map(t => { if (t.toLowerCase() === oldLower) { changed = true; return newTag; } return t; });
       if (changed) updates.push({ id: item.id, tags: next.join(', ') });
     }
     if (updates.length) {
@@ -266,6 +267,27 @@ export async function onRequestPost({ request, env }) {
       await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
     }
     await auditLog(env.DB, user, 'renameTag', `Tag "${oldTag}" → "${newTag}" en ${updates.length} ítems`);
+    const updated = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    return Response.json({ ok: true, updated: updates.length, items: updated.results || [] });
+  }
+
+  if (action === 'deleteTag') {
+    const tag = String(body.tag || '').trim();
+    if (!tag) return Response.json({ ok: false, error: 'Falta parámetro tag' });
+    const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
+    const rows = inv.results || [];
+    const tagLower = tag.toLowerCase();
+    const updates = [];
+    for (const item of rows) {
+      const tags = splitTags(item.tags || '');
+      const filtered = tags.filter(t => t.toLowerCase() !== tagLower);
+      if (filtered.length !== tags.length) updates.push({ id: item.id, tags: filtered.join(', ') });
+    }
+    if (updates.length) {
+      const stmt = env.DB.prepare('UPDATE inventario SET tags=? WHERE id=?');
+      await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
+    }
+    await auditLog(env.DB, user, 'deleteTag', `Tag "${tag}" eliminado de ${updates.length} ítems`);
     const updated = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
     return Response.json({ ok: true, updated: updates.length, items: updated.results || [] });
   }

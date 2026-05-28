@@ -168,17 +168,18 @@ async function confirmTagRename(encodedOldTag, newTagRaw){
   const oldTag = decodeURIComponent(encodedOldTag);
   const newTag = (newTagRaw || '').trim();
   if(!newTag){ toast('El tag no puede estar vacío','err'); return; }
-  if(newTag === oldTag){ renderTagsList(); return; }
-  if(TAGS.some(t => t.toLowerCase() === newTag.toLowerCase() && t !== oldTag)){
+  if(newTag.toLowerCase() === oldTag.toLowerCase()){ renderTagsList(); return; }
+  if(TAGS.some(t => t.toLowerCase() === newTag.toLowerCase())){
     toast('Ya existe un tag con ese nombre','err'); return;
   }
-  const idx = TAGS.indexOf(oldTag);
+  const idx = TAGS.findIndex(t => t.toLowerCase() === oldTag.toLowerCase());
   if(idx !== -1) TAGS[idx] = newTag;
   for(const item of items){
     if(!item.tags) continue;
-    const ts = item.tags.split(/[,;]/).map(t=>t.trim());
-    const ti = ts.findIndex(t=>t===oldTag);
-    if(ti !== -1){ ts[ti]=newTag; item.tags=ts.join(', '); }
+    const ts = itemTags(item);
+    let changed = false;
+    const next = ts.map(t => { if(t.toLowerCase()===oldTag.toLowerCase()){changed=true;return newTag;} return t; });
+    if(changed) item.tags = next.join(', ');
   }
   renderTagsList();
   fillTagSuggestions();
@@ -187,9 +188,9 @@ async function confirmTagRename(encodedOldTag, newTagRaw){
     const res = await apiPost({action:'renameTag', oldTag, newTag});
     if(!res.ok) throw new Error(res.error);
     if(res.items) items = res.items;
-    toast(`"${oldTag}" → "${newTag}" (${res.updated||0} ítems)`,'ok');
+    toast(`"${oldTag}" → "${newTag}" (${res.updated||0} ítems actualizados)`,'ok');
   }catch(err){
-    toast('Error al guardar: '+err.message,'err');
+    toast('Error al guardar en servidor: '+err.message,'err');
   }
 }
 
@@ -216,16 +217,32 @@ function addTagRow(){
   toast(`Tag "${tag}" añadido`,'ok');
 }
 
-function removeTag(tag){
-  const idx = TAGS.indexOf(tag);
+async function removeTag(tag){
+  const idx = TAGS.findIndex(t => t.toLowerCase() === tag.toLowerCase());
   if(idx === -1) return;
-  const usados = items.filter(x => (x.tags || '').split(',').map(t => t.trim()).includes(tag)).length;
+  const usados = items.filter(x => itemTags(x).some(t => t.toLowerCase() === tag.toLowerCase())).length;
   if(usados > 0){
     if(!confirm(`Este tag se usa en ${usados} ítem(s). ¿Continuar con la eliminación?`)) return;
   }
   TAGS.splice(idx, 1);
+  for(const item of items){
+    if(!item.tags) continue;
+    const ts = itemTags(item).filter(t => t.toLowerCase() !== tag.toLowerCase());
+    item.tags = ts.join(', ');
+  }
   renderTagsList();
   fillTagSuggestions();
-  if(usados > 0) toast(`Tag "${tag}" eliminado de ${usados} ítem(s)`,'ok');
-  else toast(`Tag "${tag}" eliminado`,'ok');
+  if(cf) renderInv();
+  if(usados > 0){
+    try{
+      const res = await apiPost({action:'deleteTag', tag});
+      if(!res.ok) throw new Error(res.error);
+      if(res.items) items = res.items;
+      toast(`Tag "${tag}" eliminado de ${res.updated||usados} ítem(s)`,'ok');
+    }catch(err){
+      toast('Error al guardar en servidor: '+err.message,'err');
+    }
+  } else {
+    toast(`Tag "${tag}" eliminado`,'ok');
+  }
 }
