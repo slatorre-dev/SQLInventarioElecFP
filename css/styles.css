@@ -1275,9 +1275,9 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .dept-game-controls{display:flex}
   .clbl,.lalert{display:none!important}
   .action-strip{justify-content:center!important}
-  #mItem{padding:0!important;align-items:stretch!important;overflow:hidden!important;backdrop-filter:none!important}
-  #mItem .modal{position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;border-radius:0!important;padding:0!important;transform:none!important;margin:0!important;box-sizing:border-box!important;overflow-x:hidden!important}
-  #mItem .mh{padding:16px 16px 14px;border-radius:0}
+  #mItem{padding:10px 10px 0!important;align-items:stretch!important;backdrop-filter:blur(4px)!important}
+  #mItem .modal{position:fixed!important;left:10px!important;right:10px!important;top:10px!important;bottom:10px!important;width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;border-radius:16px!important;padding:0!important;transform:none!important;margin:0!important;box-sizing:border-box!important;overflow-x:hidden!important;box-shadow:0 8px 40px rgba(0,0,0,.32)!important}
+  #mItem .mh{padding:16px 16px 14px;border-radius:16px 16px 0 0}
   #mItem .fg{grid-template-columns:1fr;padding:12px!important;overflow-x:hidden;box-sizing:border-box;width:100%}
   #mItem .m-section{grid-template-columns:1fr!important;width:100%;box-sizing:border-box}
   #mItem .m-section:has(#f_cat){grid-template-columns:1fr 1fr!important}
