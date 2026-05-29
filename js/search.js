@@ -2,19 +2,61 @@
 // BÚSQUEDA GLOBAL
 // ═════════════════════════════════════════════════════════
 let gsIdx=-1;
+let _gsMatches=[];
+
+const SEARCH_SINONIMOS = {
+  'polimetro':              ['multimetro','tester','poli','avometro'],
+  'multimetro':             ['polimetro','tester','poli','avometro'],
+  'osciloscopio':           ['osci','oscilos','osciloscopi'],
+  'fuente de alimentacion': ['fuente alimentacion','fuente de tension','fuente tension','psu'],
+  'soldador':               ['cautin','estacion de soldadura','estacion soldadura'],
+  'protoboard':             ['placa de pruebas','breadboard','proto'],
+  'condensador':            ['capacitor','condensadores','conden'],
+  'resistencia':            ['resistor','resistencias'],
+  'transistor':             ['bjt','mosfet','transistores'],
+  'cable':                  ['cables','latigillo','latiguillo','jumper'],
+  'pinza':                  ['pinzas','amperimetro de pinza','pinza amperimetrica'],
+  'generador de funciones': ['generador de senales','generador senales','gen funciones'],
+  'ordenador':              ['pc','computador','ordenadores'],
+  'pantalla':               ['monitor','display','pantallas'],
+  'tablet':                 ['tableta','ipad'],
+  'raspberry':              ['raspberry pi','raspi'],
+  'arduino':                ['arduino uno','arduino mega','arduino nano'],
+};
 
 function normalizeStr(s){
   return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 }
 
+// Mejora 1: includes en vez de startsWith
+// Mejora 2: expansión por sinónimos del taller
 function fuzzyMatch(query, text){
   const q=normalizeStr(query);
   const t=normalizeStr(text);
   const queryWords=q.split(/\s+/).filter(w=>w);
   const textWords=t.split(/\s+/).filter(w=>w);
-  return queryWords.every(qWord=>
-    textWords.some(tWord=>tWord.startsWith(qWord))
-  );
+  return queryWords.every(qWord=>{
+    if(textWords.some(tWord=>tWord.includes(qWord))) return true;
+    for(const [canonical,aliases] of Object.entries(SEARCH_SINONIMOS)){
+      const normCanon=normalizeStr(canonical);
+      const allForms=[normCanon,...aliases.map(normalizeStr)];
+      if(allForms.includes(qWord)||allForms.some(f=>f.includes(qWord))){
+        if(allForms.some(form=>t.includes(form))) return true;
+      }
+    }
+    return false;
+  });
+}
+
+// Mejora 3: puntuación de relevancia para ordenar resultados
+function scoreMatch(x, q){
+  const nq=normalizeStr(q);
+  const nname=normalizeStr(x.item||'');
+  if(nname===nq) return 4;
+  if(nname.startsWith(nq)) return 3;
+  const qWords=nq.split(/\s+/).filter(w=>w);
+  if(qWords.length && qWords.every(w=>nname.split(/\s+/).some(nw=>nw.includes(w)))) return 2;
+  return 1;
 }
 
 function extractItemLookup(raw){
@@ -56,17 +98,17 @@ function globalSearch(q){
     gsIdx=-1;
     return;
   }
-  const matches=items.filter(x=>{
+  _gsMatches=items.filter(x=>{
     const text=[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor,x.tags].join(' ');
     return fuzzyMatch(q,text);
-  });
+  }).sort((a,b)=>scoreMatch(b,q)-scoreMatch(a,q));
   gsIdx=-1;
-  if(!matches.length){
+  if(!_gsMatches.length){
     res.innerHTML=`<div class="gsr-empty">Sin resultados para "<strong>${q}</strong>"</div>`;
     res.classList.add('open');return;
   }
-  const visible=matches.slice(0,14);
-  res.innerHTML=`<div class="gsr-header">${matches.length} resultado${matches.length!==1?'s':''} encontrado${matches.length!==1?'s':''}</div>`
+  const visible=_gsMatches.slice(0,14);
+  res.innerHTML=`<div class="gsr-header">${_gsMatches.length} resultado${_gsMatches.length!==1?'s':''} encontrado${_gsMatches.length!==1?'s':''}</div>`
     +visible.map((x,i)=>{
       const cat=CATS[x.cat]||null;
       const aulaName=AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—';
@@ -78,7 +120,8 @@ function globalSearch(q){
         <span class="gsr-qty ${low?'qlow':'qok'}">${x.qty}</span>
       </div>`;
     }).join('')
-    +(matches.length>14?`<div class="gsr-more">+${matches.length-14} más — sigue escribiendo para filtrar</div>`:'');
+    +(_gsMatches.length>14?`<div class="gsr-more">+${_gsMatches.length-14} más — sigue escribiendo para filtrar</div>`:'')
+    +`<div class="gsr-print-row"><button class="gsr-print-btn" onclick="printGsResults(event,'${q.replace(/'/g,"\\'")}')">🖨️ Imprimir resultados (${_gsMatches.length})</button></div>`;
   res.classList.add('open');
 }
 
@@ -108,6 +151,73 @@ function gsClear(){
   document.getElementById('gsClear').style.display='none';
   document.getElementById('gsResults').classList.remove('open');
   gsIdx=-1;
+  _gsMatches=[];
+}
+
+function printGsResults(e, q){
+  e.stopPropagation();
+  if(!_gsMatches.length) return;
+  const cols = typeof PRINT_COLS !== 'undefined' ? PRINT_COLS.filter(c=>(_getPrintCols()||{})[c.key]??c.default) : [
+    {key:'ref',label:'Referencia'},{key:'item',label:'Nombre'},{key:'aula',label:'Aula'},
+    {key:'qty',label:'Cantidad'},{key:'cat',label:'Categoría'},{key:'loc',label:'Ubicación'},{key:'est',label:'Estado'}
+  ];
+  const fecha = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+  const total = _gsMatches.length;
+  const uds = _gsMatches.reduce((s,x)=>s+(Number(x.qty)||0),0);
+  const thead = cols.map(c=>`<th>${c.label}</th>`).join('');
+  const tbody = _gsMatches.map(x=>{
+    const low = typeof isLowStock==='function'&&isLowStock(x);
+    const mant = typeof needsMaintenance==='function'&&needsMaintenance(x);
+    const cat = (typeof CATS!=='undefined'&&CATS[x.cat])||(typeof CATS!=='undefined'&&CATS['Otros'])||{c:'#6b7280',bg:'#f9fafb',i:'🔧'};
+    const ec = (typeof ESTC!=='undefined'&&ESTC[x.est])||'#6b7280';
+    const mantInfo = [x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · ');
+    const code = typeof itemCode==='function'?itemCode(x):(x.code||'');
+    return '<tr>'+cols.map(c=>{
+      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${x.foto}" alt="">`:''}</td>`;
+      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${x.ref||'—'}</span></td>`;
+      if(c.key==='item')  return `<td style="font-weight:600">${x.item}</td>`;
+      if(c.key==='aula')  return `<td>${(typeof AULAS!=='undefined'?AULAS.find(a=>a.id===x.aula)?.name:null)||x.aula||'—'}</td>`;
+      if(c.key==='mod')   { const m=typeof findModulo==='function'?findModulo(x.mod):null; return `<td style="font-size:11px">${m?m.cod+' '+m.name:x.mod||'—'}</td>`; }
+      if(c.key==='qty')   return `<td style="text-align:center;font-weight:700;color:${low?'#dc2626':'#15803d'}">${x.qty}${low?' ⚠':''}</td>`;
+      if(c.key==='min')   return `<td style="text-align:center">${x.min||'—'}</td>`;
+      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${cat.i} ${x.cat}</span>`:'—'}</td>`;
+      if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
+      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
+      if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
+      if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
+      if(c.key==='tags')  return `<td style="font-size:11px">${x.tags||'—'}</td>`;
+      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
+      if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
+      return '<td>—</td>';
+    }).join('')+'</tr>';
+  }).join('');
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Búsqueda: ${q}</title>
+  <style>
+    @page{size:A4 landscape;margin:10mm}
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
+    .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:10px}
+    .head h1{font-size:18px;margin:0;color:#1e40af}
+    .head p{font-size:11px;color:#555;margin:0;text-align:right}
+    table{width:100%;border-collapse:collapse}
+    th{background:#2563eb;color:#fff;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap}
+    td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+    tr:nth-child(even) td{background:#f9fafb}
+    .footer{margin-top:8px;font-size:10px;color:#9ca3af;text-align:right}
+  </style></head><body>
+  <div class="head">
+    <h1>🔍 Búsqueda: "${q}"</h1>
+    <p>IES El Bosco — Inventario Departamento<br>${total} tipos · ${uds} unidades · ${fecha}</p>
+  </div>
+  <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
+  <div class="footer">Inventario Taller FP · ${fecha}</div>
+  <script>window.onload=()=>setTimeout(()=>print(),150);<\/script>
+  </body></html>`;
+  const w=window.open('','_blank');
+  if(!w){toast('El navegador bloqueó la ventana de impresión','err');return;}
+  w.document.write(html);
+  w.document.close();
 }
 
 document.addEventListener('click',e=>{
