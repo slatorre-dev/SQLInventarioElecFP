@@ -2180,6 +2180,40 @@ body{overflow-x:hidden}
 .dark .filter-chip-clear { color: #94a3b8; border-color: #475569; }
 .dark .filter-chip-clear:hover { background: #1e293b; }
 
+/* Highlight búsqueda global */
+mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decoration: underline; text-decoration-color: var(--accent,.6); text-underline-offset: 2px; }
+
+/* Presets de filtros */
+.preset-wrap { position: relative; }
+.preset-toggle-btn { font-size: 15px !important; }
+.preset-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 300;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.13);
+  padding: 12px;
+  min-width: 230px;
+}
+.preset-panel.open { display: block; }
+.preset-panel-hdr { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 8px; }
+.preset-item { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.preset-apply-btn { flex: 1; text-align: left; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text); transition: background .12s; }
+.preset-apply-btn:hover { background: var(--accent-l); color: var(--accent); }
+.preset-del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 4px 7px; border-radius: 6px; transition: background .12s; }
+.preset-del-btn:hover { background: #fee2e2; color: #dc2626; }
+.preset-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 0; }
+.preset-save-row { display: flex; gap: 6px; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+.preset-save-row input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; font-size: 13px; background: var(--surface2); color: var(--text); }
+.preset-save-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 5px 11px; font-size: 13px; cursor: pointer; font-weight: 600; }
+.preset-save-row button:hover { opacity: .88; }
+.dark .preset-panel { background: var(--surface); border-color: var(--border); }
+.dark .preset-apply-btn { background: var(--surface2); border-color: var(--border); }
+
 /* Easter egg: robot bailarín */
 @keyframes robotDance {
   0%   { transform: rotate(-18deg) translateY(0px) scale(1); }

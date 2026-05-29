@@ -61,6 +61,18 @@ function scoreMatch(x, q){
   return 1;
 }
 
+function highlightText(text, query){
+  if(!query||!text) return text;
+  const words=normalizeStr(query).split(/\s+/).filter(w=>w.length>=2);
+  if(!words.length) return text;
+  let result=text.normalize('NFD');
+  words.forEach(w=>{
+    const pattern=w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').split('').map(c=>c+'[̀-ͯ]*').join('');
+    result=result.replace(new RegExp(pattern,'gi'),m=>`<mark class="srch-hl">${m}</mark>`);
+  });
+  return result;
+}
+
 function extractItemLookup(raw){
   const value = String(raw || '').trim();
   if(!value) return '';
@@ -117,7 +129,7 @@ function globalSearch(q){
       const low=isLowStock(x);
       return`<div class="gsr-item" tabindex="-1" role="option" data-idx="${i}" onclick="gsGo('${x.aula}','${(x.item||'').replace(/'/g,"\\'")}')">
         ${cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};flex-shrink:0;font-size:11px">${cat.i}</span>`:'<span style="width:18px;flex-shrink:0"></span>'}
-        <span class="gsr-name">${x.item}</span>
+        <span class="gsr-name">${highlightText(x.item,q)}</span>
         <span class="gsr-aula">📍 ${aulaName}</span>
         <span class="gsr-qty ${low?'qlow':'qok'}">${x.qty}</span>
       </div>`;

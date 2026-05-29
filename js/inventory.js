@@ -1447,6 +1447,81 @@ function printInv(){
 }
 
 // ═════════════════════════════════════════════════════════
+// PRESETS DE FILTROS
+// ═════════════════════════════════════════════════════════
+const PRESETS_KEY='inv_filter_presets';
+
+function getPresets(){ try{return JSON.parse(localStorage.getItem(PRESETS_KEY))||[];}catch(e){return[];} }
+function savePresets(arr){ localStorage.setItem(PRESETS_KEY,JSON.stringify(arr)); }
+
+function togglePresetPanel(){
+  const panel=document.getElementById('presetPanel');
+  if(!panel) return;
+  const open=panel.classList.contains('open');
+  panel.classList.toggle('open',!open);
+  if(!open) renderPresetList();
+}
+
+function renderPresetList(){
+  const list=document.getElementById('presetList');
+  if(!list) return;
+  const presets=getPresets();
+  if(!presets.length){ list.innerHTML='<div class="preset-empty">Sin presets guardados</div>'; return; }
+  list.innerHTML=presets.map((p,i)=>
+    `<div class="preset-item">
+      <button class="preset-apply-btn" onclick="applyPreset(${i})">${p.name}</button>
+      <button class="preset-del-btn" onclick="deletePreset(${i})" title="Eliminar">✕</button>
+    </div>`
+  ).join('');
+}
+
+function saveCurrentPreset(){
+  const name=(document.getElementById('presetNameInput')?.value||'').trim();
+  if(!name){toast('Escribe un nombre para el preset','err');return;}
+  const preset={
+    name,
+    srch:document.getElementById('srch')?.value||'',
+    fCat:document.getElementById('fCat')?.value||'',
+    fTipo:document.getElementById('fTipo')?.value||'',
+    fEst:document.getElementById('fEst')?.value||'',
+    subFilter:_subFilter||'',
+  };
+  const presets=getPresets();
+  presets.push(preset);
+  savePresets(presets);
+  document.getElementById('presetNameInput').value='';
+  renderPresetList();
+  toast(`Preset "${name}" guardado`);
+}
+
+function applyPreset(idx){
+  const p=getPresets()[idx];
+  if(!p) return;
+  if(document.getElementById('srch')) document.getElementById('srch').value=p.srch||'';
+  if(document.getElementById('fCat')) document.getElementById('fCat').value=p.fCat||'';
+  if(document.getElementById('fEst')) document.getElementById('fEst').value=p.fEst||'';
+  setFilterTipo(p.fTipo||'');
+  _subFilter=p.subFilter||null;
+  document.getElementById('presetPanel')?.classList.remove('open');
+  renderInv();
+  toast(`"${p.name}" aplicado`);
+}
+
+function deletePreset(idx){
+  const presets=getPresets();
+  const name=presets[idx]?.name;
+  presets.splice(idx,1);
+  savePresets(presets);
+  renderPresetList();
+  if(name) toast(`Preset "${name}" eliminado`);
+}
+
+document.addEventListener('click',e=>{
+  const wrap=document.getElementById('presetWrap');
+  if(wrap&&!wrap.contains(e.target)) document.getElementById('presetPanel')?.classList.remove('open');
+});
+
+// ═════════════════════════════════════════════════════════
 // TOAST
 // ═════════════════════════════════════════════════════════
 function toast(msg,type='ok'){
