@@ -113,23 +113,6 @@ Accesos directos integrados a normativa, carpeta digital del curso, modelo de pe
 
 ---
 
-## Migración a servidor local (Ubuntu + Apache)
-
-La carpeta `migracionApache/` contiene una migración completa de la infraestructura Cloudflare a un servidor Ubuntu local con Apache, para uso en intranet.
-
-| Componente | Cloudflare (actual) | Apache (migrado) |
-|---|---|---|
-| Hosting estático | Cloudflare Pages | Apache `DocumentRoot` |
-| Backend | Workers (`functions/api/`) | Node.js Express (puerto 3000) |
-| Base de datos | Cloudflare D1 (SQLite remoto) | SQLite local (`better-sqlite3`) |
-| Deploy | `git push` → auto | systemd + Apache |
-
-El frontend no requiere ningún cambio. El backend migra con cambios mínimos gracias a un wrapper D1-compatible en `server/db.js`.
-
-Ver [`docs/MIGRACION_APACHE.md`](docs/MIGRACION_APACHE.md) para detalles técnicos e [`migracionApache/INSTALL.md`](migracionApache/INSTALL.md) para la guía de instalación paso a paso.
-
----
-
 ## Documentación técnica
 
 Este repositorio contiene la migración del proyecto original (Google Apps Script + Google Sheets) hacia una arquitectura moderna con Cloudflare Pages, Cloudflare Pages Functions y Cloudflare D1.

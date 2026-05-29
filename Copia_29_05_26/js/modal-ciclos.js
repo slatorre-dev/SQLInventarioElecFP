@@ -1,0 +1,213 @@
+// ═════════════════════════════════════════════════════════
+// MODAL GESTIÓN DE CICLOS Y MÓDULOS
+// ═════════════════════════════════════════════════════════
+
+const _CICLO_ICONS = ['📡','🔌','🔧','⚙️','💡','🖥️','🔋','🛠️','📻','🎛️'];
+const _CICLO_TH    = ['th-blue','th-amber','th-purple','th-teal','th-pink','th-green'];
+
+let ciclosEditing  = [];
+let cicloExpandIdx = null;
+let cicloAddingNew = false;
+
+function openCiclosModal(){
+  if(!requirePerm('config.manage')) return;
+  ciclosEditing  = JSON.parse(JSON.stringify(CICLOS));
+  cicloExpandIdx = null;
+  cicloAddingNew = false;
+  _renderCiclos();
+  document.getElementById('mCiclos').classList.add('open');
+}
+function closeCiclosModal(){ document.getElementById('mCiclos').classList.remove('open'); }
+
+function _renderCiclos(){
+  const el = document.getElementById('ciclosList');
+  el.innerHTML = ciclosEditing.map((c, i) => {
+    const isDpto   = c.id === 'departamento';
+    const expanded = cicloExpandIdx === i;
+    return `
+      <div class="ciclo-block${expanded ? ' expanded' : ''}">
+        <div class="ciclo-hdr" onclick="toggleCicloExpand(${i})">
+          <span class="ciclo-icon-inp"><input value="${c.icon||'📚'}"
+            onclick="event.stopPropagation()"
+            onchange="ciclosEditing[${i}].icon=this.value.trim()"
+            maxlength="2" title="Icono (emoji)"></span>
+          <span class="nivel-badge ${c.nivel==='CFGM'?'badge-gm':'badge-gs'}">${c.nivel||'—'}</span>
+          <span class="ciclo-name-inp"><input value="${c.name.replace(/"/g,'&quot;')}"
+            onclick="event.stopPropagation()"
+            onchange="ciclosEditing[${i}].name=this.value"
+            placeholder="Nombre del ciclo"></span>
+          <span class="ciclo-nmods">${c.modulos.length} mód.</span>
+          <span class="expand-arrow">${expanded?'▲':'▼'}</span>
+          ${isDpto ? '<span style="width:28px"></span>' :
+            `<button class="del-btn" onclick="event.stopPropagation();removeCicloRow(${i})" title="Eliminar ciclo">🗑</button>`}
+        </div>
+        ${expanded ? _renderMods(c, i) : ''}
+      </div>`;
+  }).join('');
+
+  if(cicloAddingNew) el.innerHTML += _renderNewForm();
+}
+
+function _renderMods(c, ci){
+  return `
+    <div class="ciclo-mods">
+      <div class="mods-hdr">
+        <span>Código</span><span>Nombre módulo</span><span>Horas</span><span></span>
+      </div>
+      ${c.modulos.map((m, mi) => `
+        <div class="mod-row">
+          <input class="mod-cod" value="${m.cod}"
+            onchange="ciclosEditing[${ci}].modulos[${mi}].cod=this.value.trim()"
+            placeholder="0000">
+          <input class="mod-name" value="${m.name.replace(/"/g,'&quot;')}"
+            onchange="ciclosEditing[${ci}].modulos[${mi}].name=this.value"
+            placeholder="Nombre módulo">
+          <input class="mod-horas" type="number" min="0" value="${m.horas}"
+            onchange="ciclosEditing[${ci}].modulos[${mi}].horas=Number(this.value)||0"
+            placeholder="0">
+          <button class="del-btn" onclick="removeModuloRow(${ci},${mi})" title="Eliminar módulo">🗑</button>
+        </div>`).join('')}
+      <button class="add-aula-btn" style="margin-top:8px" onclick="addModuloRow(${ci})">＋ Añadir módulo</button>
+    </div>`;
+}
+
+function _renderNewForm(){
+  return `
+    <div class="ciclo-block new-ciclo-form">
+      <div class="ncf-grid">
+        <div>
+          <label class="ncf-lbl">Grado</label>
+          <select id="ncNivel" class="sinput">
+            <option value="CFGM">Grado Medio (CFGM)</option>
+            <option value="CFGS">Grado Superior (CFGS)</option>
+          </select>
+        </div>
+        <div>
+          <label class="ncf-lbl">Nombre del ciclo</label>
+          <input id="ncNombre" class="sinput" placeholder="Ej: Instalaciones Eléctricas">
+        </div>
+      </div>
+      <div class="ncf-sep">Primer módulo (obligatorio)</div>
+      <div class="ncf-mods">
+        <div>
+          <label class="ncf-lbl">Código</label>
+          <input id="ncModCod" class="sinput" placeholder="0000">
+        </div>
+        <div>
+          <label class="ncf-lbl">Nombre módulo</label>
+          <input id="ncModNombre" class="sinput" placeholder="Nombre del módulo">
+        </div>
+        <div>
+          <label class="ncf-lbl">Horas</label>
+          <input id="ncModHoras" class="sinput" type="number" min="0" placeholder="0">
+        </div>
+      </div>
+      <div class="ncf-btns">
+        <button class="btn" onclick="cancelNewCiclo()">Cancelar</button>
+        <button class="btn btn-p" onclick="confirmAddCiclo()">＋ Añadir ciclo</button>
+      </div>
+    </div>`;
+}
+
+function toggleCicloExpand(i){
+  cicloExpandIdx = cicloExpandIdx === i ? null : i;
+  _renderCiclos();
+}
+
+function removeCicloRow(idx){
+  const c = ciclosEditing[idx];
+  const usados = items.filter(x => x.mod && x.mod.startsWith(c.id + '__')).length;
+  if(usados > 0){
+    if(!confirm(`Este ciclo tiene ${usados} ítem(s) asignados. Si lo eliminas, esos ítems conservarán el valor anterior. ¿Continuar?`)) return;
+  }
+  ciclosEditing.splice(idx, 1);
+  if(cicloExpandIdx === idx) cicloExpandIdx = null;
+  else if(cicloExpandIdx > idx) cicloExpandIdx--;
+  _renderCiclos();
+}
+
+function addModuloRow(cicloIdx){
+  ciclosEditing[cicloIdx].modulos.push({cod:'', name:'', horas:0});
+  _renderCiclos();
+}
+
+function removeModuloRow(cicloIdx, modIdx){
+  const c   = ciclosEditing[cicloIdx];
+  const mid = c.id + '__' + c.modulos[modIdx].cod;
+  const usados = items.filter(x => x.mod === mid).length;
+  if(usados > 0){
+    if(!confirm(`Este módulo tiene ${usados} ítem(s) asignados. ¿Continuar?`)) return;
+  }
+  c.modulos.splice(modIdx, 1);
+  _renderCiclos();
+}
+
+function showNewCicloForm(){
+  cicloAddingNew = true;
+  cicloExpandIdx = null;
+  _renderCiclos();
+  document.getElementById('ncNombre') && document.getElementById('ncNombre').focus();
+}
+
+function cancelNewCiclo(){
+  cicloAddingNew = false;
+  _renderCiclos();
+}
+
+function confirmAddCiclo(){
+  const nivel      = document.getElementById('ncNivel').value;
+  const nombre     = document.getElementById('ncNombre').value.trim();
+  const modCod     = document.getElementById('ncModCod').value.trim();
+  const modNombre  = document.getElementById('ncModNombre').value.trim();
+  const modHoras   = Number(document.getElementById('ncModHoras').value) || 0;
+
+  if(!nombre)              { toast('Introduce el nombre del ciclo', 'err'); return; }
+  if(!modCod || !modNombre){ toast('El primer módulo necesita código y nombre', 'err'); return; }
+
+  const prefix = nivel === 'CFGM' ? 'gm_' : 'gs_';
+  const slug   = nombre.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').substring(0,20);
+  let newId = prefix + slug;
+  if(ciclosEditing.some(c => c.id === newId)) newId += '_' + Date.now().toString().slice(-4);
+
+  const nonDpto = ciclosEditing.filter(c => c.id !== 'departamento');
+  const iconIdx = nonDpto.length % _CICLO_ICONS.length;
+  const thIdx   = nonDpto.length % _CICLO_TH.length;
+
+  const newCiclo = {
+    id: newId, name: nombre, nivel,
+    icon: _CICLO_ICONS[iconIdx], th: _CICLO_TH[thIdx],
+    desc: `${nivel === 'CFGM' ? 'Grado Medio' : 'Grado Superior'} · ${nombre}`,
+    modulos: [{cod: modCod, name: modNombre, horas: modHoras}]
+  };
+
+  const dptoIdx = ciclosEditing.findIndex(c => c.id === 'departamento');
+  if(dptoIdx >= 0) ciclosEditing.splice(dptoIdx, 0, newCiclo);
+  else ciclosEditing.push(newCiclo);
+
+  cicloAddingNew = false;
+  cicloExpandIdx = dptoIdx >= 0 ? dptoIdx : ciclosEditing.length - 1;
+  _renderCiclos();
+}
+
+async function saveCiclos(){
+  for(const c of ciclosEditing){
+    if(!c.name.trim()){ toast('Hay ciclos sin nombre', 'err'); return; }
+    for(const m of c.modulos){
+      if(!m.cod || !m.name.trim()){
+        toast(`Módulo sin código o nombre en "${c.name}"`, 'err'); return;
+      }
+    }
+  }
+  try {
+    const res = await apiPost({action:'ciclosSync', ciclos:ciclosEditing});
+    if(!res.ok) throw new Error(res.error);
+    CICLOS = ciclosEditing;
+    closeCiclosModal();
+    renderHome();
+    toast('Ciclos guardados y sincronizados', 'ok');
+  } catch(err){
+    toast('Error al sincronizar: '+err.message, 'err');
+  }
+}

@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario Taller Electricidad/Electrónica FP — IES Juan Bosco</title>
+<meta name="description" content="Gestión de inventario del departamento de Electricidad y Electrónica">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Inventario FP">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  /* CSS crítico inline — evita parpadeo del login antes de que cargue styles.css */
+  .page:not(.active){display:none}
+  #loadOverlay{position:fixed;inset:0;background:#f4f6fb;display:flex;align-items:center;justify-content:center;z-index:9998}
+  #loadOverlay.lo-hide{opacity:0;pointer-events:none;transition:opacity .45s ease}
+  @media(prefers-color-scheme:dark){#loadOverlay{background:#0f172a}}
+</style>
+</head>
+<body>
+
+<div id="loadBar"></div>
+<div id="connBar"></div>
+
+<!-- ══ PANTALLA DE CARGA ══ -->
+<div id="loadOverlay">
+  <div class="lo-box">
+    <img src="favicon.svg" class="lo-logo" alt="">
+    <div class="lo-title">Inventario Taller FP</div>
+    <div class="lo-sub">Electricidad · Electrónica · IES Juan Bosco</div>
+    <div class="lo-dots"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<nav class="topbar">
+  <div class="brand-wrap">
+    <a class="brand" onclick="goHome()">
+      <div class="brand-logo"><img src="favicon.svg" class="logo-img"></div>
+      <div class="brand-name" id="brandTitle" ondblclick="openRobotDance()">Inventario Taller Electricidad/Electrónica FP</div>
+    </a>
+    <span class="app-version" id="appVersion"></span>
+    <button class="tbtn dept-game-btn" id="btnDeptGame" style="display:none" onclick="openDeptGame()" title="Juego del departamento">
+      <img src="icons/dept-electricidad.svg" alt="">
+    </button>
+  </div>
+  <div class="topbar-right">
+    <div class="conn-status loading" id="connStatus"><span class="conn-dot"></span></div>
+    <div class="breadcrumb" id="bc"></div>
+    <button class="mob-menu-btn" id="mobMenuBtn" onclick="toggleMobMenu()" title="Menú">⋮</button>
+    <div class="topbar-btns" id="topbarBtns" onclick="closeMobMenu()">
+      <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ Nuevo ítem</button>
+      <button class="tbtn" id="btnPres" style="display:none;position:relative" onclick="goPrestamos()">⌛ Préstamos<span id="presVencBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px"></span></button>
+      <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Pedidos<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
+      <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 Exportar</button>
+      <button class="tbtn" id="btnImp" onclick="openImportModal()">📤 Importar</button>
+      <button class="tbtn" id="btnInstall" style="display:none" onclick="installPWA()" title="Instalar app" aria-label="Instalar app">📲 <span class="btn-install-label">Instalar</span></button>
+      <button class="tbtn tbtn-logout-mob" id="btnLogoutMob" onclick="logout()" title="Cerrar sesión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
+      <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintChoiceModal()" title="Imprimir inventario">🖨️ Imprimir</button>
+      <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
+        <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ Departamento</button>
+        <div class="dept-menu" id="deptMenu">
+          <div class="dept-menu-title">Gestión del departamento</div>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openAulasModal()">🏫 Gestionar aulas</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openUbicacionesModal()">📍 Gestionar ubicaciones</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openCatsModal()">🏷️ Gestionar categorías</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openCiclosModal()">📚 Gestionar ciclos y módulos</button>
+          <div class="dept-menu-sep"></div>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openProfModal()">👥 Gestionar profesores prestatarios</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openUsuariosModal()">🔐 Gestionar usuarios de la app</button>
+          <div class="dept-menu-sep"></div>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openImportModal()">📤 Importar CSV / Backup</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openExportModal()">📥 Exportar / Backup</button>
+          <div class="dept-menu-sep"></div>
+          <a class="dept-menu-item" href="https://docs.google.com/spreadsheets/d/1VNk8sXg4Gjudjn6hHWTUxlWXIvJUFCHBwLkAZ1FC13Y/edit?gid=919419425#gid=919419425" target="_blank" rel="noopener" onclick="closeDeptMenu()">📊 Ver hoja de cálculo</a>
+          <div class="dept-menu-sep"></div>
+          <button class="dept-menu-item" id="btnHistorialDept" style="display:none" onclick="closeDeptMenu();openHistorialModal()">📋 Historial de acciones</button>
+          <button class="dept-menu-item" id="btnAuditoriaDept" data-perm="config.manage" onclick="closeDeptMenu();openAuditoriaModal()">🔍 Auditoría de datos</button>
+        </div>
+      </div>
+    </div>
+    <div class="user-chip" id="userChip" style="display:none">
+      <div class="user-chip-info" onclick="goProfile()" title="Ver mi perfil">
+        <div class="user-avatar" id="userAvatar"></div>
+        <span id="userName"></span>
+      </div>
+      <button class="user-logout" onclick="logout()" title="Cerrar sesión"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ PERFIL ══ -->
+<div class="page" id="pProfile">
+  <div class="profile-wrap">
+    <div class="profile-avatar-big" id="profAvatar"></div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">👤 Información de perfil</div>
+      <div class="fg">
+        <div>
+          <label class="fl">Usuario</label>
+          <div class="profile-readonly" id="profUser"></div>
+        </div>
+        <div>
+          <label class="fl">Rol</label>
+          <div class="profile-readonly" id="profRol"></div>
+        </div>
+        <div class="full">
+          <label class="fl">Nombre completo</label>
+          <input class="fi-w" type="text" id="profNombre" placeholder="Tu nombre completo" autocomplete="name">
+        </div>
+        <div class="full">
+          <label class="fl">Correo electrónico</label>
+          <input class="fi-w" type="email" id="profEmail" placeholder="tu@correo.es" autocomplete="email">
+        </div>
+      </div>
+      <div class="mf" style="margin-top:18px">
+        <div></div>
+        <button class="btn btn-p" id="btnSavePerfil" onclick="saveProfile()">💾 Guardar cambios</button>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">🔑 Cambiar contraseña</div>
+      <div class="fg">
+        <div class="full">
+          <label class="fl">Contraseña actual</label>
+          <input class="fi-w" type="password" id="profPassOld" autocomplete="current-password">
+        </div>
+        <div>
+          <label class="fl">Nueva contraseña</label>
+          <input class="fi-w" type="password" id="profPassNew" autocomplete="new-password">
+        </div>
+        <div>
+          <label class="fl">Confirmar contraseña</label>
+          <input class="fi-w" type="password" id="profPassConf" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="mf" style="margin-top:18px">
+        <div></div>
+        <button class="btn" id="btnChangePass" onclick="doChangePassword()" style="border-color:var(--acc2);color:var(--acc2)">🔑 Cambiar contraseña</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOGIN ══ -->
+<div class="page" id="pLogin">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-icon"><img src="favicon.svg" style="width:36px;height:36px"></div>
+      <h1>Inventario Taller FP</h1>
+
+      <!-- Vista: formulario de acceso -->
+      <div id="loginForm">
+        <p class="login-sub">Introduce tus credenciales para continuar</p>
+        <div class="login-ok" id="loginOk"></div>
+        <div class="login-error" id="loginError"></div>
+        <div class="login-field">
+          <label>Usuario</label>
+          <input type="text" id="loginUser" autocomplete="username">
+        </div>
+        <div class="login-field">
+          <label>Contraseña</label>
+          <input type="password" id="loginPass" autocomplete="current-password">
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+
+        <!-- Google Sign-In -->
+        <div class="login-divider">
+          <span>o continúa con</span>
+        </div>
+        <div class="google-signin-btn">
+          <div id="g_id_onload"
+               data-client_id="374986567801-lamnmhp3p3jtudo9f4db3s5kum7ef1v9.apps.googleusercontent.com"
+               data-callback="handleGoogleSignIn"
+               data-auto_prompt="false">
+          </div>
+          <div class="g_id_signin" data-type="standard" data-size="large" data-theme="light"></div>
+        </div>
+
+        <div class="login-footer">
+          Si no tienes cuenta, contacta con el administrador del centro
+          <br><button class="login-link" onclick="showRecovery()">¿Olvidaste tu contraseña?</button>
+        </div>
+      </div>
+
+      <!-- Vista: solicitar recuperación -->
+      <div id="recoveryForm" style="display:none">
+        <p class="login-sub">Introduce tu usuario y te enviaremos un enlace de recuperación.</p>
+        <div class="login-error" id="recoveryError"></div>
+        <div class="login-ok" id="recoveryOk"></div>
+        <div class="login-field">
+          <label>Usuario</label>
+          <input type="text" id="recoveryUser" autocomplete="username">
+        </div>
+        <button class="login-btn" id="recoveryBtn" onclick="requestReset()">Enviar correo de recuperación</button>
+        <div class="login-footer">
+          <button class="login-link" onclick="showLogin()">← Volver al inicio de sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESET CONTRASEÑA ══ -->
+<div class="page" id="pReset">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-icon" style="font-size:30px">🔑</div>
+      <h1>Nueva contraseña</h1>
+      <p class="login-sub">Elige una contraseña segura para tu cuenta</p>
+      <div class="login-error" id="resetError"></div>
+      <div class="login-field">
+        <label>Nueva contraseña</label>
+        <input type="password" id="resetPass1" autocomplete="new-password">
+      </div>
+      <div class="login-field">
+        <label>Confirmar contraseña</label>
+        <input type="password" id="resetPass2" autocomplete="new-password">
+      </div>
+      <button class="login-btn" id="resetBtn" onclick="doResetPassword()">Cambiar contraseña</button>
+      <div class="login-footer">
+        <button class="login-link" onclick="goBackToLogin()">← Volver al inicio de sesión</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div class="page" id="pH">
+  <div class="home-hero">
+    <h1>¿Qué deseas consultar?</h1>
+    <h2>Acciones rápidas</h2>
+    <p>Selecciona un aula o un ciclo formativo para ver su inventario</p>
+    <div class="action-strip" style="justify-content:center;gap:10px;margin-top:18px">
+      <button class="btn btn-p icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem rápido</span></button>
+      <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
+      <a class="btn icon-btn" href="javascript:void(0)" onclick="goDocsDpto()" style="display:inline-flex;padding:11px 24px;font-size:14px;border-color:#0891b2;color:#0891b2;text-decoration:none">📂 <span class="btn-text">Documentación</span></a>
+      <button class="btn icon-btn" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="goMaintenance()">🛠️ <span class="btn-text">Mantenimiento</span></button>
+      <button class="btn icon-btn" id="btnGoHistorial" style="display:none;padding:11px 24px;font-size:14px;border-color:#6366f1;color:#6366f1" onclick="goHistorialPage()">📋 <span class="btn-text">Historial</span></button>
+    </div>
+    <div class="gsearch-wrap" id="gsWrap">
+      <span class="gsearch-ico">🔍</span>
+      <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor…" autocomplete="off"
+        oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)"
+        onkeydown="gsKey(event)">
+      <button class="gsearch-clear" id="gsClear" onclick="gsClear()" title="Limpiar">✕</button>
+      <button class="gsearch-qr" id="gsQr" onclick="openQrScanner()" title="Escanear QR" style="display:none">
+        <svg style="width:20px;height:20px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#fff" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M0.9472 0.9472h30.1056v30.1056H0.9472Z"/>
+          <path fill="currentColor" d="M5.9648 5.9648h2.5088v2.5088H5.9648Zm0 17.5616h2.5088v2.5088H5.9648Zm17.5616-17.5616h2.5088v2.5088h-2.5088Z"/>
+          <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
+        </svg>
+      </button>
+      <div class="gsr" id="gsResults" role="listbox"></div>
+    </div>
+  </div>
+  <div class="home-body">
+    <div id="loanBanner"></div>
+    <div class="stats-strip" id="hStats"></div>
+    <div class="sec-label">
+      Por aula / espacio
+      <button class="mini-btn" data-perm="config.manage" onclick="openAulasModal()">⚙️ Gestionar aulas</button>
+    </div>
+    <div class="choice-grid" id="gAulas"></div>
+    <div style="height:20px"></div>
+    <div class="sec-label">
+      Por categoría
+      <button class="mini-btn" data-perm="categories.manage" onclick="openCatsModal()">⚙️ Gestionar categorías</button>
+    </div>
+    <div class="choice-grid" id="gCats"></div>
+    <div style="height:20px"></div>
+    <div class="sec-label">
+      Por ciclo formativo
+      <button class="mini-btn" data-perm="config.manage" onclick="openCiclosModal()">⚙️ Gestionar ciclos</button>
+    </div>
+    <div class="choice-grid" id="gCiclos"></div>
+  </div>
+</div>
+
+<!-- ══ HISTORIAL PAGE ══ -->
+<div class="page" id="pHistorialPage">
+  <div class="sub-header">
+    <button class="sub-back" onclick="goHome()">←</button>
+    <div class="sub-tag" style="background:#ede9fe;color:#6d28d9">📋 Registro</div>
+    <div class="sub-title">Historial de acciones</div>
+    <span id="hpSummary" style="margin-left:auto;font-size:12px;color:var(--muted)"></span>
+  </div>
+  <div class="hp-controls">
+    <div class="sbox" style="flex:1"><span class="si">🔍</span><input type="text" id="hpSearch" placeholder="Buscar usuario, ítem, acción…" oninput="hpFilter()"></div>
+    <select id="hpFilterTipo" class="historial-filter" onchange="hpFilter()">
+      <option value="">Todos los tipos</option>
+      <option value="Items">Items</option>
+      <option value="Prestamos">Préstamos</option>
+      <option value="Usuarios">Usuarios</option>
+      <option value="Configuracion">Configuración</option>
+    </select>
+  </div>
+  <div id="hpFeed" class="hp-feed"></div>
+</div>
+
+<!-- ══ DOCS DPTO PAGE ══ -->
+<div class="page" id="pDocsDpto">
+  <div class="sub-header">
+    <div class="sub-tag" style="background:var(--teal-l);color:var(--teal)">📂 Departamento</div>
+    <div class="sub-title">Documentación del departamento</div>
+    <div class="sub-meta">Normativa, circulares y recursos compartidos · Electricidad y Electrónica</div>
+  </div>
+  <div class="sub-body">
+    <div class="docs-notice">
+      <span class="docs-notice-ico">🔒</span>
+      <div>
+        <strong>SharePoint requiere autenticación institucional.</strong>
+        Pulsa cualquier acceso para abrirlo en una pestaña nueva con tu cuenta del centro.
+      </div>
+    </div>
+
+    <div class="sec-label" style="margin-top:18px">Accesos directos</div>
+    <div class="docs-grid" id="docsGrid"></div>
+
+    <div class="sec-label" style="margin-top:24px">Enlaces externos</div>
+    <div class="docs-links" id="docsLinks"></div>
+  </div>
+</div>
+
+<!-- ══ PRESTAMOS PAGE ══ -->
+<div class="page" id="pPres">
+  <div class="sub-header">
+    <div class="sub-tag" style="background:var(--amber-l);color:var(--amber)">⌛ Gestión de préstamos</div>
+    <div class="sub-title">Préstamos</div>
+    <div class="sub-meta" id="presMeta"></div>
+  </div>
+  <div class="sub-body">
+    <div class="stats-strip" id="presStats"></div>
+    <div class="pres-tabs">
+      <button class="pres-tab active" id="ptActivos" onclick="setPresTab('activos')">🟡 Activos</button>
+      <button class="pres-tab" id="ptVencidos" onclick="setPresTab('vencidos')">🔴 Vencidos</button>
+      <button class="pres-tab" id="ptDevueltos" onclick="setPresTab('devueltos')">✅ Historial</button>
+      <button class="pres-tab" id="ptProfesor" onclick="setPresTab('profesor')">👤 Por profesor/a</button>
+      <button class="pres-tab" id="ptAula" onclick="setPresTab('aula')">🏫 Por aula</button>
+      <button class="pres-tab" id="ptMaterial" onclick="setPresTab('material')">📦 Por material</button>
+    </div>
+    <div class="toolbar">
+      <div class="sbox"><span class="si">🔍</span><input type="text" id="presSearch" placeholder="Buscar por ítem o profesor..." oninput="renderPrestamos()"></div>
+      <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar profesores</span></button>
+      <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>
+    </div>
+    <div id="presContent"></div>
+  </div>
+</div>
+
+<!-- ══ CICLO PAGE (selección de módulo) ══ -->
+<div class="page" id="pCiclo">
+  <div class="ciclo-page-header">
+    <div class="ciclo-tag" id="cicloTag"></div>
+    <div class="ciclo-title" id="cicloTitle"></div>
+    <div class="ciclo-meta" id="cicloMeta"></div>
+  </div>
+  <div class="ciclo-body">
+    <div class="sec-label">Selecciona un módulo</div>
+    <div class="mod-grid" id="modGrid"></div>
+  </div>
+</div>
+
+<!-- ══ SUBPAGE (inventario filtrado) ══ -->
+<div class="page" id="pS">
+  <div class="sub-header">
+    <div class="sub-bc" id="subBc"></div>
+    <div class="sub-title-row">
+      <div class="sub-title" id="sTitle"></div>
+      <div class="sub-stats-compact" id="sStats"></div>
+    </div>
+    <div class="sub-meta" id="sMeta"></div>
+    <div class="action-strip">
+      <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
+      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
+      <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintChoiceModal()">🖨️ <span class="btn-text">Imprimir</span></button>
+    </div>
+  </div>
+  <div class="sub-body">
+    <div class="print-header">
+      <div class="print-header-title" id="printTitle"></div>
+      <div class="print-header-meta" id="printMeta"></div>
+    </div>
+    <div class="toolbar">
+      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()"></div>
+      <div id="invFilters">
+        <div style="display:flex;gap:4px;align-items:center">
+          <select id="fCat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
+          <button class="mini-btn" onclick="openCatsModal()" title="Gestionar categorías">⚙️</button>
+        </div>
+        <select id="fTipo" onchange="renderInv()" style="display:none"><option value="">Todos los tipos</option><option value="consumible">Consumibles</option><option value="inventariable">Inventariables</option></select>
+        <div class="preset-wrap" id="presetWrap">
+          <button class="mini-btn preset-toggle-btn" onclick="togglePresetPanel()" title="Presets de filtros">🔖</button>
+          <div class="preset-panel" id="presetPanel">
+            <div class="preset-panel-hdr">Presets de filtros</div>
+            <div id="presetList"></div>
+            <div class="preset-save-row">
+              <input type="text" id="presetNameInput" placeholder="Nombre del preset..." maxlength="30" onkeydown="if(event.key==='Enter')saveCurrentPreset()">
+              <button onclick="saveCurrentPreset()">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="activeFiltersBar" class="print-no"></div>
+    <div class="bulkbar print-no" id="bulkBar" style="display:none">
+      <div class="bulk-count" id="bulkCount">0 seleccionados</div>
+      <select id="bulkAction" onchange="renderBulkActionControl()">
+        <option value="">Acción en lote...</option>
+        <option value="loc">Cambiar ubicación</option>
+        <option value="cat">Cambiar categoría</option>
+        <option value="mod">Cambiar ciclo y módulo</option>
+        <option value="tipo">Cambiar tipo de material</option>
+        <option value="tagsAdd">Añadir tags</option>
+        <option value="tagsReplace">Reemplazar tags</option>
+        <option value="ref">Cambiar referencia</option>
+        <option value="mant">Marcar mantenimiento</option>
+        <option value="foto">Cambiar imagen</option>
+        <option value="delete" style="color:#dc2626;font-weight:700">⚠ Eliminar seleccionados</option>
+      </select>
+      <div class="bulk-control" id="bulkActionControl"></div>
+      <button class="mini-btn" id="bulkApplyBtn" onclick="applyBulkAction()">Aplicar</button>
+      <button class="mini-btn" onclick="bulkExportSelected()">Exportar</button>
+      <button class="mini-btn" onclick="bulkPrintSelected()">Imprimir</button>
+      <button class="mini-btn" onclick="clearBulkSelection()">Limpiar</button>
+    </div>
+    <div class="srow">
+      <span class="clbl" id="iCount"></span>
+      <span class="lalert" id="iLow"></span>
+      <div class="tipo-filter-buttons">
+        <button class="tipo-btn tipo-btn-all active" onclick="setFilterTipo('')" title="Ver todos los items">
+          <span class="tipo-icon">📋</span>
+          <span class="tipo-label">Todos</span>
+        </button>
+        <button class="tipo-btn tipo-btn-consumible" onclick="setFilterTipo('consumible')" title="Mostrar solo consumibles">
+          <span class="tipo-icon">🧴</span>
+          <span class="tipo-label">Consumibles</span>
+        </button>
+        <button class="tipo-btn tipo-btn-inventariable" onclick="setFilterTipo('inventariable')" title="Mostrar solo inventariables">
+          <span class="tipo-icon">🔧</span>
+          <span class="tipo-label">Inventariable</span>
+        </button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="pager-top print-no" id="pagerTop" style="flex:1"></div>
+      <div class="view-toggle-btns print-no">
+        <button id="btnGroupView" class="view-btn active" onclick="setGroupView(!_groupView)" title="Alternar vista agrupada / lista">Agrupado</button>
+        <button class="view-btn active" data-view="table" onclick="setView('table')" title="Vista tabla">☰</button>
+        <button class="view-btn" data-view="cards" onclick="setView('cards')" title="Vista tarjetas">⊞</button>
+      </div>
+    </div>
+    <div id="iContent"></div>
+  </div>
+</div>
+
+<!-- MODAL ITEM -->
+<div class="mbg" id="mItem">
+  <div class="modal">
+    <div class="mh"><div class="mt" id="mT">Nuevo ítem</div><button class="mx" onclick="closeM()">✕</button></div>
+    <div class="fg">
+      <!-- 📝 IDENTIFICACIÓN -->
+      <div class="m-section">
+        <div class="m-section-title">📝 IDENTIFICACIÓN</div>
+        <div class="ref-nombre-row full">
+          <div><label class="fl">Ref.</label><input class="fi-w" id="f_ref" placeholder="R-10K"></div>
+          <div><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
+        </div>
+        <div class="aula-loc-row full">
+          <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
+          <div>
+            <label class="fl">Ubicación</label>
+            <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
+            <datalist id="locList"></datalist>
+          </div>
+        </div>
+        <div class="ciclo-mod-row full">
+          <div><label class="fl">Ciclo</label>
+            <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
+              <option value="">Sin asignar</option>
+            </select>
+          </div>
+          <div><label class="fl">Módulo</label>
+            <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🏷️ CLASIFICACIÓN -->
+      <div class="m-section">
+        <div class="m-section-title">🏷️ CLASIFICACIÓN</div>
+        <div><label class="fl">Categoría</label>
+          <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
+        </div>
+        <div><label class="fl">Tags</label>
+          <div style="position:relative">
+            <input class="fi-w" id="f_tags" placeholder="Arduino, SMD..." autocomplete="off" style="padding-right:30px">
+            <datalist id="tagList"></datalist>
+            <div id="tagsDropdown" class="tags-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+          </div>
+        </div>
+        <div><label class="fl">Estado</label>
+          <select class="fi-w" id="f_est"><option>Bueno</option><option>Deteriorado</option><option>Avería</option><option>Baja</option></select>
+        </div>
+        <label style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:6px 8px;cursor:pointer;background:#FFD700;border-radius:6px;font-size:11px">
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="checkbox" id="f_mant" onchange="toggleMaintFields()" style="margin:0;cursor:pointer;min-width:16px;width:16px;height:16px">
+            <span style="font-weight:bold">Solicitar</span>
+          </div>
+          <span style="font-weight:bold;font-size:10px;line-height:1.2">mantenimiento</span>
+        </label>
+      </div>
+
+      <!-- 📦 INVENTARIO (sin cambios) -->
+      <div class="m-section">
+        <div class="m-section-title">📦 INVENTARIO</div>
+        <div class="full">
+          <label class="fl">Foto principal</label>
+          <input type="hidden" id="f_foto">
+          <input type="file" id="f_foto_file" accept="image/*" style="display:none" onchange="fotoFileChanged(this)">
+          <div class="photo-picker">
+            <div class="photo-col">
+              <div class="photo-preview" id="f_foto_preview" onclick="fotoPreviewClick()" style="cursor:pointer"><span>📷</span></div>
+              <div id="qrButtonContainer" style="display:none">
+                <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:11px;padding:4px 6px;white-space:nowrap;width:100%">🖨️ QR</button>
+              </div>
+            </div>
+            <div class="item-stock-strip">
+              <div><label class="fl">Cantidad</label><input class="fi-w" id="f_qty" type="number" min="0" value="1"></div>
+              <div><label class="fl">Mínimo</label><input class="fi-w" id="f_min" type="number" min="0" value="5"></div>
+              <div><label class="fl">Tipo</label>
+                <select class="fi-w" id="f_tipo_material">
+                  <option value="consumible">Consumible</option>
+                  <option value="inventariable">Inventariable</option>
+                </select>
+              </div>
+              <div><label class="fl">Foto</label><button type="button" class="btn btn-sm fi-w" onclick="document.getElementById('f_foto_file').click()" style="font-size:12px" title="Subir imagen o hacer foto">📷 Subir</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔧 DETALLES -->
+      <div class="m-section">
+        <div class="m-section-title">🔧 DETALLES</div>
+        <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
+        <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
+        <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
+      </div>
+
+      <!-- 🛠️ MANTENIMIENTO (opcional) -->
+      <div class="maint-fields m-section" id="maintFields" style="border:none;padding:0;margin-top:0;background:none;border-top:none">
+        <div style="margin-bottom:12px">
+          <div class="m-section-title" style="margin-top:0">🛠️ MANTENIMIENTO</div>
+        </div>
+        <div>
+          <label class="fl">Fecha de aviso</label>
+          <input class="fi-w" id="f_mantFecha" type="date">
+        </div>
+        <div>
+          <label class="fl">Estado mantenimiento</label>
+          <select class="fi-w" id="f_mantEstado">
+            <option>Pendiente</option>
+            <option>En reparación</option>
+            <option>Reparado</option>
+            <option>Resuelto</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Responsable</label>
+          <input class="fi-w" id="f_mantResp" list="mantRespList" placeholder="Profesor/a o responsable">
+          <datalist id="mantRespList"></datalist>
+        </div>
+        <div class="full">
+          <label class="fl">Motivo / nota de reparación</label>
+          <textarea class="fi-w" id="f_mantNota" placeholder="Qué ocurre, qué revisar, piezas necesarias..."></textarea>
+        </div>
+      </div>
+
+      <!-- 📎 DOCUMENTACIÓN -->
+      <div class="m-section">
+        <div class="m-section-title">📎 DOCUMENTACIÓN</div>
+        <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="f_obs" placeholder="Notas, proveedor, nº serie..."></textarea></div>
+        <div class="full">
+          <label class="fl">Contenedor / Caja</label>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
+              <input type="checkbox" id="f_es_contenedor" onchange="toggleContenedorFields()">
+              <span>Es un contenedor / agrupador de ítems</span>
+            </label>
+            <div id="f_parent_row">
+              <select class="fi-w" id="f_parent_id" onchange="toggleContenedorFields()">
+                <option value="">— Sin caja padre —</option>
+              </select>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">Si este componente pertenece a una caja, selecciónala aquí</div>
+            </div>
+            <div id="f_contenedor_hijos" style="display:none">
+              <hr style="margin:8px 0;border:none;border-top:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:12px;color:var(--muted)">Marca los ítems que pertenecen a esta caja:</span>
+                <div style="display:flex;gap:6px">
+                  <button type="button" class="btn btn-sm" onclick="toggleGenerarUnidades()" style="font-size:12px;padding:4px 10px">⚡ Generar unidades</button>
+                  <button type="button" class="btn btn-sm btn-loan" onclick="saveHijosCaja()" style="font-size:12px;padding:4px 10px">💾 Guardar selección</button>
+                </div>
+              </div>
+              <!-- Panel generar unidades -->
+              <div id="genUnidadesPanel" style="display:none;border:1.5px solid var(--accent);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--accent-l,#eff6ff)">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                  <label style="font-size:13px;font-weight:600;white-space:nowrap">Unidades a crear:</label>
+                  <input type="number" id="genUnidadesQty" min="1" max="50" value="2" style="width:70px" class="fi-w" oninput="renderGenUnidadesTable()">
+                  <label style="font-size:13px;font-weight:600;white-space:nowrap">Prefijo ref.:</label>
+                  <input type="text" id="genUnidadesPrefijo" class="fi-w" placeholder="ej. SET-POL" style="width:110px" oninput="renderGenUnidadesTable()">
+                </div>
+                <div id="genUnidadesPadreRef" style="font-size:11px;color:var(--muted);margin-bottom:6px"></div>
+                <div id="genUnidadesTable" style="max-height:240px;overflow-y:auto;margin-bottom:10px"></div>
+                <div style="display:flex;justify-content:flex-end;gap:8px">
+                  <button type="button" class="btn btn-sm" onclick="toggleGenerarUnidades()" style="font-size:12px;padding:4px 10px">Cancelar</button>
+                  <button type="button" class="btn btn-sm btn-loan" onclick="saveGenerarUnidades()" style="font-size:12px;padding:4px 10px">✅ Crear unidades</button>
+                </div>
+              </div>
+              <input class="fi-w" id="f_hijos_search" type="text" placeholder="🔍 Buscar ítem..." oninput="renderHijosList()" style="margin-bottom:6px">
+              <div id="f_hijos_list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;background:var(--bg2,#f9fafb)"></div>
+            </div>
+          </div>
+        </div>
+        <div class="full" id="itemQrBox" style="display:none">
+          <hr class="docs-sep">
+          <div class="docs-lbl">▦ Código QR del ítem</div>
+        <div class="qr-panel">
+          <img id="itemQrImg" class="qr-img" alt="Código QR del ítem">
+          <div class="qr-info">
+            <div class="qr-title" id="itemQrTitle"></div>
+            <div class="qr-url" id="itemQrUrl"></div>
+            <div class="qr-actions">
+              <button type="button" class="btn" onclick="copyItemQrUrl()">📋 Copiar enlace</button>
+              <button type="button" class="btn btn-p" onclick="printItemQr()">🖨️ Imprimir QR</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="full">
+        <hr class="docs-sep">
+        <div class="docs-lbl">📎 Documentación adjunta</div>
+        <input type="file" id="f_doc_input" multiple style="display:none" onchange="addDocFiles(this.files);this.value=''">
+        <input type="file" id="f_cam_input" accept="image/*" capture="environment" style="display:none" onchange="addDocFiles(this.files);this.value=''">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('f_doc_input').click()">
+            <span style="font-size:20px">📁</span><span>Subir archivos</span>
+          </button>
+          <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('f_cam_input').click()">
+            <span style="font-size:20px">📷</span><span>Hacer foto</span>
+          </button>
+        </div>
+        <div class="doc-list" id="f_doc_list"></div>
+      </div>
+    </div>
+    </div>
+    <div class="mf">
+      <div>
+        <button class="btn" id="btnHistorial" style="display:none" onclick="openHistorial()">📋 Historial</button>
+      </div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeM()">Cancelar</button>
+        <button class="btn btn-p" id="btnSave" onclick="saveItem()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QR ITEM -->
+<div class="mbg" id="mItemQr" onclick="if(event.target===this)closeItemQr()">
+  <div class="modal" style="width:min(460px,100%)">
+    <div class="mh"><div class="mt">Código QR</div><button class="mx" onclick="closeItemQr()">✕</button></div>
+    <div class="qr-panel" style="margin-top:12px">
+      <img id="quickQrImg" class="qr-img" alt="Código QR del ítem">
+      <div class="qr-info">
+        <div class="qr-title" id="quickQrTitle"></div>
+        <div class="qr-url" id="quickQrUrl"></div>
+        <div class="qr-actions">
+          <button type="button" class="btn" onclick="copyQuickItemQrUrl()">📋 Copiar enlace</button>
+          <button type="button" class="btn btn-p" onclick="printQuickItemQr()">🖨️ Imprimir QR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DOCS -->
+<div class="mbg" id="mDocs" onclick="if(event.target===this)closeDocsModal()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt" id="docsModalTitle">📎 Documentación</div><button class="mx" onclick="closeDocsModal()">✕</button></div>
+    <div class="mb" style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div class="doc-list" id="dm_doc_list"></div>
+      <input type="file" id="dm_doc_input" multiple style="display:none" onchange="addDocsModalFiles(this.files);this.value=''">
+      <input type="file" id="dm_cam_input" accept="image/*" capture="environment" style="display:none" onchange="addDocsModalFiles(this.files);this.value=''">
+      <div style="display:flex;gap:8px">
+        <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('dm_doc_input').click()"><span style="font-size:18px">📁</span><span>Subir archivos</span></button>
+        <button type="button" class="doc-drop" style="flex:1" onclick="document.getElementById('dm_cam_input').click()"><span style="font-size:18px">📷</span><span>Hacer foto</span></button>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeDocsModal()">Cerrar</button>
+      <button class="btn btn-p" id="btnDocsSave" onclick="saveDocsModal()">💾 Guardar documentos</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HISTORIAL -->
+<div class="mbg" id="mItemHistorial" onclick="if(event.target===this)closeHistorial()">
+  <div class="modal" style="width:min(600px,100%)">
+    <div class="mh">
+      <div class="mt" id="histModalTitle">📋 Historial del ítem</div>
+      <button class="mx" onclick="closeHistorial()">✕</button>
+    </div>
+    <div class="mb" id="histBody" style="padding:16px;min-height:120px"></div>
+    <div class="mf">
+      <button class="btn" onclick="closeHistorial()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER FOTO -->
+<div class="mbg" id="mPhotoView" onclick="if(event.target===this)closePhotoModal()">
+  <div class="modal" style="width:min(520px,100%);background:transparent;border:none;box-shadow:none;padding:0">
+    <div style="position:relative;display:flex;align-items:center;justify-content:center">
+      <img id="photoViewImg" src="" alt="Foto" style="max-width:100%;max-height:80vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+      <button class="mx" onclick="closePhotoModal()" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRESTAR -->
+<div class="mbg" id="mPrestar" onclick="if(event.target===this)closePrestar()">
+  <div class="modal" style="width:min(500px,100%)">
+    <div class="mh"><div class="mt">📤 Prestar material</div><button class="mx" onclick="closePrestar()">✕</button></div>
+    <div id="prestarItemSelector" style="display:none;margin-bottom:14px">
+      <label class="fl">Ítem a prestar *</label>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <select class="fi-w" id="pres_filtAula" onchange="filterPresItems()" style="flex:1;min-width:0"></select>
+        <div class="sbox" style="flex:2;min-width:0"><span class="si">🔍</span><input type="text" id="pres_filtQ" placeholder="Buscar..." oninput="filterPresItems()" autocomplete="off"></div>
+      </div>
+      <select class="fi-w" id="pres_item" onchange="onPresItemChange(this.value)"></select>
+    </div>
+    <div id="prestarItemInfo" style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:10px;padding:12px 14px;margin-bottom:18px"></div>
+    <div class="fg">
+      <div class="full"><label class="fl">Profesor/a que pide *</label>
+        <select class="fi-w" id="pres_prof"></select>
+      </div>
+      <div><label class="fl">Cantidad *</label><input class="fi-w" id="pres_cant" type="number" min="1" value="1"></div>
+      <div><label class="fl">Aula destino</label><select class="fi-w" id="pres_aulaDest"></select></div>
+      <div class="full"><label class="fl">Devolución prevista</label><input class="fi-w" id="pres_fecha" type="date"></div>
+      <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="pres_obs" placeholder="Para qué se necesita, etc."></textarea></div>
+    </div>
+    <div class="mf">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closePrestar()">Cancelar</button>
+        <button class="btn btn-loan" id="btnPrestarSave" onclick="confirmPrestar()">📤 Registrar préstamo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRÉSTAMO CAJA COMPLETA -->
+<div class="mbg" id="mPrestarCaja" onclick="if(event.target===this)closePrestarCaja()">
+  <div class="modal">
+    <div class="mh"><span class="mti">📦 Préstamo de caja completa</span><button class="mcl" onclick="closePrestarCaja()">✕</button></div>
+    <div style="margin-bottom:12px">
+      <div style="font-weight:600;font-size:15px" id="prestarCajaNombre"></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">Se prestarán todos los componentes con stock:</div>
+      <div id="prestarCajaComponentes" style="margin-top:8px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px 12px"></div>
+    </div>
+    <div class="fg">
+      <div class="full"><label class="fl">Profesor/a que pide *</label>
+        <select class="fi-w" id="prestarCajaProf"></select>
+      </div>
+      <div><label class="fl">Aula destino</label><select class="fi-w" id="prestarCajaAulaDest"></select></div>
+      <div><label class="fl">Devolución prevista</label><input class="fi-w" id="prestarCajaFecha" type="date"></div>
+      <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="prestarCajaObs" placeholder="Para qué se necesita, etc."></textarea></div>
+    </div>
+    <div class="mf">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closePrestarCaja()">Cancelar</button>
+        <button class="btn btn-loan" id="btnPrestarCajaSave" onclick="confirmPrestarCaja()">📦 Registrar préstamo de caja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PICKER BAJA / ELIMINAR -->
+<div class="mbg" id="mDelPicker" onclick="if(event.target===this)closeDelModal()">
+  <div class="modal" style="width:min(380px,100%)">
+    <div class="mh"><div class="mt">🗑️ <span id="delPickerName">Baja / Eliminar</span></div><button class="mx" onclick="closeDelModal()">✕</button></div>
+    <!-- Paso 1: selector de ítem (cuando se abre sin ID) -->
+    <div id="delPickerStep1" style="display:none;padding:4px 0 8px">
+      <input id="delPickerSearch" type="text" class="sinput" placeholder="Buscar ítem por nombre o referencia…" autocomplete="off" oninput="delPickerFilter()" style="width:100%;margin-bottom:10px">
+      <div id="delPickerList" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+    <!-- Paso 2: opciones baja/eliminar -->
+    <div id="delPickerStep2" style="padding:4px 0 8px;display:flex;flex-direction:column;gap:10px">
+      <button id="delBtnBaja" class="btn" style="width:100%;justify-content:center;padding:13px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="closeDelModal();openBaja(_delItemId)">🚮 Dar de baja</button>
+      <button id="delBtnDelete" class="btn" style="width:100%;justify-content:center;padding:13px;font-size:14px;border-color:var(--red);color:var(--red)" onclick="closeDelModal();confDel(_delItemId)">⛔ Eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PICKER PRESTAR / DEVOLVER -->
+<div class="mbg" id="mPresDevPicker" onclick="if(event.target===this)closePresDevModal()">
+  <div class="modal" style="width:min(400px,100%)">
+    <div class="mh"><div class="mt" id="pickerItemName">Material</div><button class="mx" onclick="closePresDevModal()">✕</button></div>
+    <div style="padding:4px 0 8px">
+      <button class="btn btn-p" id="pickerBtnPrestar" style="width:100%;justify-content:center;margin-bottom:14px" onclick="closePresDevModal();openPrestar(_pickerItemId)">📤 Nuevo préstamo</button>
+      <div id="pickerLoans"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEVOLVER -->
+<div class="mbg" id="mDevolver" onclick="if(event.target===this)closeDevolver()">
+  <div class="modal" style="width:min(440px,100%)">
+    <div class="mh"><div class="mt">📥 Devolver material</div><button class="mx" onclick="closeDevolver()">✕</button></div>
+    <div id="devolverInfo" style="background:var(--green-l);border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;margin-bottom:18px"></div>
+    <div class="fg">
+      <div class="full"><label class="fl">Cantidad a devolver *</label><input class="fi-w" id="dev_cant" type="number" min="1" value="1"></div>
+      <div class="full"><label class="fl">Observaciones (opcional)</label><textarea class="fi-w" id="dev_obs" placeholder="Estado en que se devuelve..."></textarea></div>
+    </div>
+    <div class="mf">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeDevolver()">Cancelar</button>
+        <button class="btn btn-return" id="btnDevolverSave" onclick="confirmDevolver()">📥 Confirmar devolución</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELEGIR TIPO DE IMPRESIÓN -->
+<div class="mbg" id="mPrintChoice" onclick="if(event.target===this)closePrintChoiceModal()">
+  <div class="modal" style="max-width:380px">
+    <div class="mh"><div class="mt">🖨️ Imprimir</div><button class="mx" onclick="closePrintChoiceModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 18px;padding:0 20px">¿Qué tipo de impresión deseas?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px 20px">
+      <button class="btn btn-p" onclick="closePrintChoiceModal();openPrintModal()" style="width:100%;padding:12px;font-size:14px;text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">🖨️</span>Listado normal<br><small style="font-size:11px;color:rgba(255,255,255,.85);font-weight:400">Tabla con columnas seleccionables</small>
+      </button>
+      <button class="btn" onclick="closePrintChoiceModal();openPrintQrModal()" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">🔳</span>Etiquetas QR<br><small style="font-size:11px;color:var(--muted);font-weight:400">Etiquetas con código QR por ítem</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPRIMIR INVENTARIO -->
+<div class="mbg" id="mPrint" onclick="if(event.target===this)closePrintModal()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt">🖨️ Imprimir inventario</div><button class="mx" onclick="closePrintModal()">✕</button></div>
+    <div class="mb" style="padding:18px 20px 20px">
+      <p id="printFilterInfo" style="margin:0 0 14px;font-size:12px;padding:7px 10px;border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--muted)"></p>
+      <p style="margin:0 0 14px;color:var(--muted);font-size:13px">Selecciona las columnas que aparecerán en la impresión:</p>
+      <div class="print-col-grid" id="printColGrid"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btn-sm" onclick="printColSelectAll()">Seleccionar todo</button>
+        <button class="btn btn-sm" onclick="printColSelectNone()">Ninguno</button>
+      </div>
+      <div style="margin-top:18px;display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn" onclick="closePrintModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="printInv()">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPRIMIR QR -->
+<div class="mbg" id="mPrintQr" onclick="if(event.target===this)closePrintQrModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><div class="mt">🖨️ Imprimir QR</div><button class="mx" onclick="closePrintQrModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;padding:0 20px;margin-top:12px">¿Qué deseas imprimir?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px">
+      <button class="btn btn-p" onclick="openQrSimpleModal()" style="width:100%;padding:12px;font-size:14px;text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">📋</span>Etiquetas QR por ítem<br><small style="font-size:11px;color:rgba(255,255,255,.85);font-weight:400">5 por fila · elige datos y tipo de material</small>
+      </button>
+      <button class="btn" onclick="printFromModal('qr')" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">🔳</span>Solo Códigos QR<br><small style="font-size:11px;color:var(--muted);font-weight:400">6 etiquetas compactas por fila · solo código</small>
+      </button>
+    </div>
+    <div class="mf" style="margin-top:16px;padding:0 20px 20px">
+      <button class="btn" onclick="closePrintQrModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIGURAR ETIQUETA SIMPLE QR -->
+<div class="mbg" id="mQrSimple" onclick="if(event.target===this)closeQrSimpleModal()">
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><div class="mt">📋 Etiquetas QR por ítem</div><button class="mx" onclick="closeQrSimpleModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);padding:0 20px;margin:12px 0 12px">Elige qué datos incluir bajo cada QR. El QR y el código van siempre. 5 etiquetas por fila para ahorrar papel.</p>
+    <div style="padding:0 20px;margin-bottom:14px">
+      <label style="font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">Tipo de material a imprimir</label>
+      <select id="qrSimpleTipo" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+        <option value="all">Todos</option>
+        <option value="consumible">Solo consumibles</option>
+        <option value="inventariable">Solo inventariables</option>
+      </select>
+    </div>
+    <div id="qrSimpleFields" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px"></div>
+    <div class="mf" style="margin-top:18px;padding:0 20px 20px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeQrSimpleModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="printQrSimpleFromModal()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXPORTAR -->
+<div class="mbg" id="mExport" onclick="if(event.target===this)closeExportModal()">
+  <div class="modal" style="width:min(560px,100%)">
+    <div class="mh"><div class="mt">📥 Exportar datos</div><button class="mx" onclick="closeExportModal()">✕</button></div>
+    <div class="export-options">
+      <button class="export-option" onclick="exportCSV();closeExportModal()">
+        <span class="export-option-ico">📄</span>
+        <span><strong>CSV de esta vista</strong><small id="expFilteredCount">Ítems filtrados por aula, categoría, módulo o búsqueda.</small></span>
+      </button>
+      <button class="export-option" onclick="exportAllItemsCSV()">
+        <span class="export-option-ico">📋</span>
+        <span><strong>CSV de todo el inventario</strong><small id="expAllItemsCount">Todos los ítems, sin filtros.</small></span>
+      </button>
+      <button class="export-option primary" onclick="exportFullBackup()">
+        <span class="export-option-ico">🗄️</span>
+        <span><strong>Backup completo JSON</strong><small id="expBackupCount">Inventario, aulas, categorías, ciclos, préstamos y profesores.</small></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR CSV -->
+<div class="mbg" id="mImport" onclick="if(event.target===this)closeImport()">
+  <div class="modal" style="width:min(680px,100%)">
+    <div class="mh"><div class="mt" id="impTitle">📤 Importar inventario desde CSV</div><button class="mx" onclick="closeImport()">✕</button></div>
+
+    <div class="import-step-indicator">
+      <div class="step-dot" id="sd1">1</div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-dot" id="sd2">2</div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-dot" id="sd3">3</div>
+      <div class="step-line" id="sl3"></div>
+      <div class="step-dot" id="sd4">4</div>
+    </div>
+
+    <!-- PASO 1: Subir archivo -->
+    <div class="import-step active" id="impStep1">
+      <div class="import-drop" id="impDrop" onclick="document.getElementById('impFileInput').click()">
+        <div class="import-drop-icon">📁</div>
+        <div class="import-drop-text">Haz clic o arrastra aquí tu archivo CSV o JSON</div>
+        <div class="import-drop-sub">CSV para añadir ítems · JSON para restaurar backup</div>
+      </div>
+      <input type="file" id="impFileInput" accept=".csv,.json,text/csv,application/json" style="display:none">
+      <div class="import-info">
+        <strong>Columnas reconocidas automáticamente:</strong><br>
+        <code>Referencia</code>, <code>Aula</code>, <code>Item</code> / <code>Nombre</code>, <code>Cantidad</code>, <code>Stock mínimo</code>, <code>Categoría</code>, <code>Ubicación</code>, <code>Estado</code>, <code>Utilidad</code>, <code>Última revisión</code>, <code>Observaciones</code>
+        <br><br>
+        💡 Si una aula del CSV no existe en el sistema, el ítem se asignará a <strong>Departamento</strong>.
+      </div>
+      <div class="import-info">
+        <strong>Backup JSON:</strong> tambiÃ©n puedes cargar un backup completo exportado desde la app para restaurar inventario, aulas, categorÃ­as, ciclos o profesores.
+      </div>
+      <div class="backup-box" id="backupBox" style="display:none">
+        <div class="backup-head">
+          <div>
+            <strong>Backup detectado</strong>
+            <div id="backupMeta"></div>
+          </div>
+          <button class="mini-btn" onclick="clearBackupPreview()">Quitar</button>
+        </div>
+        <div class="backup-grid" id="backupSections"></div>
+        <div class="backup-warning">La restauraciÃ³n reemplaza por completo las secciones seleccionadas.</div>
+        <div class="mf" style="margin-top:14px">
+          <div></div>
+          <div class="mf-right">
+            <button class="btn" onclick="closeImport()">Cancelar</button>
+            <button class="btn btn-p" id="backupRestoreBtn" onclick="restoreBackupJson()">Restaurar selecciÃ³n</button>
+          </div>
+        </div>
+      </div>
+      <div class="mf" style="margin-top:18px">
+        <div></div>
+        <div class="mf-right">
+          <button class="btn" onclick="closeImport()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 2: Mapeo de columnas -->
+    <div class="import-step" id="impStep2">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Confirma cómo mapear las columnas de tu CSV a los campos del inventario:</p>
+      <div class="import-mapping" id="impMapping"></div>
+      <div class="mf">
+        <button class="btn" onclick="impGoToStep(1)">← Volver</button>
+        <div class="mf-right">
+          <button class="btn" onclick="closeImport()">Cancelar</button>
+          <button class="btn btn-p" onclick="impGoToStep(3)">Vista previa →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 3: Vista previa -->
+    <div class="import-step" id="impStep3">
+      <div class="import-summary" id="impSummary"></div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Vista previa (primeras 50 filas):</p>
+      <div class="import-preview" id="impPreview"></div>
+      <div class="mf">
+        <button class="btn" onclick="impGoToStep(2)">← Volver</button>
+        <div class="mf-right">
+          <button class="btn" onclick="closeImport()">Cancelar</button>
+          <button class="btn btn-p" id="impConfirmBtn" onclick="impDoImport()">📥 Importar al inventario</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 4: Resultado -->
+    <div class="import-step" id="impStep4">
+      <div id="impProgressWrap" style="display:none">
+        <div class="import-progress"><div class="import-progress-bar" id="impProgressBar"></div></div>
+        <p style="text-align:center;font-size:13px;color:var(--muted)" id="impProgressText">Importando...</p>
+      </div>
+      <div id="impResultWrap" style="display:none;text-align:center">
+        <div class="import-result-icon" id="impResultIcon">✅</div>
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:6px" id="impResultTitle">Importación completada</h2>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:18px" id="impResultMsg"></p>
+        <button class="btn btn-p" onclick="closeImport()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROFESORES -->
+<div class="mbg" id="mProf" onclick="if(event.target===this)closeProfModal()">
+  <div class="modal">
+    <div class="mh"><div class="mt">👥 Profesores/as</div><button class="mx" onclick="closeProfModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Lista de profesores/as que pueden pedir material prestado</p>
+    <div class="prof-list" id="profList"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <button class="add-aula-btn" onclick="addProfRow()">＋ Añadir profesor</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: nombre,departamento,email">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importProfesoresCSV(this)">
+      </label>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,departamento,email</code></span>
+    </div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeProfModal()">Cerrar</button>
+        <button class="btn btn-p" onclick="saveProfesores()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE USUARIOS -->
+<div class="mbg" id="mUsuarios" onclick="if(event.target===this)closeUsuariosModal()">
+  <div class="modal" style="width:min(640px,100%)">
+    <div class="mh"><div class="mt">🔐 Usuarios de la aplicación</div><button class="mx" onclick="closeUsuariosModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Cuentas de acceso a la aplicación. Solo el Jefe de Departamento puede gestionar usuarios.</p>
+    <div style="background:var(--surface2,#f1f5f9);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--muted);flex:1;min-width:160px">⏱ Cierre automático por inactividad</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input id="inactivityMinInput" type="number" min="1" max="120" style="width:60px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:center">
+        <span style="font-size:12px;color:var(--muted)">minutos</span>
+        <button class="btn btn-sm" onclick="saveInactivitySetting()" style="font-size:12px">Guardar</button>
+      </div>
+    </div>
+    <div class="prof-list" id="usuariosList"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <button class="add-aula-btn" onclick="addUsuarioRow()">＋ Añadir usuario</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: usuario,nombre,email,rol,password">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importUsuariosCSV(this)">
+      </label>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>usuario,nombre,email,rol,password</code></span>
+    </div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeUsuariosModal()">Cerrar</button>
+        <button class="btn btn-p" onclick="saveUsuarios()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MÓDULOS POR USUARIO -->
+<div class="mbg" id="mModUsuario" style="z-index:600" onclick="if(event.target===this)closeModulosUsuario()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt" id="mModUsuarioTitle">📚 Módulos del usuario</div><button class="mx" onclick="closeModulosUsuario()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Marca los módulos que imparte este profesor. Al guardar se actualizará la columna <strong>Profesor/a</strong> en la hoja Modulos.</p>
+    <div id="mModUsuarioBody" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px"></div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeModulosUsuario()">Cancelar</button>
+        <button class="btn btn-p" id="btnSaveModUsuario" onclick="saveModulosUsuario()">💾 Guardar módulos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE AULAS -->
+<div class="mbg" id="mAulas" onclick="if(event.target===this)closeAulasModal()">
+  <div class="modal">
+    <div class="mh"><div class="mt">Gestionar aulas</div><button class="mx" onclick="closeAulasModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Modifica el nombre, descripción o icono de las aulas. También puedes añadir o eliminar.</p>
+    <div class="aulas-list" id="aulasList"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+      <button class="add-aula-btn" onclick="addAulaRow()">＋ Añadir aula</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: nombre,descripcion,icono">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importAulasCSV(this)">
+      </label>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,descripcion,icono</code></span>
+    </div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeAulasModal()">Cancelar</button>
+        <button class="btn btn-p" onclick="saveAulas()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE UBICACIONES -->
+<div class="mbg" id="mUbicaciones" onclick="if(event.target===this)closeUbicacionesModal()">
+  <div class="modal">
+    <div class="mh"><div class="mt">Gestionar ubicaciones</div><button class="mx" onclick="closeUbicacionesModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Edita las ubicaciones sugeridas en los ítems. Las ubicaciones ya usadas por inventario se mantienen disponibles.</p>
+    <div class="aulas-list" id="ubicacionesList"></div>
+    <button class="add-aula-btn" onclick="addUbicacionRow()">＋ Añadir ubicación</button>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeUbicacionesModal()">Cancelar</button>
+        <button class="btn btn-p" onclick="saveUbicaciones()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE CATEGORÍAS -->
+<div class="mbg" id="mCats" onclick="if(event.target===this)closeCatsModal()">
+  <div class="modal">
+    <div class="mh"><div class="mt">Gestionar categorías</div><button class="mx" onclick="closeCatsModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Añade, edita o elimina categorías. El icono, nombre y colores son personalizables.</p>
+    <div style="display:flex;gap:8px;font-size:11px;color:var(--muted);padding:0 2px;margin-bottom:6px">
+      <div style="width:42px;text-align:center">Icono</div>
+      <div style="flex:2">Nombre</div>
+      <div style="width:52px;text-align:center">Texto</div>
+      <div style="width:52px;text-align:center">Fondo</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="cats-list" id="catsList"></div>
+    <button class="add-cat-btn" onclick="addCatRow()">＋ Añadir categoría</button>
+    <button class="add-cat-btn" onclick="normalizeCategoriesToTags()" style="margin-top:8px;border-color:#7c3aed;color:#7c3aed;background:#faf5ff">↔ Normalizar categorías a tags</button>
+    <button class="add-cat-btn" onclick="normalizeTagsCanonicalPersist()" style="margin-top:8px;border-color:#2563eb;color:#1d4ed8;background:#eff6ff">🧹 Normalizar tags guardados (D1)</button>
+    <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
+    <div style="margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">🏷️ Tags disponibles</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Gestiona los tags sugeridos en el formulario de ítems.</p>
+      <div class="tags-list" id="tagsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;max-height:120px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:8px;border:1px solid var(--border)"></div>
+      <div style="display:flex;gap:6px">
+        <input class="fi-w" id="newTagInput" style="flex:1" placeholder="Nuevo tag..." autocomplete="off">
+        <button class="add-cat-btn" onclick="addTagRow()" style="flex:0 0 auto;padding:6px 14px">＋ Añadir</button>
+      </div>
+    </div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeCatsModal()">Cancelar</button>
+        <button class="btn btn-p" onclick="saveCats()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIÓN DE CICLOS Y MÓDULOS -->
+<div class="mbg" id="mCiclos" onclick="if(event.target===this)closeCiclosModal()">
+  <div class="modal" style="max-width:680px">
+    <div class="mh"><div class="mt">⚙️ Gestionar ciclos y módulos</div><button class="mx" onclick="closeCiclosModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Añade, edita o elimina ciclos formativos y sus módulos. El ciclo "Departamento" no se puede eliminar.</p>
+    <div id="ciclosList"></div>
+    <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo</button>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeCiclosModal()">Cancelar</button>
+        <button class="btn btn-p" onclick="saveCiclos()">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="mbg" id="mConf">
+  <div class="cbox">
+    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:6px" id="cTitle">¿Eliminar ítem?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:22px" id="cSub"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn" onclick="closeConf()">Cancelar</button>
+      <button class="btn btn-d" id="cOk">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BAJA -->
+<div class="mbg" id="mBaja" onclick="if(event.target===this)closeBaja()">
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><div class="mt">⛔ Dar de baja</div><button class="mx" onclick="closeBaja()">✕</button></div>
+    <div style="font-weight:700;font-size:15px;margin-bottom:14px" id="bajaItemName"></div>
+    <div style="display:flex;gap:12px;background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px">
+      <div>Stock actual: <strong id="bajaQtyActual">—</strong></div>
+      <div style="color:var(--muted)">·</div>
+      <div style="color:var(--muted)">Quedarán: <strong id="bajaQtyRestante" style="color:var(--green)">—</strong></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="fl">Unidades a dar de baja *</label>
+      <input class="fi-w" type="number" id="bajaCantidad" min="1" value="1" oninput="updateBajaRestante()">
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="fl">Motivo de la baja *</label>
+      <textarea class="fi-w" id="bajaMotivo" rows="3" placeholder="Ej: Equipo irreparable, obsoleto, robado..."></textarea>
+    </div>
+    <div style="margin-bottom:20px">
+      <label class="fl">Fecha de baja</label>
+      <input class="fi-w" type="date" id="bajaFecha">
+    </div>
+    <div class="mf">
+      <div style="font-size:12px;color:var(--muted)" id="bajaNote"></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeBaja()">Cancelar</button>
+        <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" id="btnBaja" onclick="saveBaja()">⛔ Confirmar baja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PEDIDOS -->
+<div class="mbg" id="mPedidos" onclick="if(event.target===this)closePedidos()">
+  <div class="modal" style="max-width:540px">
+    <div class="mh"><div class="mt">🛒 Solicitud de compra</div><button class="mx" onclick="closePedidos()">✕</button></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Marca ítems para pedir. Puedes ajustar la cantidad y añadir una nota antes de imprimir.</div>
+    <div class="ped-list" id="pedList"></div>
+    <div class="mf">
+      <button class="btn" onclick="clearPedidos()" style="color:var(--red)">🗑 Vaciar lista</button>
+      <div class="mf-right">
+        <button class="btn" onclick="closePedidos()">Cerrar</button>
+        <button class="btn btn-p" onclick="printPedidos()">🖨 Imprimir / PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ESCÁNER QR ══ -->
+<div class="mbg" id="mQrScanner" onclick="if(event.target===this)closeQrScanner()">
+  <div class="modal" style="max-width:600px">
+    <div class="mh"><div class="mt">🔍 Escanear QR</div><button class="mx" onclick="closeQrScanner()">✕</button></div>
+    <div id="qrScannerContent" style="display:none">
+      <video id="qrVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px" autoplay playsinline></video>
+      <div id="qrResult" style="font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Apunta la cámara a un código QR...</div>
+    </div>
+    <div id="qrError" style="display:none;padding:16px;background:var(--red-light);border-radius:8px;color:var(--red);font-size:13px"></div>
+    <div class="qr-actions" id="qrActions" style="display:none">
+      <div class="qr-actions-head">
+        <div class="qr-actions-photo" id="qrActionsPhoto">📦</div>
+        <div>
+          <div class="qr-actions-title" id="qrActionsTitle"></div>
+          <div class="qr-actions-meta" id="qrActionsMeta"></div>
+        </div>
+      </div>
+      <div class="qr-actions-grid">
+        <button class="btn btn-p" onclick="qrQuickAction('open')">Abrir ficha</button>
+        <button class="btn btn-loan" id="qrActLoan" onclick="qrQuickAction('loan')">⌛ Prestar / Devolver</button>
+        <button class="btn" id="qrActMaint" onclick="qrQuickAction('maintenance')" style="border-color:var(--amber);color:var(--amber)">🛠️ Mantenimiento</button>
+        <button class="btn" onclick="qrQuickAction('docs')">📌 Documentos</button>
+        <button class="btn btn-d" id="qrActDelete" onclick="qrQuickAction('delete')">🗑️ Baja</button>
+      </div>
+      <button class="mini-btn" onclick="qrResumeScan()">Escanear otro QR</button>
+    </div>
+    <div class="mf" style="margin-top:16px">
+      <button class="btn" onclick="closeQrScanner()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL HISTORIAL (SOLO SEBA) ══ -->
+<div class="mbg" id="mHistorial" onclick="if(event.target===this)closeHistorialModal()" style="display:none">
+  <div class="modal historial-modal">
+    <div class="mh">
+      <h2>📋 Historial de acciones</h2>
+      <button class="mbtn-close" onclick="closeHistorialModal()">✕</button>
+    </div>
+    <div class="historial-body">
+      <div class="historial-controls" id="historialControls">
+        <div class="historial-filter-row">
+          <input type="text" id="filterUsuario" placeholder="Filtrar por usuario..." class="historial-filter">
+          <select id="filterAccion" class="historial-filter">
+            <option value="">Todas las acciones</option>
+            <option value="add">Añadir ítem</option>
+            <option value="update">Actualizar ítem</option>
+            <option value="delete">Eliminar ítem</option>
+            <option value="loan">Préstamo</option>
+            <option value="order">Pedido</option>
+          </select>
+          <select id="filterTipo" class="historial-filter">
+            <option value="">Todos los tipos</option>
+          </select>
+          <input type="text" id="filterQue" placeholder="Filtrar por elemento..." class="historial-filter">
+          <button class="mini-btn" onclick="limpiarFiltrosHistorial()">Limpiar filtros</button>
+        </div>
+      </div>
+      <table class="historial-table" id="historialTable">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Usuario</th>
+            <th>Tipo</th>
+            <th>Acción</th>
+            <th>Elemento</th>
+            <th>Nombre</th>
+            <th>Detalles</th>
+          </tr>
+        </thead>
+        <tbody id="historialTbody">
+        </tbody>
+      </table>
+      <div id="historialEmpty" style="text-align:center;padding:2rem;color:#999">Cargando historial...</div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeHistorialModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL AUDITORÍA DE DATOS ══ -->
+<div class="mbg" id="mAuditoria" onclick="if(event.target===this)closeAuditoriaModal()" style="display:none">
+  <div class="modal auditoria-modal">
+    <div class="mh">
+      <h2>🔍 Auditoría de datos — Items incompletos</h2>
+      <button class="mbtn-close" onclick="closeAuditoriaModal()">✕</button>
+    </div>
+    <div class="auditoria-body">
+      <!-- Filtros por tipo de problema -->
+      <div id="auditoriaFiltros" class="auditoria-filtros">
+        <button class="abtn active" id="audFiltAll" onclick="filtrarAuditoria('all')">Todos</button>
+        <button class="abtn" onclick="filtrarAuditoria('cat')">Sin categoría</button>
+        <button class="abtn" onclick="filtrarAuditoria('mod')">Sin módulo</button>
+        <button class="abtn" onclick="filtrarAuditoria('aula')">Sin aula</button>
+        <button class="abtn" onclick="filtrarAuditoria('ref')">Sin referencia</button>
+        <button class="abtn" onclick="filtrarAuditoria('loc')">Sin ubicación</button>
+        <button class="abtn" onclick="filtrarAuditoria('proveedor')">Sin proveedor</button>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;margin-right:4px">Agrupar:</span>
+        <button class="abtn active" id="audGrpNone" onclick="agruparAuditoria('none')">Sin agrupar</button>
+        <button class="abtn" id="audGrpCat" onclick="agruparAuditoria('cat')">Categoría</button>
+        <button class="abtn" id="audGrpAula" onclick="agruparAuditoria('aula')">Aula</button>
+      </div>
+      <!-- Información y controles -->
+      <div id="auditoriaInfo" class="auditoria-info"></div>
+      <div class="auditoria-controls" style="margin:1rem 0;display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="mini-btn" id="audSelAll" onclick="seleccionarTodos()" style="display:none">☐ Seleccionar todos</button>
+        <button class="mini-btn" id="audEditMult" onclick="editarSeleccionados()" style="display:none;background:var(--blue);color:white">✏️ Editar seleccionados</button>
+      </div>
+      <!-- Tabla -->
+      <table class="inv-table auditoria-table" id="auditoriaTable">
+        <thead>
+          <tr>
+            <th style="width:32px;text-align:center">☑</th>
+            <th>Ref</th>
+            <th>Nombre</th>
+            <th>Aula</th>
+            <th>Categoría</th>
+            <th>Campos faltantes</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="auditoriaTbody"></tbody>
+      </table>
+      <div id="auditoriaEmpty" style="text-align:center;padding:2rem;color:#999;display:none">No se encontraron problemas ✓</div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeAuditoriaModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EASTER EGG: ROBOT BAILARÍN -->
+<div class="mbg" id="mRobotDance" onclick="if(event.target===this)closeRobotDance()" style="display:none;z-index:9999">
+  <div class="modal" style="max-width:380px;text-align:center;background:linear-gradient(135deg,#0f0f23 0%,#1a1a3e 50%,#0f0f23 100%);border:2px solid #7c3aed;overflow:hidden;padding:0">
+    <div style="background:linear-gradient(90deg,#7c3aed,#06b6d4,#10b981,#f59e0b,#ef4444,#7c3aed);background-size:300% 100%;animation:rainbowBar 2s linear infinite;height:4px"></div>
+    <div style="padding:24px 20px 20px">
+      <div style="font-size:13px;color:#a78bfa;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;animation:pulse 1s ease-in-out infinite">♪ ♫ ¡EASTER EGG! ♫ ♪</div>
+      <div id="robotDanceScene" style="font-size:52px;line-height:1;margin:0 auto 16px;position:relative;height:140px;display:flex;align-items:center;justify-content:center">
+        <div id="robotBody" style="position:relative;display:inline-block">
+          <div id="robotEmoji" style="font-size:72px;display:block;transform-origin:center bottom;animation:robotDance 0.5s ease-in-out infinite alternate">🤖</div>
+          <div id="robotNotes" style="position:absolute;top:-10px;right:-30px;font-size:20px;animation:floatNotes 1s ease-in-out infinite">🎵</div>
+          <div id="robotNotes2" style="position:absolute;top:10px;left:-30px;font-size:16px;animation:floatNotes 1s ease-in-out infinite 0.5s">🎶</div>
+        </div>
+      </div>
+      <div id="robotDanceFloor" style="font-size:11px;color:#4c1d95;letter-spacing:2px;margin-bottom:12px;animation:discoBlink 0.3s step-end infinite">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
+      <div style="font-size:14px;color:#e2e8f0;font-weight:700;margin-bottom:4px">¡El inventario tiene ritmo! 🕺</div>
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:20px">Taller de Electricidad/Electrónica FP</div>
+      <div id="danceStars" style="font-size:20px;margin-bottom:20px;animation:starSpin 3s linear infinite">⚡ ⭐ ⚡ ⭐ ⚡</div>
+      <button class="btn btn-p" onclick="closeRobotDance()" style="width:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4);border:none;color:#fff;font-weight:700">¡Para el baile!</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEPARTMENT GAME -->
+<div class="mbg" id="mDeptGame" onclick="if(event.target===this)closeDeptGame()">
+  <div class="modal dept-game-modal">
+    <div class="mh">
+      <div class="mt">Comecocos del departamento</div>
+      <button class="mx" onclick="closeDeptGame()">x</button>
+    </div>
+    <div class="dept-game-head">
+      <div><span>Puntos</span><strong id="deptGameScore">0</strong></div>
+      <div><span>Vidas</span><strong id="deptGameLives">3</strong></div>
+      <button class="mini-btn" onclick="restartDeptGame()">Reiniciar</button>
+    </div>
+    <canvas id="deptGameCanvas" width="560" height="560" aria-label="Juego tipo comecocos"></canvas>
+    <div class="dept-game-controls" aria-label="Controles tactiles">
+      <button onclick="deptGameMove('up')" title="Arriba">↑</button>
+      <div>
+        <button onclick="deptGameMove('left')" title="Izquierda">←</button>
+        <button onclick="deptGameMove('down')" title="Abajo">↓</button>
+        <button onclick="deptGameMove('right')" title="Derecha">→</button>
+      </div>
+    </div>
+    <div class="dept-game-status" id="deptGameStatus">Flechas o WASD para moverte.</div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script defer src="js/config.js"></script>
+<script defer src="js/state.js"></script>
+<script defer src="js/roles.js"></script>
+<script defer src="js/api.js"></script>
+<script defer src="js/docs.js"></script>
+<script defer src="js/search.js"></script>
+<script defer src="js/home.js"></script>
+<script defer src="js/inventory.js"></script>
+<script defer src="js/modal-item.js"></script>
+<script defer src="js/modal-aulas.js"></script>
+<script defer src="js/modal-ubicaciones.js"></script>
+<script defer src="js/modal-cats.js"></script>
+<script defer src="js/modal-ciclos.js"></script>
+<script defer src="js/prestamos.js"></script>
+<script defer src="js/import.js"></script>
+<script defer src="js/nav.js"></script>
+<script defer src="js/docs-dpto.js"></script>
+<script defer src="js/pwa.js"></script>
+<script defer src="js/profile.js"></script>
+<script defer src="js/reset.js"></script>
+<script defer src="js/qr-scanner.js"></script>
+<script defer src="js/audit-log.js"></script>
+<script defer src="js/modal-historial.js"></script>
+<script defer src="js/modal-auditoria.js"></script>
+<script defer src="js/dept-game.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script defer src="js/auth.js"></script>
+<button id="fabNuevo" class="fab-nuevo print-no" style="display:none" title="Añadir ítem (arrastra para mover)">＋</button>
+<script defer src="js/agente-widget.js"></script>
+<script>
+(function(){
+  window.openRobotDance=function(){
+    var m=document.getElementById('mRobotDance');
+    if(!m) return;
+    m.style.display='flex';
+    void m.offsetWidth;
+    m.classList.add('open');
+    startDiscoFloor();
+  };
+  window.closeRobotDance=function(){
+    var m=document.getElementById('mRobotDance');
+    if(!m) return;
+    m.classList.remove('open');
+    setTimeout(function(){m.style.display='none';},200);
+    stopDiscoFloor();
+  };
+  var _discoInt=null;
+  var discoColors=['#4c1d95','#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444'];
+  function startDiscoFloor(){
+    var el=document.getElementById('robotDanceFloor');
+    if(!el) return;
+    var i=0;
+    _discoInt=setInterval(function(){
+      el.style.color=discoColors[i%discoColors.length];
+      i++;
+    },120);
+  }
+  function stopDiscoFloor(){
+    if(_discoInt) clearInterval(_discoInt);
+    _discoInt=null;
+  }
+})();
+</script>
+
+<!-- MODAL AVISO CIERRE SESIÓN POR INACTIVIDAD -->
+<div class="mbg" id="mInactivityWarn" style="z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)">
+  <div style="background:var(--surface,#fff);border-radius:18px;padding:32px 28px;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.35)">
+    <div id="inactivityRobot" style="font-size:64px;line-height:1;margin-bottom:8px;display:inline-block;animation:robotBounce 0.5s infinite alternate">🤖</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:var(--text)">¿Sigues ahí?</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">La sesión se cerrará por inactividad en</div>
+    <div style="font-size:52px;font-weight:900;color:var(--red,#ef4444);line-height:1;margin-bottom:16px" id="inactivityCountdown">10</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:20px">segundos</div>
+    <button onclick="stayConnected()" style="background:var(--primary,#6366f1);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:15px;font-weight:700;cursor:pointer;width:100%">✋ Seguir conectado</button>
+  </div>
+</div>
+<style>
+#mInactivityWarn { display:none }
+#mInactivityWarn.open { display:flex }
+@keyframes robotBounce {
+  from { transform: translateY(0) rotate(-8deg); }
+  to   { transform: translateY(-12px) rotate(8deg); }
+}
+</style>
+</body>
+</html>

@@ -1,0 +1,31 @@
+name: Backup automático a Google Drive
+
+on:
+  schedule:
+    # Día 1 y 16 de cada mes a las 03:00 UTC (~= cada 15 días)
+    - cron: '0 3 1,16 * *'
+  workflow_dispatch:
+    # Permite lanzarlo manualmente desde GitHub Actions
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al endpoint de backup
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            "https://inventarioelecfp.pages.dev/api/backup?secret=${{ secrets.BACKUP_SECRET }}")
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          CODE=$(echo "$RESPONSE" | tail -n 1)
+          echo "HTTP $CODE"
+          echo "$BODY"
+          if [ "$CODE" != "200" ]; then
+            echo "Error: el endpoint devolvió HTTP $CODE"
+            exit 1
+          fi
+          OK=$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('ok',''))")
+          if [ "$OK" != "True" ]; then
+            echo "El backup falló: $BODY"
+            exit 1
+          fi
+          echo "Backup completado correctamente."
