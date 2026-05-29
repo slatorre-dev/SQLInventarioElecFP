@@ -170,6 +170,38 @@ function cleanTag(tag){
     .substring(0, 50);
 }
 
+function _normTag(s){
+  return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+
+function _trigrams(s){
+  const set = new Set();
+  if(s.length < 3){ set.add(s); return set; }
+  for(let i=0;i<s.length-2;i++) set.add(s.slice(i,i+3));
+  return set;
+}
+
+function tagTrigramSimilarity(a, b){
+  const ta = _trigrams(_normTag(a));
+  const tb = _trigrams(_normTag(b));
+  if(!ta.size || !tb.size) return 0;
+  const inter = [...ta].filter(g => tb.has(g)).length;
+  return inter / (ta.size + tb.size - inter);
+}
+
+function findCanonicalTag(typed){
+  if(!typed || !TAGS.length) return null;
+  const normTyped = _normTag(typed);
+  const exact = TAGS.find(t => _normTag(t) === normTyped);
+  if(exact && exact !== typed) return exact;
+  let best = null, bestScore = 0;
+  for(const candidate of TAGS){
+    const score = tagTrigramSimilarity(typed, candidate);
+    if(score > bestScore){ bestScore = score; best = candidate; }
+  }
+  return bestScore >= 0.65 && best !== typed ? best : null;
+}
+
 function initTagsAutocomplete(){
   const input = document.getElementById('f_tags');
   if(!input) return;
@@ -182,13 +214,21 @@ function initTagsAutocomplete(){
     const val = input.value.trim();
     if(val){
       const tags = val.split(',').map(cleanTag).filter(Boolean);
-      const newTags = tags.filter(t => !TAGS.includes(t) && t.length > 0);
-      if(newTags.length > 0){
+      const normalized = [];
+      const changed = [];
+      for(const t of tags){
+        const canon = findCanonicalTag(t);
+        if(canon){ normalized.push(canon); changed.push(`"${t}" → "${canon}"`); }
+        else normalized.push(t);
+      }
+      const newTags = normalized.filter(t => !TAGS.includes(t) && t.length > 0);
+      if(newTags.length){
         TAGS.push(...newTags);
         TAGS.sort(tagNameCompare);
         fillTagSuggestions();
       }
-      input.value = tags.join(', ');
+      input.value = normalized.join(', ');
+      if(changed.length) toast(`Tag normalizado: ${changed.join(', ')}`, 'ok');
     }
   });
   input.addEventListener('keydown', (e) => {
