@@ -107,15 +107,10 @@ body{
   display:none;
   min-height:calc(100vh - 58px);
   min-height:calc(100svh - 58px);
-  animation:pgIn .28s ease;
-}
-@media (max-width: 900px){
-  .page{
-    animation: none;
-  }
+  animation:pgIn .15s ease-out;
 }
 .page.active{display:block}
-@keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 
 /* SETUP */
 .setup{max-width:640px;margin:0 auto;padding:60px 24px;text-align:center}

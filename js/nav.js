@@ -39,7 +39,7 @@ function goHome(){
   _showHomeButtons();
   if(typeof applyRoleUI === 'function') applyRoleUI();
   gsClear();
-  show('pH'); renderHome();
+  show('pH'); requestAnimationFrame(renderHome);
 }
 
 function goAula(id){
@@ -199,7 +199,7 @@ function openSub(){
   if(_fab) _fab.style.display=(!noActions && typeof can==='function' && can('items.write')) ? 'flex' : 'none';
   document.getElementById('srch').value='';
   fillCatFilter();
-  show('pS'); renderInv(); renderSubStats(all,low);
+  show('pS'); requestAnimationFrame(() => { renderInv(); renderSubStats(all,low); });
 }
 
 function openItemRoute(id){
