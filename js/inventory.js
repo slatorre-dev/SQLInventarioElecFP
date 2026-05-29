@@ -323,15 +323,10 @@ function groupConsumiblesByTag(items){
   const map = new Map();
   for(const x of items){
     const tags = itemTags(x);
-    const tagList = tags.length ? tags : ['Sin tag'];
-    const seenKeys = new Set();
-    for(const rawTag of tagList){
-      const key = tagFamilyKey(rawTag);
-      if(seenKeys.has(key)) continue;
-      seenKeys.add(key);
-      if(!map.has(key)) map.set(key, { items: [] });
-      map.get(key).items.push(x);
-    }
+    const rawTag = tags.length ? tags[0] : 'Sin tag';
+    const key = tagFamilyKey(rawTag);
+    if(!map.has(key)) map.set(key, { items: [] });
+    map.get(key).items.push(x);
   }
   return [...map.entries()]
     .map(([key, bucket]) => ({
