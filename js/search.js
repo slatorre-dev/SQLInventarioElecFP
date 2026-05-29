@@ -28,21 +28,23 @@ function normalizeStr(s){
   return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 }
 
-// Mejora 1: includes en vez de startsWith
-// Mejora 2: expansión por sinónimos del taller
+// ≤2 chars: coincidencia exacta de palabra; ≥3 chars: subcadena dentro de palabra
+function wordMatch(textWords, pattern){
+  if(pattern.length<=2) return textWords.includes(pattern);
+  return textWords.some(tw=>tw.includes(pattern));
+}
+
 function fuzzyMatch(query, text){
   const q=normalizeStr(query);
-  const t=normalizeStr(text);
-  const queryWords=q.split(/\s+/).filter(w=>w);
-  const textWords=t.split(/\s+/).filter(w=>w);
-  return queryWords.every(qWord=>{
-    if(textWords.some(tWord=>tWord.includes(qWord))) return true;
+  const textWords=normalizeStr(text).split(/\s+/).filter(w=>w);
+  return q.split(/\s+/).filter(w=>w).every(qWord=>{
+    if(wordMatch(textWords,qWord)) return true;
     for(const [canonical,aliases] of Object.entries(SEARCH_SINONIMOS)){
       const normCanon=normalizeStr(canonical);
       const allForms=[normCanon,...aliases.map(normalizeStr)];
-      if(allForms.includes(qWord)||allForms.some(f=>f.includes(qWord))){
-        if(allForms.some(form=>t.includes(form))) return true;
-      }
+      // solo activar el grupo si qWord coincide con una forma larga o es exactamente una forma corta
+      const triggered=allForms.includes(qWord)||allForms.some(f=>f.length>2&&f.includes(qWord));
+      if(triggered && allForms.some(form=>wordMatch(textWords,form))) return true;
     }
     return false;
   });
