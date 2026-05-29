@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
       const result = await DB.prepare(`
         SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
                inventario.item AS itemNombre
-        FROM log LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
+        FROM log LEFT JOIN inventario ON CAST(log.itemId AS SIGNED) = inventario.id
         WHERE log.itemId = ? ORDER BY log.id DESC LIMIT 200
       `).bind(String(itemId)).all();
       return res.json({ ok: true, logs: (result.results || []).map(mapLogRow) });
@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
     const result = await DB.prepare(`
       SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
              inventario.item AS itemNombre
-      FROM log LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
+      FROM log LEFT JOIN inventario ON CAST(log.itemId AS SIGNED) = inventario.id
       ORDER BY log.id DESC LIMIT 5000
     `).all();
     return res.json((result.results || []).map(mapLogRow));

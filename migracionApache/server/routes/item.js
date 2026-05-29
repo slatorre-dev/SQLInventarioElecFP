@@ -4,6 +4,10 @@ const DB = require('../db');
 
 const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material','oculto'];
 const FIELDS_UPD = HEADERS_INV.filter(h => h !== 'id');
+// MySQL: columnas con nombres reservados necesitan backticks en SQL generado
+const q = h => '`' + h + '`';
+const HEADERS_SQL = HEADERS_INV.map(q);
+const FIELDS_UPD_SQL = FIELDS_UPD.map(q);
 
 function isSuperAdmin(user) {
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === 'superadmin';
@@ -22,7 +26,7 @@ async function ensureContainerCols() {
   const migrated = await DB.prepare("SELECT value FROM app_meta WHERE key='tipo_material_migrated'").first().catch(() => null);
   if (!migrated) {
     await DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 OR lower(cat) LIKE '%herramient%' OR lower(cat) LIKE '%equipo%' OR lower(cat) LIKE '%instrument%'").run().catch(() => {});
-    await DB.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('tipo_material_migrated', datetime('now'))").run().catch(() => {});
+    await DB.prepare("REPLACE INTO `app_meta` (`key`,value) VALUES ('tipo_material_migrated', NOW())").run().catch(() => {});
   }
 }
 
@@ -74,7 +78,7 @@ router.post('/', async (req, res) => {
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
     const vals = HEADERS_INV.map(h => item[h] ?? null);
-    await DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')}) VALUES (${HEADERS_INV.map(() => '?').join(',')})`)
+    await DB.prepare(`INSERT INTO inventario (${HEADERS_SQL.join(',')}) VALUES (${HEADERS_INV.map(() => '?').join(',')})`)
       .bind(...vals).run();
     await auditLog(user, 'add', newId, itemAuditSummary('Anadido', item));
     return res.json({ ok: true, item });
@@ -84,7 +88,7 @@ router.post('/', async (req, res) => {
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
-    const sets = FIELDS_UPD.map(h => `${h}=?`).join(',');
+    const sets = FIELDS_UPD_SQL.map(h => `${h}=?`).join(',');
     const vals = [...FIELDS_UPD.map(h => item[h] ?? null), item.id];
     await DB.prepare(`UPDATE inventario SET ${sets} WHERE id=?`).bind(...vals).run();
     await auditLog(user, 'update', item.id, itemAuditSummary('Actualizado', item));
@@ -104,7 +108,7 @@ router.post('/', async (req, res) => {
     if (!newItems.length) return res.json({ ok: false, error: 'Sin items' });
     const maxRow = await DB.prepare('SELECT MAX(id) as m FROM inventario').first();
     let nextId = (maxRow.m || 0) + 1;
-    const stmt = DB.prepare(`INSERT OR REPLACE INTO inventario (${HEADERS_INV.join(',')}) VALUES (${HEADERS_INV.map(() => '?').join(',')})`);
+    const stmt = DB.prepare(`REPLACE INTO inventario (${HEADERS_SQL.join(',')}) VALUES (${HEADERS_INV.map(() => '?').join(',')})`);
     const batch = newItems.map(it => {
       if (!it.id) it.id = nextId++;
       if (!it.code) it.code = 'IB-' + String(it.id).padStart(5, '0');

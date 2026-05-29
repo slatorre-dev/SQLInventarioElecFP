@@ -71,10 +71,10 @@ router.get('/', async (req, res) => {
   await DB.prepare("ALTER TABLE inventario ADD COLUMN oculto INTEGER DEFAULT 0").run().catch(() => {});
   await DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
   await DB.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
-  await DB.prepare("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT DEFAULT '')").run().catch(() => {});
+  await DB.prepare("CREATE TABLE IF NOT EXISTS `app_meta` (`key` VARCHAR(500) PRIMARY KEY, value VARCHAR(500) DEFAULT '')").run().catch(() => {});
 
   // Migración renombrar categoría consumibles → Material de taller
-  const catRenameMigrated = await DB.prepare("SELECT value FROM app_meta WHERE key='rename_consumibles_to_material_taller_v1'").first().catch(() => null);
+  const catRenameMigrated = await DB.prepare("SELECT value FROM `app_meta` WHERE `key`='rename_consumibles_to_material_taller_v1'").first().catch(() => null);
   if (!catRenameMigrated) {
     const CAT_NEW = 'Material de taller';
     const catRows = await DB.prepare('SELECT rowid, name, c, bg, i, orden FROM categorias ORDER BY orden, rowid').all().catch(() => ({ results: [] }));
@@ -90,13 +90,13 @@ router.get('/', async (req, res) => {
         .bind(CAT_NEW, String(seed?.c || '#7c3aed'), String(seed?.bg || '#f5f3ff'), String(seed?.i || '📦'), Number(seed?.orden || 2))
         .run().catch(() => {});
     }
-    await DB.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('rename_consumibles_to_material_taller_v1', datetime('now'))").run().catch(() => {});
+    await DB.prepare("REPLACE INTO `app_meta` (`key`,value) VALUES ('rename_consumibles_to_material_taller_v1', NOW())").run().catch(() => {});
   }
 
-  const tipoMigrado = await DB.prepare("SELECT value FROM app_meta WHERE key='tipo_material_migrated'").first().catch(() => null);
+  const tipoMigrado = await DB.prepare("SELECT value FROM `app_meta` WHERE `key`='tipo_material_migrated'").first().catch(() => null);
   if (!tipoMigrado) {
     await DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 OR lower(cat) LIKE '%herramient%' OR lower(cat) LIKE '%equipo%' OR lower(cat) LIKE '%instrument%'").run().catch(() => {});
-    await DB.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('tipo_material_migrated', datetime('now'))").run().catch(() => {});
+    await DB.prepare("REPLACE INTO `app_meta` (`key`,value) VALUES ('tipo_material_migrated', NOW())").run().catch(() => {});
   }
 
   const itemsQuery = isSuperAdmin(user)
