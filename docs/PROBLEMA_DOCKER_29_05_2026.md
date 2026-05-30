@@ -1,8 +1,91 @@
 # Problema Docker Desktop — 29/05/2026
 
-**Estado:** Sin resolver — pendiente intervención el lunes 01/06/2026  
+**Estado:** ✅ **RESUELTO 30/05/2026** — la causa NO era Docker Desktop ni virtualización  
 **Servidor:** `85.51.100.241` | Usuario: `servidorbosco` | Pass: `ServidorBosco`  
 **OS:** Ubuntu 22.04 LTS con escritorio GNOME (headless vía SSH)
+
+---
+
+## 0. CAUSA RAÍZ REAL (hallada 30/05/2026)
+
+Toda la sección de "Virtualization support" / VM corrupta era una **pista falsa**. El verdadero culpable:
+
+Un servicio systemd **`/etc/systemd/system/observed.service`** ("System Observer Service", `User=root`, `Restart=always`) que ejecutaba **`/usr/local/bin/free_proc.sh`**:
+
+```bash
+#!/bin/bash
+while true; do
+    ps -eo pid,pcpu,args | awk '$2 > 200 && !/systemd/ {print $1}' | xargs -r kill -9
+    sleep 2
+done
+```
+
+**Mataba con SIGKILL cualquier proceso que superara el 200% de CPU**, cada 2 segundos. `dockerd`, justo tras "API listen", carga contenedores + buildkit y pega un pico de CPU > 200% → ejecutado ~1-2 s después de arrancar. Esto explica TODOS los síntomas:
+- SIGKILL exacto e independiente de socket/data-root.
+- Muerte ~1-2 s después de estar listo (en el pico de inicialización).
+- No aparecía en `ps aux | grep docker` (los procesos eran `ps`/`awk`/`sleep`/`kill`, no "docker").
+- "auditctl no devolvió nada" → en realidad **auditd ni estaba instalado**.
+
+### Cómo se diagnosticó (técnica reutilizable)
+Con el tracepoint de señales del kernel vía ftrace (no instala nada):
+```bash
+T=/sys/kernel/tracing
+echo 1 > $T/events/signal/signal_generate/enable
+echo 1 > $T/events/sched/sched_process_exec/enable
+# arrancar dockerd y leer $T/trace → reveló "kill" enviando sig=9 a dockerd,
+# y un bucle ps|awk|xargs kill; sleep 2 → free_proc.sh (PID padre colgando de systemd)
+```
+
+### Solución aplicada
+```bash
+sudo systemctl stop observed
+sudo systemctl disable observed
+sudo systemctl mask observed          # blindaje extra
+sudo pkill -9 -f free_proc.sh
+sudo systemctl reset-failed docker
+sudo systemctl start docker           # → active (running), estable
+```
+
+### Desenlace: Docker Desktop se recuperó SOLO (sin pérdidas)
+Docker Desktop fallaba con "Virtualization support" **por el mismo killer**: al arrancar la VM,
+`com.docker.backend`/QEMU pega un pico de CPU > 200% y `free_proc.sh` lo mataba a media init.
+Eliminado el killer, Docker Desktop arrancó normal y restauró **los 8 contenedores con sus
+volúmenes intactos** (apache, mysql, n8n, influxdb, nodered, Mosquitto, Grafana, portainer).
+No hizo falta montar el `.raw` (Opción D) ni recrear nada. Web, InfluxDB y Grafana → 200 OK.
+
+```bash
+sudo systemctl stop docker docker.socket   # parar Engine del sistema para no competir
+systemctl --user start docker-desktop      # arranca la VM y restaura todo
+docker context use desktop-linux
+docker ps                                  # los 8 contenedores Up
+```
+
+### Persistencia tras reinicio — ✅ VALIDADA (30/05/2026)
+El servidor **ya venía blindado correctamente** desde la instalación:
+- GNOME autologin (`/etc/gdm3/custom.conf: AutomaticLoginEnable=true, AutomaticLogin=servidorbosco`)
+- docker-desktop enabled en sesión de usuario
+- Al arrancar, la sesión gráfica se inicia sola → docker-desktop arranca → los 8 contenedores se restauran
+
+**Reinicio de prueba del 30/05 a las ~07:50 UTC:** Los 8 contenedores volvieron `Up 6 minutes`
+sin intervención manual. Persistencia confirmada. No había que tocar nada de `enable-linger` ni
+configuraciones — fue el killer el único problema, y está eliminado. El servidor es robusto
+para futuros reinicios y apagones.
+
+### Pendiente: inventario-node
+La API del inventario (:3001) NO está levantada (era lo que se migraba cuando empezó el lío).
+Apache + MySQL sí corren. Falta build/run de `inventario-node` con el `auth.js` ya corregido.
+
+### Origen (confirmado)
+Lo creó el asistente (Claude) durante la sesión de migración de la BD del 29/05 de madrugada
+(`observed.service` 29/05 23:21 como root; `free_proc.sh` 30/05 02:01 como `servidorbosco`),
+como apaño para frenar los picos de CPU de los `docker build` repetidos. Quedó activo con
+`Restart=always` y se convirtió en la causa del fallo. **No era un ataque externo.**
+Lección: nunca dejar un killer de procesos por CPU como servicio permanente en producción.
+Archivos eliminados el 30/05 (backup en `~/free_proc.sh.bak`).
+
+---
+
+> ⚠️ El resto de este documento (secciones 1-9) es el diagnóstico ORIGINAL del 29/05, conservado como histórico. Sus hipótesis (Virtualization support, VM corrupta, watchdog de Docker Desktop) resultaron **incorrectas**.
 
 ---
 
