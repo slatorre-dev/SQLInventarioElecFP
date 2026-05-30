@@ -741,6 +741,15 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .cons-subgroups{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cons-subgroup-btn{padding:8px 10px;min-height:38px}
 }
+@media (max-width:640px){
+  .cons-group-icon{display:none}
+  .cons-group-btn{padding:9px 8px 8px;min-height:60px;gap:4px}
+  .cons-group.open .cons-group-btn{padding:7px 9px;gap:4px}
+  .cons-group-title{font-size:11px}
+  .cons-group-main{padding-right:14px}
+  .cons-subgroup-title{font-size:11px}
+  .cons-subgroup-btn{padding:7px 9px;gap:6px;min-height:34px}
+}
 .tag-mini{display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2563eb;font-size:10px;margin-top:3px}
 .tag-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:10px;font-weight:700}
 .qr-name-icon{width:17px;height:17px;display:block}
