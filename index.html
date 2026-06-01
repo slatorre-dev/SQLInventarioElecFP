@@ -859,6 +859,62 @@
       <button class="btn" onclick="closePrintChoiceModal();openPrintQrModal()" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
         <span style="font-size:18px;margin-right:8px">🔳</span>Etiquetas QR<br><small style="font-size:11px;color:var(--muted);font-weight:400">Etiquetas con código QR por ítem</small>
       </button>
+      <button class="btn" onclick="closePrintChoiceModal();openPrintLabelsModal()" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">📦</span>Plantilla pegatinas<br><small style="font-size:11px;color:var(--muted);font-weight:400">Grid de etiquetas en A4 · formatos Apli/Avery</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLANTILLA PEGATINAS -->
+<div class="mbg" id="mPrintLabels" onclick="if(event.target===this)closePrintLabelsModal()">
+  <div class="modal" style="max-width:430px">
+    <div class="mh"><div class="mt">📦 Plantilla pegatinas</div><button class="mx" onclick="closePrintLabelsModal()">✕</button></div>
+    <div class="mb" style="padding:16px 20px 20px">
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600">Formato de hoja:</label>
+        <select id="labelTpl" onchange="onLabelTplChange()" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2,#f1f5f9);font-size:13px;color:var(--text)">
+          <option value="apli65">65/A4 — 38×21 mm · Apli 01282 (estantería)</option>
+          <option value="apli40">40/A4 — 52×30 mm · Apli 01283</option>
+          <option value="avery21" selected>21/A4 — 63×38 mm · Avery L7160 (más común)</option>
+          <option value="apli24">24/A4 — 70×37 mm · Apli 01276</option>
+          <option value="apli10">10/A4 — 99×57 mm · Apli 01273</option>
+          <option value="l8">8/A4 — 105×74 mm</option>
+          <option value="l4">4/A4 — A6 (105×148 mm)</option>
+          <option value="custom">Personalizado…</option>
+        </select>
+        <div id="labelTplCustom" style="display:none;margin-top:8px;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="labelW" placeholder="Ancho" min="20" max="200" oninput="onLabelTplChange()" style="width:78px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;text-align:center">
+            <span style="color:var(--muted)">×</span>
+            <input type="number" id="labelH" placeholder="Alto" min="15" max="290" oninput="onLabelTplChange()" style="width:78px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;text-align:center">
+            <span style="font-size:12px;color:var(--muted)">mm</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="labelCols" placeholder="Cols" min="1" max="8" value="3" oninput="onLabelTplChange()" style="width:60px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;text-align:center">
+            <span style="font-size:12px;color:var(--muted)">columnas</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-weight:600">Contenido de cada pegatina:</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="lf_nombre" checked> Nombre</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="lf_ref" checked> Ref.</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="lf_aula" checked> Aula</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="lf_qty"> Cantidad</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="lf_loc"> Ubicación</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px"><input type="checkbox" id="lf_est"> Estado</label>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)"><input type="checkbox" id="lf_guides" checked> Mostrar guías de corte (línea de puntos)</label>
+      </div>
+      <p id="labelPreviewInfo" style="font-size:12px;padding:7px 10px;border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--muted);margin:0 0 16px"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn" onclick="closePrintLabelsModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="printLabels()">🖨️ Imprimir</button>
+      </div>
     </div>
   </div>
 </div>
@@ -878,7 +934,7 @@
           <option value="A5 landscape">A5 Horizontal (210×148 mm)</option>
           <option value="A5 portrait">A5 Vertical (148×210 mm)</option>
           <option value="letter landscape">Carta Horizontal (279×216 mm)</option>
-          <option value="custom">Personalizado (pegatinas, etiquetas…)</option>
+          <option value="custom">Personalizado (papel no estándar)</option>
         </select>
         <div id="printPaperCustom" style="display:none;margin-top:8px;gap:8px;align-items:center">
           <input type="number" id="printPaperW" placeholder="Ancho" min="30" max="1200" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;text-align:center">

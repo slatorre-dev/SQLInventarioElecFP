@@ -1326,6 +1326,134 @@ const PRINT_COLS = [
 const PRINT_COLS_KEY = 'inv_print_cols';
 const PRINT_PAPER_KEY = 'inv_print_paper';
 
+// ─── PLANTILLA PEGATINAS ────────────────────────────────
+// w/h en mm, cols = columnas por página, perPage calculado,
+// mTop/mLeft = margen superior/izquierdo del folio, gX/gY = gap entre etiquetas
+const LABEL_TPLS = {
+  apli65:  { w:38.1, h:21.2, cols:5, perPage:65, mTop:10.7, mLeft:4.6,  gX:0,   gY:0   },
+  apli40:  { w:52.5, h:29.7, cols:4, perPage:40, mTop:10.0, mLeft:5.0,  gX:0,   gY:0   },
+  avery21: { w:63.5, h:38.1, cols:3, perPage:21, mTop:4.5,  mLeft:7.25, gX:2.5, gY:0   },
+  apli24:  { w:70.0, h:37.0, cols:3, perPage:24, mTop:8.5,  mLeft:0,    gX:0,   gY:0   },
+  apli10:  { w:99.1, h:57.0, cols:2, perPage:10, mTop:4.5,  mLeft:5.95, gX:0,   gY:0   },
+  l8:      { w:105,  h:74.3, cols:2, perPage:8,  mTop:0,    mLeft:0,    gX:0,   gY:0   },
+  l4:      { w:105,  h:148.5,cols:2, perPage:4,  mTop:0,    mLeft:0,    gX:0,   gY:0   },
+};
+
+function openPrintLabelsModal(){
+  onLabelTplChange();
+  document.getElementById('mPrintLabels').classList.add('open');
+}
+function closePrintLabelsModal(){
+  document.getElementById('mPrintLabels').classList.remove('open');
+}
+
+function _resolveLabelTpl(){
+  const id = document.getElementById('labelTpl')?.value || 'avery21';
+  if(id === 'custom'){
+    const w = parseFloat(document.getElementById('labelW')?.value);
+    const h = parseFloat(document.getElementById('labelH')?.value);
+    const cols = Math.max(1, parseInt(document.getElementById('labelCols')?.value) || 3);
+    if(!w || !h) return null;
+    const rows = Math.floor((297 - 10) / h);
+    const mLeft = Math.max(0, (210 - cols * w) / 2);
+    return { w, h, cols, perPage: cols * rows, mTop: 5, mLeft, gX: 0, gY: 0 };
+  }
+  return LABEL_TPLS[id] || LABEL_TPLS.avery21;
+}
+
+function onLabelTplChange(){
+  const id = document.getElementById('labelTpl')?.value;
+  const customDiv = document.getElementById('labelTplCustom');
+  if(customDiv) customDiv.style.display = id === 'custom' ? 'flex' : 'none';
+  const tpl = _resolveLabelTpl();
+  const info = document.getElementById('labelPreviewInfo');
+  if(!info) return;
+  if(!tpl){ info.textContent = 'Indica las dimensiones de la pegatina'; return; }
+  const total = getFiltered().length;
+  const pages = Math.ceil(total / tpl.perPage);
+  info.textContent = `${tpl.perPage} etiquetas/página · ${total} ítems · ~${pages} página${pages !== 1 ? 's' : ''}`;
+}
+
+function printLabels(){
+  const tpl = _resolveLabelTpl();
+  if(!tpl){ toast('Indica el tamaño y columnas de la pegatina','err'); return; }
+
+  const fields = {
+    nombre: document.getElementById('lf_nombre')?.checked ?? true,
+    ref:    document.getElementById('lf_ref')?.checked ?? true,
+    aula:   document.getElementById('lf_aula')?.checked ?? true,
+    qty:    document.getElementById('lf_qty')?.checked ?? false,
+    loc:    document.getElementById('lf_loc')?.checked ?? false,
+    est:    document.getElementById('lf_est')?.checked ?? false,
+  };
+  const guides = document.getElementById('lf_guides')?.checked ?? true;
+
+  const data = getFiltered();
+  if(!data.length){ toast('No hay ítems para imprimir','err'); return; }
+  closePrintLabelsModal();
+
+  const { w, h, cols, perPage, mTop, mLeft, gX, gY } = tpl;
+
+  // Fuentes adaptativas según altura de la pegatina
+  const nameSize = h < 25 ? '6.5pt' : h < 40 ? '8pt' : h < 60 ? '9.5pt' : '11pt';
+  const metaSize = h < 25 ? '5.5pt' : h < 40 ? '6.5pt' : h < 60 ? '7pt' : '8.5pt';
+  const pad = h < 25 ? '1mm 1.5mm' : h < 40 ? '1.5mm 2mm' : '2.5mm 3mm';
+  const clamp = h < 25 ? 1 : h < 40 ? 2 : 3;
+  const border = guides ? `border:0.3px dashed #bbb;` : '';
+
+  function labelCell(x){
+    const aulaNombre = AULAS.find(a => a.id === x.aula)?.name || x.aula || '';
+    let inner = '';
+    if(fields.nombre)
+      inner += `<div style="font-weight:700;font-size:${nameSize};line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:${clamp};-webkit-box-orient:vertical;word-break:break-word">${escHtml(x.item||'')}</div>`;
+    if(fields.ref && x.ref)
+      inner += `<div style="font-family:monospace;font-size:${metaSize};color:#555;margin-top:0.4mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escHtml(x.ref)}</div>`;
+    if(fields.aula && aulaNombre && h >= 28)
+      inner += `<div style="font-size:${metaSize};color:#444;margin-top:0.4mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escHtml(aulaNombre)}</div>`;
+    if(fields.qty && h >= 28)
+      inner += `<div style="font-size:${metaSize};margin-top:0.4mm">Ud: <b>${x.qty??'—'}</b></div>`;
+    if(fields.loc && x.loc && h >= 45)
+      inner += `<div style="font-size:${metaSize};color:#666;margin-top:0.4mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escHtml(x.loc)}</div>`;
+    if(fields.est && x.est && h >= 45)
+      inner += `<div style="font-size:${metaSize};color:#444;margin-top:0.4mm">${escHtml(x.est)}</div>`;
+    return `<div style="width:${w}mm;height:${h}mm;overflow:hidden;padding:${pad};box-sizing:border-box;${border}">${inner}</div>`;
+  }
+
+  function emptyCell(){
+    return `<div style="width:${w}mm;height:${h}mm;${guides?'border:0.3px dashed #e5e5e5;':''}"></div>`;
+  }
+
+  // Agrupar en páginas
+  const pageItems = [];
+  for(let i = 0; i < data.length; i += perPage) pageItems.push(data.slice(i, i + perPage));
+
+  const pagesHtml = pageItems.map(page => {
+    const cells = page.map(x => labelCell(x));
+    while(cells.length < perPage) cells.push(emptyCell());
+    return `<div style="width:210mm;height:297mm;padding-top:${mTop}mm;padding-left:${mLeft}mm;box-sizing:border-box;page-break-after:always;overflow:hidden">
+      <div style="display:grid;grid-template-columns:repeat(${cols},${w}mm);gap:${gY}mm ${gX}mm;line-height:1.3">
+        ${cells.join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <title>Pegatinas inventario</title>
+  <style>
+    @page{size:A4 portrait;margin:0}
+    *{box-sizing:border-box}
+    body{margin:0;padding:0;font-family:Arial,sans-serif;color:#111}
+  </style></head><body>
+  ${pagesHtml}
+  <script>window.onload=()=>setTimeout(()=>print(),200);<\/script>
+  </body></html>`;
+
+  const win = window.open('','_blank');
+  if(!win){ toast('El navegador bloqueó la ventana de impresión','err'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
 function _getPrintPaper(){
   try { return JSON.parse(localStorage.getItem(PRINT_PAPER_KEY)) || {size:'A4 landscape'}; }
   catch(e){ return {size:'A4 landscape'}; }
