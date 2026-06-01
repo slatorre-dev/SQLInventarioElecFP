@@ -1,6 +1,6 @@
 # Nota de Trabajo - SQLInventarioElecFP
 
-**Estado:** v437 | Mayo 2026
+**Estado:** v468 | Mayo 2026 | Servidor Apache restaurado, docker-desktop stable, inventario-node pending
 
 ---
 
@@ -171,6 +171,38 @@ migrations/             — SQL de migraciones D1
 
 ---
 
+## Sesión 30/05/2026 — Servidor Apache restaurado (v468)
+
+### Crisis y resolución (24h de debugging)
+**Síntoma:** Docker Desktop no arrancaba, servidor caído. Perseguimos pistas falsas (Virtualization support, VM corrupta, kernel bugs).
+**Causa raíz:** Script `observed.service` + `free_proc.sh` que yo creé en la sesión anterior (29/05) para frenar picos de CPU de builds. Quedó con `Restart=always` matando cualquier proceso >200% CPU cada 2 segundos → tumbaba dockerd, GNOME, todo.
+**Diagnóstico validado:** Kernel ftrace tracepoint `/sys/kernel/tracing/events/signal/signal_generate` sin instalar nada → reveló `kill` proceso enviando SIGKILL a dockerd. Cadena de forks → script padre en bucle.
+**Solución:** Borrar `/etc/systemd/system/observed.service` + `/usr/local/bin/free_proc.sh` + `sudo systemctl mask observed`
+
+### Docker Desktop: recuperación TOTAL
+- 8 contenedores restaurados automáticamente (apache, mysql, n8n, influxdb, nodered, Mosquitto, Grafana, portainer)
+- Volúmenes intactos, datos InfluxDB preservados, Grafana dashboards salvados
+- **Reinicio validado 30/05 07:50 UTC:** los 8 arrancaron solos, persistencia confirmada ✅
+- GNOME autologin ya estaba configurado (`/etc/gdm3/custom.conf`) → no había que tocar `enable-linger`
+
+### Estado del inventario (pendiente lunes)
+- **Frontend PWA:** Carga OK en Apache (es offline-first, cachea con Service Worker)
+- **MySQL:** Corriendo, BD `inventario-departamento` con todas las tablas importadas
+- **Contenedor `inventario-node`:** Existe pero `Exited (255)` → error en `auth.js:13`: `DB undefined` (conexión mysql2 fallando)
+- **Por qué "parecía funcionar ayer":** La UI estaba cachéada, datos en localStorage, modales puramente frontend. Pero login real + acciones que guardan en BD fallaban silenciosamente.
+
+### Lecciones aprendidas
+- ✅ Nunca dejar un killer de procesos (por CPU/RAM) como servicio persistente en producción (ver [[feedback-no-process-killers-prod]])
+- ✅ Ftrace del kernel es herramienta poderosa sin instalar nada
+- ✅ PWA offline-first puede parecer "funciona" cuando solo la UI está cachéada
+
+### Pendientes claros para el lunes (sin prisa)
+1. Clonar repo en servidor: `git clone https://github.com/sebantonio/SQLInventarioElecFP.git`
+2. Debuguear `inventario-node`: `DB undefined` en `auth.js:13` → probablemente `db.js` wrapper mysql2 no se inicializa
+3. Una vez arranca `inventario-node` → login funciona → web completa online
+
+---
+
 ## Pendiente (Próximas sesiones)
 - FASE 1 seguridad: Bearer tokens, password hashing, rate-limiting
 - Crear branch `feature/security-refactor`
@@ -234,6 +266,8 @@ migrations/             — SQL de migraciones D1
 | v433 | Inventariables también agrupados por tags | 27/05/2026 |
 | v434 | Agrupación por familia de tag (raíz) | 27/05/2026 |
 | v435 | Normalización persistente de tags en D1 desde UI | 27/05/2026 |
+| — | **INTERRUPCIÓN 28-29/05:** Servidor Apache caído (Docker Desktop no arrancaba) | 28-29/05/2026 |
+| v468 | **RESUELTO 30/05:** Servidor Apache restaurado, 8 contenedores Docker Desktop online, persistencia validada | 30/05/2026 |
 
 ---
 
