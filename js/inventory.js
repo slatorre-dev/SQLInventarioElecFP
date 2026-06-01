@@ -814,6 +814,9 @@ function bulkPrintSelected(){
   const sel = _getPrintCols();
   const cols = PRINT_COLS.filter(c=>sel[c.key]);
   if(!cols.length){ toast('Selecciona columnas en Imprimir','err'); return; }
+  const bpPaper = _getPrintPaper();
+  const bpPageSize = bpPaper.size === 'custom' ? `${bpPaper.w||210}mm ${bpPaper.h||297}mm` : (bpPaper.size||'A4 landscape');
+  const bpMargin = bpPaper.size === 'custom' && Math.min(bpPaper.w||999,bpPaper.h||999) < 80 ? '3mm' : '10mm';
   const total = selected.length;
   const uds = selected.reduce((s,x)=>s+(Number(x.qty)||0),0);
   const fecha = new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
@@ -847,7 +850,7 @@ function bulkPrintSelected(){
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
   <title>Inventario seleccion</title>
   <style>
-    @page{size:A4 landscape;margin:10mm}
+    @page{size:${bpPageSize};margin:${bpMargin}}
     *{box-sizing:border-box}
     body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
     .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:10px}
@@ -1321,6 +1324,18 @@ const PRINT_COLS = [
   { key:'obs',       label:'Observaciones', default:false },
 ];
 const PRINT_COLS_KEY = 'inv_print_cols';
+const PRINT_PAPER_KEY = 'inv_print_paper';
+
+function _getPrintPaper(){
+  try { return JSON.parse(localStorage.getItem(PRINT_PAPER_KEY)) || {size:'A4 landscape'}; }
+  catch(e){ return {size:'A4 landscape'}; }
+}
+
+function onPrintPaperChange(){
+  const val = document.getElementById('printPaperSize')?.value;
+  const custom = document.getElementById('printPaperCustom');
+  if(custom) custom.style.display = val === 'custom' ? 'flex' : 'none';
+}
 
 function _getPrintCols(){
   try {
@@ -1338,6 +1353,17 @@ function openPrintModal(){
       <input type="checkbox" id="prcol_${c.key}" ${sel[c.key]?'checked':''}>
       <span>${c.label}</span>
     </label>`).join('');
+  const paper = _getPrintPaper();
+  const paperSel = document.getElementById('printPaperSize');
+  if(paperSel){ paperSel.value = paper.size || 'A4 landscape'; }
+  const customDiv = document.getElementById('printPaperCustom');
+  if(customDiv){ customDiv.style.display = paper.size === 'custom' ? 'flex' : 'none'; }
+  if(paper.size === 'custom'){
+    const wEl = document.getElementById('printPaperW');
+    const hEl = document.getElementById('printPaperH');
+    if(wEl) wEl.value = paper.w || '';
+    if(hEl) hEl.value = paper.h || '';
+  }
   const filtered = getFiltered();
   const total = items.length;
   const info = document.getElementById('printFilterInfo');
@@ -1378,6 +1404,20 @@ function printInv(){
   localStorage.setItem(PRINT_COLS_KEY, JSON.stringify(sel));
   const cols = PRINT_COLS.filter(c=>sel[c.key]);
   if(!cols.length){ toast('Selecciona al menos una columna','err'); return; }
+
+  const paperVal = document.getElementById('printPaperSize')?.value || 'A4 landscape';
+  let pageSize, pageMargin = '10mm';
+  if(paperVal === 'custom'){
+    const w = parseInt(document.getElementById('printPaperW')?.value);
+    const h = parseInt(document.getElementById('printPaperH')?.value);
+    if(!w || !h){ toast('Indica el ancho y alto del papel personalizado','err'); return; }
+    pageSize = `${w}mm ${h}mm`;
+    pageMargin = Math.min(w,h) < 80 ? '3mm' : '6mm';
+    localStorage.setItem(PRINT_PAPER_KEY, JSON.stringify({size:'custom',w,h}));
+  } else {
+    pageSize = paperVal;
+    localStorage.setItem(PRINT_PAPER_KEY, JSON.stringify({size:paperVal}));
+  }
   closePrintModal();
 
   const titulo = cf?.label || 'Inventario';
@@ -1416,7 +1456,7 @@ function printInv(){
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
   <title>Inventario ${titulo}</title>
   <style>
-    @page{size:A4 landscape;margin:10mm}
+    @page{size:${pageSize};margin:${pageMargin}}
     *{box-sizing:border-box}
     body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:0}
     .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #2563eb;padding-bottom:6px;margin-bottom:10px}

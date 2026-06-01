@@ -869,6 +869,25 @@
     <div class="mh"><div class="mt">🖨️ Imprimir inventario</div><button class="mx" onclick="closePrintModal()">✕</button></div>
     <div class="mb" style="padding:18px 20px 20px">
       <p id="printFilterInfo" style="margin:0 0 14px;font-size:12px;padding:7px 10px;border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--muted)"></p>
+      <div style="margin-bottom:14px">
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600">Tamaño de papel:</label>
+        <select id="printPaperSize" onchange="onPrintPaperChange()" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2,#f1f5f9);font-size:13px;color:var(--text)">
+          <option value="A4 landscape">A4 Horizontal (297×210 mm) — por defecto</option>
+          <option value="A4 portrait">A4 Vertical (210×297 mm)</option>
+          <option value="A3 landscape">A3 Horizontal (420×297 mm)</option>
+          <option value="A5 landscape">A5 Horizontal (210×148 mm)</option>
+          <option value="A5 portrait">A5 Vertical (148×210 mm)</option>
+          <option value="letter landscape">Carta Horizontal (279×216 mm)</option>
+          <option value="custom">Personalizado (pegatinas, etiquetas…)</option>
+        </select>
+        <div id="printPaperCustom" style="display:none;margin-top:8px;gap:8px;align-items:center">
+          <input type="number" id="printPaperW" placeholder="Ancho" min="30" max="1200" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;text-align:center">
+          <span style="color:var(--muted)">×</span>
+          <input type="number" id="printPaperH" placeholder="Alto" min="30" max="1200" style="width:90px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-size:13px;text-align:center">
+          <span style="font-size:12px;color:var(--muted)">mm</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:4px">Ej: 100×150 para foto, 210×99 para DL</span>
+        </div>
+      </div>
       <p style="margin:0 0 14px;color:var(--muted);font-size:13px">Selecciona las columnas que aparecerán en la impresión:</p>
       <div class="print-col-grid" id="printColGrid"></div>
       <div style="display:flex;gap:8px;margin-top:10px">
