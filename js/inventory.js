@@ -370,7 +370,7 @@ function renderConsumibleTagGroups(catKey, items, mode){
     const icon = tagIcon(g.tag);
     return `<section class="cons-subgroup${isOpen?' open':''}">
       <button class="cons-subgroup-btn" type="button" onclick="toggleConsumibleTagGroup('${catEncoded}','${tagEncoded}')">
-        <span class="cons-subgroup-title" title="${escHtml(g.tag)}">${icon} ${escHtml(g.tag)}</span>
+        <span class="cons-subgroup-title" title="${escHtml(g.tag)}"><span class="cons-subgroup-icon">${icon} </span>${escHtml(g.tag)}</span>
         <span class="cons-subgroup-metrics">${g.refs}</span>
         ${g.low?`<span class="cons-subgroup-low" title="Stock bajo">⚠ ${g.low}</span>`:''}
         <span class="cons-subgroup-chevron">${isOpen ? '▲' : '▼'}</span>

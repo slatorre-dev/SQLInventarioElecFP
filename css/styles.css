@@ -747,8 +747,10 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .cons-group.open .cons-group-btn{padding:7px 9px;gap:4px}
   .cons-group-title{font-size:11px}
   .cons-group-main{padding-right:14px}
-  .cons-subgroup-title{font-size:11px}
-  .cons-subgroup-btn{padding:7px 9px;gap:6px;min-height:34px}
+  .cons-subgroup-icon{display:none}
+  .cons-subgroup-title{font-size:10px}
+  .cons-subgroup-btn{padding:7px 8px;gap:5px;min-height:34px}
+  .cons-subgroup-metrics,.cons-subgroup-low{font-size:10px;padding:1px 5px}
 }
 .tag-mini{display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#2563eb;font-size:10px;margin-top:3px}
 .tag-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:10px;font-weight:700}
