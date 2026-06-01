@@ -1386,6 +1386,7 @@ function printLabels(){
     loc:    document.getElementById('lf_loc')?.checked ?? false,
     est:    document.getElementById('lf_est')?.checked ?? false,
     foto:   document.getElementById('lf_foto')?.checked ?? false,
+    qr:     document.getElementById('lf_qr')?.checked ?? false,
   };
   const guides = document.getElementById('lf_guides')?.checked ?? true;
 
@@ -1417,13 +1418,22 @@ function printLabels(){
       inner += `<div style="font-size:${metaSize};color:#666;margin-top:0.4mm;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${escHtml(x.loc)}</div>`;
     if(fields.est && x.est && h >= 45)
       inner += `<div style="font-size:${metaSize};color:#444;margin-top:0.4mm">${escHtml(x.est)}</div>`;
-    if(fields.foto && x.foto && h >= 35){
-      const imgSize = h < 60 ? '13mm' : '22mm';
+    const sideEl = (() => {
+      if(fields.qr && h >= 25){
+        const qrMm = h < 30 ? 12 : h < 50 ? 15 : 22;
+        const qrPx = qrMm * 4;
+        return `<img src="${qrSrc(itemUrl(x.id), qrPx)}" style="width:${qrMm}mm;height:${qrMm}mm;flex-shrink:0;display:block" alt="QR">`;
+      }
+      if(fields.foto && x.foto && h >= 35){
+        const imgSize = h < 60 ? '13mm' : '22mm';
+        return `<img src="${x.foto}" style="width:${imgSize};height:${imgSize};object-fit:cover;border-radius:2px;flex-shrink:0" alt="">`;
+      }
+      return '';
+    })();
+    if(sideEl)
       return `<div style="width:${w}mm;height:${h}mm;overflow:hidden;padding:${pad};box-sizing:border-box;${border};display:flex;gap:2mm;align-items:flex-start">
-        <div style="flex:1;min-width:0">${inner}</div>
-        <img src="${x.foto}" style="width:${imgSize};height:${imgSize};object-fit:cover;border-radius:2px;flex-shrink:0" alt="">
+        <div style="flex:1;min-width:0">${inner}</div>${sideEl}
       </div>`;
-    }
     return `<div style="width:${w}mm;height:${h}mm;overflow:hidden;padding:${pad};box-sizing:border-box;${border}">${inner}</div>`;
   }
 
